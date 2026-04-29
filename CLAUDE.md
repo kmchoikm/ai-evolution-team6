@@ -26,3 +26,39 @@
 * 사용자의 질문이나 요구사항에 대해 불필요한 인사말이나 서론은 생략하고 **간결하게 핵심 위주로 답변**한다.
 * 작업 지시가 불명확할 경우 임의로 넘겨짚어 코딩하지 말고, "기획 의도가 A가 맞나요, 아니면 B인가요?"라고 **명확하게 역질문**하여 방향을 좁힌 후 개발한다.
 * 키텍처나 워크플로우를 설명할 때는 마크다운 구조(리스트, 표 등)를 적극 활용하여 가독성을 높인다.
+
+---
+
+## 5. gstack 워크플로우 (AI-Assisted Development Process)
+
+사용하는 모든 웹 브라우징에는 `/browse` (gstack의 실제 Chromium 브라우저)를 사용하세요. 절대 `mcp__claude-in-chrome__*` 도구를 사용하지 마세요.
+
+### 사용 가능한 gstack 스킬 (Slash Commands)
+
+**기획 & 설계:**
+- `/office-hours` - 제품 기획 (YC 스타일 6가지 강제 질문으로 가정 재검토)
+- `/plan-ceo-review` - CEO/창업자 관점 전략 검토 (4가지 스코프 모드)
+- `/plan-eng-review` - 엔지니어링 아키텍처 검토 (데이터 흐름, 에러 처리, 테스트)
+- `/plan-design-review` - 시니어 디자이너 설계 검토 (AI 슬롭 탐지)
+- `/plan-devex-review` - 개발자 경험 검토 (TTHW 벤치마크)
+
+**개발 & 리뷰:**
+- `/review` - 스태프 엔지니어 코드 리뷰 (자동 수정 + 완성도 검토)
+- `/design-consultation` - 디자인 시스템 구축 (Mockup 자동 생성)
+- `/design-shotgun` - 디자인 탐색 (AI 비교 보드, Taste 학습)
+- `/design-html` - 설계도 → 프로덕션 HTML 변환 (Pretext 레이아웃)
+- `/qa` - QA 리드 (실제 브라우저 테스트 + 회귀 테스트 자동 생성)
+
+**보안 & 배포:**
+- `/cso` - 보안 감시 (OWASP Top 10 + STRIDE)
+- `/ship` - 배포 자동화 (테스트 실행 + 커버리지 감시 + PR 오픈)
+- `/land-and-deploy` - 배포 완료 (머지 → CI 대기 → 프로덕션 배포 → 헬스 체크)
+- `/canary` - 배포 후 모니터링
+
+**도구 & 유틸:**
+- `/browse` - 실제 Chromium 브라우저 (AI 제어, ~100ms/명령)
+- `/investigate` - 체계적 근본 원인 분석
+- `/retro` - 주간 팀 회고 (팀 인식)
+- `/learn` - 프로젝트별 학습 저장소 관리
+- `/careful` - 파괴적 명령 실행 전 경고
+- `/freeze` - 특정 디렉토리만 편집 (디버깅 중 오류 방지)
