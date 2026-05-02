@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit — 내 발에 딱 맞는 러닝화</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>🏃 RunFit</h1>
+    <p class="tagline">내 발에 딱 맞는 러닝화를 찾아드립니다</p>
+  </header>
+
+  <main class="container">
+    <div class="intro">
+      <h2>3분 진단 시작</h2>
+      <p>7개 질문에 답하시면 AI가 가장 어울리는 러닝화를 추천해 드려요.</p>
+    </div>
+
+    <form id="diagnosis-form">
+
+      <!-- Q1 -->
+      <section class="question">
+        <h3>Q1. 주로 달리는 거리는? <span class="required">*</span></h3>
+        <div class="option-grid grid-4">
+          <label class="option-btn"><input type="radio" name="distance" value="short" /><span>🚶<br>가볍게 조깅<br><small>5km 이하</small></span></label>
+          <label class="option-btn"><input type="radio" name="distance" value="medium" /><span>🏃<br>일반 훈련<br><small>5~10km</small></span></label>
+          <label class="option-btn"><input type="radio" name="distance" value="long" /><span>🏃‍♂️<br>장거리 훈련<br><small>10~21km</small></span></label>
+          <label class="option-btn"><input type="radio" name="distance" value="marathon" /><span>🏅<br>마라톤<br><small>21km 이상</small></span></label>
+        </div>
+      </section>
+
+      <!-- Q2 -->
+      <section class="question">
+        <h3>Q2. 러닝 빈도는?</h3>
+        <div class="option-grid grid-3">
+          <label class="option-btn"><input type="radio" name="frequency" value="casual" /><span>주 1~2회<br><small>취미 러너</small></span></label>
+          <label class="option-btn"><input type="radio" name="frequency" value="regular" checked /><span>주 3~4회<br><small>꾸준한 훈련</small></span></label>
+          <label class="option-btn"><input type="radio" name="frequency" value="intensive" /><span>주 5회 이상<br><small>매일 수준</small></span></label>
+        </div>
+      </section>
+
+      <!-- Q3 -->
+      <section class="question">
+        <h3>Q3. 발볼 유형은? <span class="required">*</span></h3>
+        <div class="option-grid grid-3">
+          <label class="option-btn"><input type="radio" name="width" value="wide" /><span>😣<br>발볼 넓음<br><small>신발이 항상 조임</small></span></label>
+          <label class="option-btn"><input type="radio" name="width" value="normal" /><span>😊<br>보통<br><small>대부분 잘 맞음</small></span></label>
+          <label class="option-btn"><input type="radio" name="width" value="narrow" /><span>😕<br>발볼 좁음<br><small>신발이 헐거움</small></span></label>
+        </div>
+      </section>
+
+      <!-- Q4 -->
+      <section class="question">
+        <h3>Q4. 원하는 쿠션감</h3>
+        <div class="slider-container">
+          <span class="slider-label-left">딱딱함</span>
+          <input type="range" id="cushion-slider" min="1" max="5" value="3" />
+          <span class="slider-label-right">물렁함</span>
+        </div>
+        <div class="slider-marks">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        </div>
+        <div class="slider-value">선택값: <strong id="cushion-value">3</strong> (중간)</div>
+      </section>
+
+      <!-- Q5 -->
+      <section class="question">
+        <h3>Q5. 중요 요소 <small>(최대 3개)</small></h3>
+        <div class="option-grid grid-3">
+          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="speed" /><span>⚡ 속도감</span></label>
+          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="protection" /><span>🛡️ 부상 방지</span></label>
+          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="comfort" /><span>💆 편안함</span></label>
+          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="breathability" /><span>🌬️ 통기성</span></label>
+          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="design" /><span>✨ 디자인</span></label>
+        </div>
+      </section>
+
+      <!-- Q6 -->
+      <section class="question">
+        <h3>Q6. 예산 범위 <small>(선택)</small></h3>
+        <div class="option-grid grid-5">
+          <label class="option-btn"><input type="radio" name="budget" value="low" /><span>~7만원</span></label>
+          <label class="option-btn"><input type="radio" name="budget" value="mid" /><span>7~12만원</span></label>
+          <label class="option-btn"><input type="radio" name="budget" value="high" /><span>12~20만원</span></label>
+          <label class="option-btn"><input type="radio" name="budget" value="premium" /><span>20만원+</span></label>
+          <label class="option-btn"><input type="radio" name="budget" value="" checked /><span>상관없음</span></label>
+        </div>
+      </section>
+
+      <!-- Q7 -->
+      <section class="question">
+        <h3>Q7. 추가로 알려주실 내용 <small>(선택)</small></h3>
+        <textarea id="free-text" maxlength="200" placeholder="예) 평발이에요 / 아킬레스건이 약해요 / 가을 마라톤 준비 중"></textarea>
+        <div class="char-count"><span id="char-count">0</span> / 200</div>
+      </section>
+
+      <!-- 오류 영역 -->
+      <div id="errors" class="errors" style="display: none;"></div>
+
+      <!-- 제출 -->
+      <button type="submit" id="submit-btn" class="btn-submit">
+        추천 받기 →
+      </button>
+    </form>
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-message">AI가 최적의 러닝화를 찾고 있어요... 🔍</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>KAIST 11조 — 김기환·김소현·박영민·이창석·황선정</p>
+    <p class="disclaimer">※ 본 서비스는 무신사 리뷰 데이터 기반 프로토타입입니다.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,534 +1,310 @@
-# SPEC
-## 무신사 러닝화 리뷰 기반 AI 추천 시스템 — 기술 명세서
+# SPEC.md
+## SoleMate — 상세 기능 및 기술 명세서
 
-버전: 1.0  
----
-
-## 1. 서비스 개요
-
-### 1.1 서비스명
-- 정식명: 무신사 러닝화 AI 추천 시스템
-- 코드명: SoleMate / RunFit
-
-### 1.2 핵심 가치 제안
-소비자 리뷰 텍스트를 NLP로 분석하여 러닝화별 6대 속성(무게감·쿠션감·디자인·가격·발볼·착용감) 선호도 프로필을 생성하고, 이를 기반으로 유사 제품 추천 및 개인화 추천을 제공한다.
-
-### 1.3 타깃 사용자
-- 러닝을 시작한 MZ 세대 (20~40대)
-- 자신의 취향에 맞는 러닝화를 효율적으로 탐색하고 싶은 소비자
-- 처음 러닝화를 구매하는 초보 러너
-
-### 1.4 서비스 범위 (MVP)
-- **In Scope**: 무신사 러닝화 카테고리 내 상위 50개 제품에 대한 속성 프로필 생성 및 추천
-- **Out of Scope**: 실시간 리뷰 수집, 타 카테고리 확장, 개인 계정 연동
+이 문서는 SoleMate 서비스의 MVP(Minimum Viable Product) 구현을 위한 상세 개발 스펙을 정의합니다. 모든 코드 작성 및 시스템 설계는 이 문서를 기준으로 진행됩니다.
 
 ---
 
-## 2. 시스템 아키텍처
+### 1. 사용자 시나리오 (User Scenario)
+> **목적:** 사용자가 서비스에 진입하여 결과를 얻기까지의 핵심 흐름 정의 (이탈률 최소화 관점)
 
-### 2.1 전체 아키텍처
+1. **진입 및 온보딩:** 사용자가 모바일 웹에 접속하면, 서비스의 핵심 가치("데이터 기반 부상 방지 러닝화 추천")가 1줄로 노출된다.
+2. **Step 1. 신체 조건 입력:** 직관적인 UI(이미지/카드 선택형)를 통해 성별, 체중, 발볼, 아치 형태(내전/외전/중립)를 선택한다. (모를 경우 '잘 모름/중립' git add docs/SPEC.md선택 가능)
+3. **Step 2. 러닝 목표 입력:** 주간 러닝 거리, 목표 대회(예: 서울마라톤), 예산을 선택한다.
+4. **분석 대기 (Loading):** 입력 완료 버튼을 누르면 "수천 건의 리뷰 데이터를 분석하여 최적의 러닝화를 찾고 있습니다..."라는 문구와 함께 로딩 스피너가 표시된다.
+5. **결과 확인:** AI가 분석한 1, 2, 3순위 러닝화가 카드 형태로 노출된다. 각 카드에는 추천 이유(사용자 데이터 기반)와 주요 스펙, 예상 가격이 명시된다.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        데이터 레이어                              │
-│                                                                  │
-│  무신사 리뷰 데이터  →  전처리 파이프라인  →  속성 점수 DB         │
-│  (텍스트, 제품 ID,       (OKT + KSS +          (제품별 벡터)     │
-│   평점, 날짜)             KNU SentiLex)                          │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                        비즈니스 로직 레이어                        │
-│                                                                  │
-│  속성 프로필 생성기  →  코사인 유사도 계산기  →  추천 엔진         │
-│                                                                   │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                        프레젠테이션 레이어                         │
-│                                                                  │
-│  카테고리 목록 페이지    제품 상세 페이지    AI 추천 모달           │
-│  (속성 필터 UI)         (유사 제품 추천)    (자유형 텍스트 입력)   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 2.2 기술 스택
-
-| 레이어 | 기술 | 용도 |
-|-------|------|------|
-| 데이터 수집 | Python + BeautifulSoup / 공식 API | 리뷰 데이터 수집 |
-| 형태소 분석 | OKT (Open Korean Text) | 한국어 어간 복원, 품사 태깅 |
-| 문장 분리 | KSS (Korean Sentence Splitter) | 문장 단위 분리 |
-| 감성 분석 | KNU SentiLex | 단어별 감성 점수 |
-| 유사도 계산 | NumPy + SciPy (cosine_similarity) | 제품 간 코사인 유사도 |
-| 백엔드 (선택) | FastAPI (Python) | 추천 API 서버 |
-| DB | SQLite (개발) / PostgreSQL (프로덕션) | 제품 프로필 저장 |
-| 프론트엔드 | HTML + Tailwind CSS + Vanilla JS | 무신사 UI 프로토타입 |
-| 시각화 | Chart.js (레이더 차트) | 속성 프로필 표시 |
+---
+git add docs/SPEC.md
+### 2. 타겟 단말 (Client)
+* **디바이스:** 모바일 단말(스마트폰) 최우선 고려 (Mobile-First Design)
+* **환경:** 모바일 웹 브라우저 (Safari, Chrome, Samsung Internet 등)
+* **UI/UX 원칙:** 반응형 웹(Responsive Web)으로 구현하되, 터치 친화적인 큼직한 버튼과 스와이프 가능한 카드 UI를 적극 활용한다. (가로 스크롤 지양, 세로 스크롤 위주)
 
 ---
 
-## 3. 데이터 명세
+### 3. 기능 요구사항 (Functional Requirements)
 
-### 3.1 수집 대상 데이터
+#### 3.1. 사용자 입력 폼 (프론트엔드)
+* **Progressive Disclosure (점진적 공개):** 한 화면에 모든 질문을 쏟아내지 않고, 1~2개씩 스텝별로 나누어 보여주어 입력 피로도를 낮춘다. (PREMORTEM C1 리스크 대응)
+* **입력값 검증 (Validation):** 필수 값 누락 시 다음 스텝으로 넘어가지 못하게 막고, 붉은색 테두리와 직관적인 에러 메시지를 띄운다.
 
-#### 제품 데이터
-```
-products (테이블)
-─────────────────────────────────────
-product_id      VARCHAR(20)  PK    무신사 제품 ID
-brand           VARCHAR(50)        브랜드명 (Nike, Adidas 등)
-name            VARCHAR(200)       제품명
-price           INTEGER            정가 (원)
-sale_price      INTEGER            할인가 (원, nullable)
-image_url       TEXT               대표 이미지 URL
-category        VARCHAR(50)        카테고리 (러닝화 고정)
-created_at      TIMESTAMP          수집 일시
-updated_at      TIMESTAMP          최종 업데이트
-```
-
-#### 리뷰 데이터
-```
-reviews (테이블)
-─────────────────────────────────────
-review_id       VARCHAR(50)  PK    리뷰 고유 ID
-product_id      VARCHAR(20)  FK    제품 ID
-rating          FLOAT              전체 평점 (1.0~5.0)
-body            TEXT               리뷰 텍스트 원문
-size_purchased  VARCHAR(10)        구매 사이즈 (nullable)
-created_at      TIMESTAMP          리뷰 작성일
-is_processed    BOOLEAN            NLP 처리 완료 여부
-```
-
-#### 속성 점수 데이터
-```
-product_profiles (테이블)
-─────────────────────────────────────
-product_id      VARCHAR(20)  PK    제품 ID
-review_count    INTEGER            분석에 사용된 리뷰 수
-score_weight    FLOAT              무게감 선호도 점수 (-10.0 ~ 10.0)
-score_cushion   FLOAT              쿠션감 선호도 점수 (-10.0 ~ 10.0)
-score_design    FLOAT              디자인 선호도 점수 (-10.0 ~ 10.0)
-score_price     FLOAT              가격 선호도 점수 (-10.0 ~ 10.0)
-score_width     FLOAT              발볼 선호도 점수 (-10.0 ~ 10.0)
-score_fit       FLOAT              착용감 선호도 점수 (-10.0 ~ 10.0)
-confidence      FLOAT              신뢰도 점수 (0.0 ~ 1.0, 리뷰 수 기반)
-computed_at     TIMESTAMP          계산 일시
-```
-
-### 3.2 데이터 수집 대상 브랜드
-나이키(Nike), 아디다스(Adidas), 뉴발란스(New Balance), 미즈노(Mizuno), 브룩스(Brooks), 써코니(Saucony), 아식스(ASICS), 온 클라우드(On Cloud), 호카(HOKA), 언더아머(Under Armour), 퓨마(PUMA), 살로몬(Salomon)
-
-### 3.3 데이터 품질 기준
-- 제품당 분석 대상 리뷰 최소 50건 이상 (미달 시 `confidence < 0.5` 표시)
-- 리뷰 본문 길이 최소 20자 이상 (미달 시 필터링)
-- 배송/포장 관련 리뷰 자동 제외: 키워드 `["배송", "포장", "선물", "박스", "재구매 예정"]` 포함 비율 > 80% 이면 제외
-- 수집 주기: 월 1회 전체 갱신
+#### 3.2. 추천 엔진 및 LLM 연동 (백엔드)
+* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 내전 여부)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
+* **Claude API 호출 (2차):** 필터링된 후보군 N개와 사용자 프로파일을 Claude API 프롬프트에 주입하여 최종 3개를 선정하고, **"자연어로 된 맞춤형 추천 사유"**를 생성한다.
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 10초 이상 지연될 경우 통신을 끊고, DB에 하드코딩된 '안정성 위주의 베스트셀러(예: 브룩스 아드레날린, 아식스 카야노 등)'를 폴백 데이터로 즉시 반환한다.
 
 ---
 
-## 4. NLP 파이프라인 명세
+### 4. 시스템 구성도 (Architecture)
 
-### 4.1 전체 처리 흐름
+MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대신 서버리스(Serverless) 개념을 차용한 3-Tier 아키텍처로 구성합니다.
 
-```
-[입력] 리뷰 텍스트 (raw string)
-    │
-    ▼
-[STEP 1] 텍스트 전처리
-    - 특수문자, HTML 태그 제거
-    - 이모지 처리 (긍/부정 매핑 또는 제거)
-    - 반복 문자 정규화 ("너무너무너무" → "너무")
-    │
-    ▼
-[STEP 2] KSS 문장 분리
-    - 하나의 리뷰를 개별 문장 리스트로 분리
-    - 출력: ["무게는 가벼운데,", "가격이 비싸다."]
-    │
-    ▼
-[STEP 3] OKT 형태소 분석 (문장별)
-    - 어간 추출 (stem=True): "이쁘다" → "예쁘다"
-    - 품사 태깅: 명사(Noun), 형용사(Adjective), 동사(Verb) 추출
-    │
-    ▼
-[STEP 4] 속성 키워드 감지 (문장별)
-    - 6대 속성 키워드 사전 매칭
-    - 하나의 문장에서 감지된 속성 목록 반환
-    │
-    ▼
-[STEP 5] KNU SentiLex 감성 점수 계산 (문장별)
-    - 문장 내 각 형용사/동사의 감성 점수 합산
-    - 부정 전치어 처리 ("별로", "아쉽다", "안 좋다" → 점수 부호 반전)
-    │
-    ▼
-[STEP 6] 속성별 점수 집계 (제품 전체 리뷰)
-    - 속성별 감성 점수의 평균 계산
-    - 정규화: [-10, +10] 범위로 변환
-    │
-    ▼
-[출력] 제품 속성 프로필 벡터
-    {무게감: 2.1, 쿠션감: 3.5, 디자인: 4.0, 가격: -1.2, 발볼: 1.8, 착용감: 2.9}
-```
+#### 구성 레이어
 
-### 4.2 6대 속성 키워드 사전
+| 레이어 | 구성 요소 | 기술 스택 |
+|---|---|---|
+| **Client** | Mobile Web Browser | React / Vercel |
+| **WAS** | Backend / API Server | Node.js Express |
+| **WAS** | LLM 처리 로직 | Claude Logic |
+| **WAS** | DB 연결 모듈 | Google Sheets API |
+| **External** | LLM 서비스 | Anthropic Claude 3.5 Sonnet |
+| **External** | 데이터베이스 | Google Sheets |
 
-| 속성 | 키워드 (예시) |
-|------|-------------|
-| 무게감 | 무게, 무겁다, 가볍다, 경량, 묵직하다, 발이 무겁다 |
-| 쿠션감 | 쿠션, 쿠셔닝, 충격흡수, 말랑하다, 딱딱하다, 푹신하다, 탄성, 부스트 |
-| 디자인 | 디자인, 예쁘다, 이쁘다, 스타일, 색상, 컬러, 촌스럽다, 멋있다 |
-| 가격 | 가격, 비싸다, 저렴하다, 가성비, 갓성비, 합리적이다 |
-| 발볼 | 발볼, 발 폭, 좁다, 넓다, 발가락, 조이다, 넉넉하다, 타이트하다 |
-| 착용감 | 착용감, 편하다, 불편하다, 발이 아프다, 핏, 사이즈, 발 감싸기 |
+#### 데이터 흐름
 
-### 4.3 부정 전치어 처리 규칙
+| 순서 | 송신 | 수신 | 내용 |
+|---|---|---|---|
+| 1 | Mobile Web UI | Node.js API | 사용자 프로파일 전송 `POST /api/recommend` |
+| 2 | Node.js API | Google Sheets API | 기초 데이터 조회 |
+| 3 | Google Sheets API | Google Sheets | 러닝화 메타/리뷰 데이터 조회 (양방향) |
+| 4 | Node.js API | Claude Logic | 프롬프트 + 후보군 전송 |
+| 5 | Claude Logic | Claude API | 분석 및 사유 생성 (양방향) |
+| 6 | Node.js API | Mobile Web UI | 최종 추천 결과 반환 (JSON) |
 
-```python
-NEGATION_WORDS = ["안", "못", "별로", "아쉽다", "아쉽게도", "기대이하", 
-                   "실망", "그다지", "그닥", "별루", "글쎄"]
-
-def apply_negation(tokens, score):
-    # 감성 점수 계산 직전 토큰에 부정어 존재 시 부호 반전
-    if any(neg in tokens for neg in NEGATION_WORDS):
-        return -score
-    return score
-```
-
-### 4.4 신뢰도(Confidence) 계산
-
-```python
-def compute_confidence(review_count: int) -> float:
-    """
-    리뷰 수 기반 신뢰도:
-    - 0~49건:  0.0 ~ 0.49 (낮음)
-    - 50~199건: 0.5 ~ 0.79 (보통)
-    - 200건+:   0.8 ~ 1.0 (높음)
-    """
-    if review_count < 50:
-        return review_count / 100.0
-    elif review_count < 200:
-        return 0.5 + (review_count - 50) / 500.0
-    else:
-        return min(1.0, 0.8 + (review_count - 200) / 1000.0)
-```
+> **설계 의도 (Why):** 데이터베이스를 Google Sheets로 활용하여 기획/데이터 팀이 실시간으로 러닝화 스펙이나 리뷰 요약본을 직접 수정할 수 있게 하여 개발 의존도를 낮춥니다.
 
 ---
 
-## 5. 추천 알고리즘 명세
+### 5. 기술 스택 (Tech Stack)
 
-### 5.1 유사 제품 추천 (Similar Item Recommendation)
-
-**입력**: 기준 제품 ID  
-**출력**: 유사도 기준 Top-N 추천 제품 리스트 (유사도 점수, 주요 유사 속성 포함)
-
-```python
-import numpy as np
-from scipy.spatial.distance import cosine
-
-def get_similar_products(
-    target_product_id: str, 
-    all_profiles: dict,  # {product_id: np.array([6개 속성 점수])}
-    top_n: int = 5
-) -> list[dict]:
-    
-    target_vector = all_profiles[target_product_id]
-    similarities = []
-    
-    for pid, vector in all_profiles.items():
-        if pid == target_product_id:
-            continue
-        
-        sim_score = 1 - cosine(target_vector, vector)
-        
-        # 가장 유사한 속성 찾기
-        attr_names = ["무게감", "쿠션감", "디자인", "가격", "발볼", "착용감"]
-        diff = np.abs(target_vector - vector)
-        most_similar_attr = attr_names[np.argmin(diff)]
-        
-        similarities.append({
-            "product_id": pid,
-            "similarity": round(sim_score * 100, 1),  # 퍼센트 표시
-            "similar_reason": f"{most_similar_attr}이 비슷해요"
-        })
-    
-    return sorted(similarities, key=lambda x: x["similarity"], reverse=True)[:top_n]
-```
-
-**출력 예시**:
-```json
-[
-  {"product_id": "4590231", "similarity": 93.2, "similar_reason": "쿠션감이 비슷해요"},
-  {"product_id": "1762406", "similarity": 87.1, "similar_reason": "디자인이 비슷해요"},
-  {"product_id": "2353322", "similarity": 72.4, "similar_reason": "발볼 넓이가 비슷해요"}
-]
-```
-
-### 5.2 개인화 추천 (AI 텍스트 입력 기반)
-
-**입력**: 사용자 자유형 텍스트 (예: "평발이고 장거리 마라톤 준비 중. 쿠션이 중요해요")  
-**출력**: 사용자 요구에 맞는 제품 추천
-
-```
-[처리 흐름]
-1. 입력 텍스트에서 속성 키워드 추출
-   → "쿠션" 감지 → 쿠션감 중요
-   → "장거리" 감지 → 무게감도 중요
-   
-2. 사용자 선호 벡터 생성
-   → [무게: 높음, 쿠션: 매우 높음, 나머지: 중립]
-   
-3. 사용자 벡터와 제품 프로필 벡터 간 유사도 계산
-   → 상위 3개 제품 추천
-   
-4. 추천 이유 생성
-   → "리뷰 {N}건 기준, 이 제품은 쿠션감 관련 언급이 높고 
-       가볍다는 평이 많습니다."
-```
+* **Frontend:**
+  * **Framework:** React.js (Vite 기반)
+  * **Styling:** Tailwind CSS (빠른 모바일 UI 컴포넌트 구성)
+  * **State Management:** React Context API (단순한 스텝 폼 상태 관리)
+* **Backend (WAS):**
+  * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
+  * **API Client:** Axios (외부 API 통신용)
+* **Database & LLM:**
+  * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
+  * **LLM:** Anthropic Claude API (모델: `claude-3-5-sonnet-20240620` - 추론 및 근거 생성에 탁월)
 
 ---
 
-## 6. API 명세
+### 6. API 명세 (API Specifications)
 
-### 6.1 엔드포인트 목록
-
-#### GET /api/products
-러닝화 제품 목록 조회 (속성 필터 지원)
-
-**파라미터**:
-```
-GET /api/products?sort_by=cushion&order=desc&limit=20&offset=0
-
-sort_by: weight | cushion | design | price | width | fit | default
-order:   asc | desc
-limit:   정수 (기본값: 20)
-offset:  정수 (기본값: 0)
-```
-
-**응답**:
-```json
-{
-  "total": 142,
-  "products": [
-    {
-      "product_id": "4590231",
-      "brand": "adidas",
-      "name": "울트라부스트 5 IE1111",
-      "price": 125400,
-      "profile": {
-        "weight": 1.2,
-        "cushion": 4.3,
-        "design": 3.8,
-        "price_value": -1.5,
-        "width": 2.1,
-        "fit": 3.0,
-        "confidence": 0.72
+**[POST] `/api/recommend`**
+* **기능:** 사용자 데이터를 받아 최적의 러닝화 3종과 추천 사유 반환
+* **Request (Body):**
+  ```json
+  {
+    "user_profile": {
+      "gender": "male",
+      "weight_kg": 75,
+      "foot_type": "overpronation",
+      "foot_width": "wide",
+      "budget_max": 200000,
+      "target_race": "seoul_marathon"
+    }
+  }
+  ```
+* **Response (Success - 200 OK):**
+  ```json
+  {
+    "status": "success",
+    "recommendations": [
+      {
+        "rank": 1,
+        "brand": "Asics",
+        "model": "Gel-Kayano 30",
+        "price": 189000,
+        "image_url": "https://...",
+        "reason": "입력하신 체중(75kg)과 내전 성향을 고려할 때 가장 확실한 부상 방지 효과를 제공합니다. 또한 예산(20만 원) 내에서 구매 가능한 최적의 안정화입니다."
       }
-    }
-  ]
-}
-```
+    ]
+  }
+  ```
+* **Response (Error/Fallback - 503):** Claude API 장애 시 미리 정의된 폴백 JSON 구조 반환.
 
-#### GET /api/products/{product_id}/similar
-유사 제품 추천 조회
+---
 
-**파라미터**:
-```
-GET /api/products/4590231/similar?top_n=5
-```
+### 7. 데이터 구조 (Google Sheets 기반 DB & ERD)
 
-**응답**:
+Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간주하여 평면화(Denormalization)된 구조를 가져갑니다.
+
+#### Sheet 1: `Shoes` (러닝화 메타 데이터 - 기준 정보)
+
+| Column Name | Type | Description | Example |
+|---|---|---|---|
+| id | String | 고유 식별자 (Brand_Model) | ASICS_KAYANO30 |
+| brand | String | 브랜드명 | Asics |
+| model | String | 모델명 | Gel-Kayano 30 |
+| type | String | 러닝화 타입 (안정화, 쿠션화, 레이싱 등) | Stability |
+| pronation | String | 적합 발 타입 (내전, 외전, 중립) | Overpronation |
+| price | Number | 정가 | 189000 |
+| review_summary | String | 수집된 리뷰들의 긍/부정 핵심 요약 | "발볼이 넓어 편하지만, 무게가 다소 무거움" |
+
+#### Sheet 2: `Logs` (사용자 이용 이력 및 피드백)
+
+| Column Name | Type | Description | Example |
+|---|---|---|---|
+| log_id | UUID | 이력 고유 ID | 123e4567-e89b... |
+| timestamp | DateTime | 조회 일시 | 2026-03-15 14:00:00 |
+| user_input | JSON | 사용자가 입력한 조건 전체 | {"foot_type":"overpronation", ...} |
+| recommended_shoes | String | 추천된 신발 ID 목록 | ASICS_KAYANO30, BROOKS_ADRENALINE23 |
+
+#### ERD (Entity Relationship Diagram)
+
+##### 관계 정의
+
+| 엔티티 | 관계 | 엔티티 | 설명 |
+|---|---|---|---|
+| `Logs` | 1 : N (논리적 참조) | `Shoes` | 하나의 로그에 여러 추천 신발 포함 가능 |
+
+> Google Sheets 환경이므로 물리적 FK 제약조건은 없으나, 애플리케이션 레벨에서 논리적 조인을 수행함
+
+##### Shoes 엔티티
+
+| Column Name | Type | Key | Description | Example |
+|---|---|---|---|---|
+| id | String | PK | 고유 식별자 (Brand_Model) | ASICS_KAYANO30 |
+| brand | String | | 브랜드명 | Asics |
+| model | String | | 모델명 | Gel-Kayano 30 |
+| type | String | | 러닝화 타입 (안정화, 쿠션화, 레이싱 등) | Stability |
+| pronation | String | | 적합 발 타입 (내전, 외전, 중립) | Overpronation |
+| price | Number | | 정가 | 189000 |
+| review_summary | String | | 수집된 리뷰들의 긍/부정 핵심 요약 | "발볼이 넓어 편하지만, 무게가 다소 무거움" |
+
+##### Logs 엔티티
+
+| Column Name | Type | Key | Description | Example |
+|---|---|---|---|---|
+| log_id | UUID | PK | 이력 고유 ID | 123e4567-e89b... |
+| timestamp | DateTime | | 조회 일시 | 2026-03-15 14:00:00 |
+| user_input | JSON | | 사용자가 입력한 조건 전체 | `{"foot_type":"overpronation", ...}` |
+| recommended_shoes | String | | 추천된 신발 ID 목록 | ASICS_KAYANO30, BROOKS_ADRENALINE23 |
+
+---
+
+### 8. 서비스 흐름도 (Call Flow)
+
+사용자가 추천 버튼을 누른 후 화면에 결과가 뜨기까지의 백엔드 내부 로직 흐름입니다.
+
+#### 정상 흐름
+
+| 단계 | 주체 | 대상 | 액션 | 비고 |
+|---|---|---|---|---|
+| 1 | User | Mobile Web UI | 프로파일 입력 및 추천 요청 | |
+| 2 | Mobile Web UI | Mobile Web UI | 입력값 유효성 검사 (Validation) | 클라이언트 내부 처리 |
+| 3 | Mobile Web UI | Node.js API | `POST /api/recommend` 전송 | 로딩 UI 활성화 |
+| 4 | Node.js API | Google Sheets | 전체 러닝화 메타 데이터 조회 (Sheet: Shoes) | |
+| 5 | Google Sheets | Node.js API | 데이터 반환 (JSON array) | |
+| 6 | Node.js API | Node.js API | 1차 필터링 로직 실행 (예산, 발볼, 내전 여부 매칭) | 내부 처리 |
+| 7 | Node.js API | Claude 3.5 API | 필터링된 후보군 + 사용자 프로파일 전송 (Prompt) | System Prompt: MANIFESTO 원칙 적용 (부상 방지 우선) |
+| 8 | Claude 3.5 API | Node.js API | 최종 3개 선정 및 맞춤형 사유(Reason) 응답 | |
+| 9 | Node.js API | Google Sheets | 로그 저장 (Sheet: Logs) | **비동기 처리** |
+| 10 | Node.js API | Mobile Web UI | 최종 결과 반환 | |
+| 11 | Mobile Web UI | User | 추천 결과 카드 UI 렌더링 | 로딩 종료 |
+
+#### Fallback 처리 (API 장애 또는 시간 초과 시)
+
+| 조건 | 처리 주체 | 액션 |
+|---|---|---|
+| Claude API Timeout 발생 | Node.js API | Fallback 로직 가동 — 하드코딩된 안전한 추천 리스트 즉시 로드 후 반환 |
+
+---
+
+## origin/main 병합: STEP 1~4
+
+<!-- merged from local: docs/SPEC_STEP1_DATA.MD -->
+### STEP 1: 데이터 파이프라인
+- 목적: 무신사 리뷰 텍스트를 6개 신발 속성 점수로 변환하여 `product_profiles.json` 생성.
+- 수집 입력: `crawler/data/products.csv`, `crawler/data/reviews.csv`
+- 현재 수집 현황: 30개 제품, 466건 리뷰. 페이지네이션 버그로 제품당 20건으로 제한 발생.
+- 출력물: `product_profiles.json`
+- 핵심 속성: `goods_no`, `goods_name`, `brand`, `brand_en`, `price`, `normal_price`, `sale_rate`, `is_sold_out`, `thumbnail`, `url`, `gender`, `avg_rating`, `review_count`
+- 리뷰 속성: `review_no`, `goods_no`, `grade`, `content`, `size_option`, `like_count`, `has_image`, `user_height`, `user_weight`, `created_at`
+- LLM 처리: Claude Haiku로 리뷰를 배치 처리해 `width`, `cushion`, `weight`, `distance`, `breathability`, `fit` 6개 속성 점수를 추출.
+- 샘플 데이터: `reviews.csv` 앞부분 8건 리뷰는 품질 검증용 예시로 활용.
+
+<!-- merged from local: docs/SPEC_STEP2_FORM.MD -->
+### STEP 2: 사용자 입력 폼 / JSON 스키마
+- 목표: 사용자가 30초~1분 내에 클릭만으로 발 상태와 러닝 습관을 입력하여 추천 엔진이 이해할 수 있는 JSON 프로필로 변환.
+- 질문 구성:
+  1. 주로 달리는 거리 (`running_distance`): short / medium / long / marathon
+  2. 러닝 빈도 (`frequency`): casual / regular / intensive
+  3. 발볼 유형 (`foot_width`): wide / normal / narrow
+  4. 선호 쿠션감 (`preferred_cushion`): 1~5
+  5. 중요 요소 (`priorities`): speed / protection / comfort / breathability / design
+  6. 예산 (`budget`): low / mid / high / premium / null
+  7. 추가 설명 (`free_text`)
+- JSON 예시:
 ```json
 {
-  "source_product_id": "4590231",
+  "running_distance": "medium",
+  "frequency": "regular",
+  "foot_width": "wide",
+  "preferred_cushion": 4,
+  "priorities": ["protection", "comfort"],
+  "budget": "mid",
+  "free_text": "평발이라 발바닥이 자주 아파요"
+}
+```
+- 필드 상세:
+  - `running_distance`: short / medium / long / marathon
+  - `frequency`: casual / regular / intensive
+  - `foot_width`: wide / normal / narrow
+  - `preferred_cushion`: 1~5
+  - `priorities`: speed / protection / comfort / breathability / design
+  - `budget`: low / mid / high / premium / null
+  - `free_text`: 최대 200자 자유 입력
+- 유효성 검증:
+  - `running_distance`, `foot_width` 필수
+  - `priorities` 최대 3개
+  - `free_text` 최대 200자
+
+<!-- merged from local: docs/SPEC_STEP3_ENGINE.MD -->
+### STEP 3: 추천 엔진
+- 목표: 사용자 프로필과 제품 DB를 결합해 상위 3개 러닝화 추천 및 한국어 추천 이유 생성.
+- 방식 A: LLM 실시간 추천 (권장)
+  - 장점: free_text 반영, 자연어 추천 이유 생성
+  - 단점: API 비용, 응답 지연
+  - 필요: FastAPI 또는 Node.js 서버
+- 방식 B: 로컬 규칙 기반 매칭 (폴백)
+  - 장점: 서버 없음, GitHub Pages 배포 가능
+  - 단점: free_text 반영 제한, 추천 이유 템플릿화
+- LLM 프롬프트 구성:
+  - 사용자 프로필 라벨링
+  - 신발 DB 직렬화
+  - 추천 규칙 및 출력 JSON 형식 명시
+- 출력 JSON 예시:
+```json
+{
   "recommendations": [
     {
-      "product_id": "1762406",
-      "brand": "SALOMON",
-      "name": "XT-6 Black/Black/Phantom",
-      "similarity_score": 87.1,
-      "similar_reason": "디자인이 비슷해요",
-      "profile": { ... }
+      "goods_no": "3901126",
+      "rank": 1,
+      "match_score": 88,
+      "reason": "발볼이 넓은 고객에게 좋은 전족부 공간과 쿠션감 4/5를 제공합니다. 리뷰에 '발볼 넓어도 편안하다'는 후기가 다수 존재합니다.",
+      "highlight_features": ["넓은 발볼", "높은 쿠션", "장거리 적합"],
+      "caution": "통기성 2/5로 여름 착화 시 주의"
     }
-  ]
+  ],
+  "overall_advice": "발볼이 넓고 장거리 주행이 목적이라면 쿠션과 발볼 여유가 핵심입니다. 1순위 추천 제품부터 착용해 보세요."
 }
 ```
+- 로컬 매칭 점수 예시:
+  - 발볼 매칭: 40점
+  - 쿠션 차이: 30점
+  - 거리 매칭: 20점
+  - 예산 만족: 10점
 
-#### POST /api/recommend/text
-자유형 텍스트 기반 개인화 추천
+<!-- merged from local: docs/SPEC_STEP4_FRONTEND.MD -->
+### STEP 4: 프론트엔드 웹 프로토타입
+- 파일 구조:
+  - `frontend/index.html`
+  - `frontend/result.html`
+  - `frontend/style.css`
+  - `frontend/app.js`
+  - `frontend/recommend.js`
+  - `frontend/data/product_profiles.json`
+- 핵심 페이지:
+  - `index.html`: 7개 질문 기반 러닝화 진단 폼
+  - `result.html`: 추천 결과 카드, AI 설명, 재진단 버튼
+- 주요 역할:
+  - `app.js`: 입력 수집, 유효성 검사, 로딩 상태, 결과 페이지 이동
+  - `recommend.js`: LLM API 호출 및 로컬 폴백 추천 로직
+- 배포 목표: GitHub Pages 공개 배포
+- UX 포인트: 모바일 퍼스트, 손쉬운 선택지, 추천 결과 카드 중심
 
-**요청**:
-```json
-{
-  "query": "평발이고 하프 마라톤을 준비 중이에요. 쿠션이 중요하고 가벼운 신발을 원해요",
-  "top_n": 3
-}
-```
 
-**응답**:
-```json
-{
-  "query": "평발이고 하프 마라톤을...",
-  "detected_attributes": ["쿠션감", "무게감"],
-  "recommendations": [
-    {
-      "product_id": "3901126",
-      "brand": "New Balance",
-      "name": "W480SK5",
-      "reason": "리뷰 237건 기준, 쿠션감이 우수하고 가볍다는 평이 많습니다.",
-      "profile": { ... }
-    }
-  ]
-}
-```
-
----
-
-## 7. 프론트엔드 명세
-
-### 7.1 카테고리 목록 페이지 (무게감+AI 시연.html)
-
-#### 컴포넌트 목록
-
-| 컴포넌트 | 기능 |
-|---------|------|
-| 속성 필터 바 | 무게감/쿠션감/발볼넓이/디자인 필터 버튼 (클릭 시 해당 속성 점수 기준 정렬) |
-| ✨ AI 추천 버튼 | AI 추천 모달 트리거 |
-| 제품 그리드 | 2~4열 반응형 제품 카드 목록 |
-| AI 추천 모달 | 자유형 텍스트 입력 → 로딩 → 추천 결과 표시 |
-
-#### 속성 필터 동작 명세
-```javascript
-// 무게감 버튼 클릭 시
-sortByWeightBtn.addEventListener('click', () => {
-    // API: GET /api/products?sort_by=weight&order=asc
-    // 낮은 무게감 점수(가벼운 제품)부터 정렬
-    fetchAndRenderProducts({ sort_by: 'weight', order: 'asc' });
-});
-```
-
-#### AI 모달 상태 흐름
-```
-[닫힘] → (AI 추천 클릭) → [입력 화면] → (제출) → [로딩 중] → [결과 표시]
-                                ↑                                    │
-                                └────────────── (다시 추천) ──────────┘
-```
-
-### 7.2 제품 상세 페이지 (제품상세페이지_유사제품추천.html)
-
-#### 탭 구성
-
-| 탭 | 내용 |
-|----|------|
-| 상품 정보 | 브랜드 제품 설명, 상세 이미지 |
-| 추천 | 유사 제품 추천 (수평 스크롤 카드) |
-| 사이즈 | 한국/미국/영국/유럽 사이즈 변환표 |
-| 후기 | 사용자 리뷰 목록 |
-| 문의 | 상품 문의 |
-
-#### 유사 제품 추천 카드 명세
-```
-┌──────────────────────┐
-│    [제품 이미지]      │
-│                      │
-│  [쿠션감이 비슷해요]  │  ← 유사 이유 태그
-│                      │
-│  BRAND               │
-│  제품명 (truncate)   │
-│  ₩ 가격              │
-└──────────────────────┘
-너비: 220px 고정 (flex-shrink: 0)
-```
-
-### 7.3 레이더 차트 (속성 프로필 시각화)
-
-```javascript
-// Chart.js 설정 예시
-const radarConfig = {
-    type: 'radar',
-    data: {
-        labels: ['무게감', '쿠션감', '디자인', '가격', '발볼', '착용감'],
-        datasets: [{
-            label: '제품 A',
-            data: [2.1, 4.3, 3.8, 1.5, 2.1, 3.0],
-            // 점수를 0~5 스케일로 정규화하여 표시
-        }]
-    },
-    options: {
-        scales: { r: { min: 0, max: 5 } }
-    }
-};
-```
-
----
-
-## 8. 성능 지표 (KPI)
-
-### 8.1 모델 품질 지표
-
-| 지표 | 목표값 | 측정 방법 |
-|------|-------|---------|
-| 속성 분류 정확도 | ≥ 80% | 전문 러너 50개 리뷰 수동 라벨링 후 비교 |
-| 감성 분류 정확도 | ≥ 75% | 긍정/부정 50:50 샘플 수동 검증 |
-| 추천 수용률 | ≥ 40% | AI 추천 클릭 후 장바구니/구매 전환 |
-
-### 8.2 서비스 성능 지표
-
-| 지표 | 목표값 |
-|------|-------|
-| API 응답 시간 (추천) | < 200ms (사전 계산 캐시 사용 시) |
-| API 응답 시간 (텍스트 추천) | < 3,000ms |
-| 월간 리뷰 갱신 처리 시간 | < 1시간 |
-| 시스템 가용성 | ≥ 99.0% |
-
-### 8.3 비즈니스 성능 지표
-
-| 지표 | 목표값 |
-|------|-------|
-| AI 추천 버튼 CTR | ≥ 5% |
-| 추천 경유 구매 전환율 | 기존 대비 +15% |
-| 품절 시 대체 구매 유도율 | ≥ 20% |
-
----
-
-## 9. 개발 로드맵
-
-### Phase 1: 데이터 및 모델 검증 (MVP) — 4주
-- [ ] 러닝화 상위 50개 제품 리뷰 수집
-- [ ] NLP 파이프라인 구현 (OKT + KSS + SentiLex)
-- [ ] 제품 속성 프로필 생성 및 정확도 검증
-- [ ] 코사인 유사도 기반 추천 알고리즘 구현
-
-### Phase 2: 프로토타입 완성 — 2주
-- [ ] 카테고리 목록 페이지 속성 필터 연동
-- [ ] 제품 상세 페이지 유사 추천 섹션 완성
-- [ ] AI 추천 모달 텍스트 → 추천 흐름 완성
-- [ ] 레이더 차트 시각화
-
-### Phase 3: 검증 및 개선 — 2주
-- [ ] 전문 러너 5~10인 UX 테스트
-- [ ] 모델 정확도 측정 및 키워드 사전 보완
-- [ ] 성능 최적화 (캐싱, 응답 시간 단축)
-
-### Phase 4: 확장 (중장기)
-- [ ] BERT 기반 감성 분석 모델 전환
-- [ ] 신제품 스펙 기반 예측 태깅
-- [ ] 등산화, 농구화 등 타 스포츠화 카테고리 확장
-- [ ] 사용자 계정 연동 개인화 (구매 이력 기반)
-
----
-
-## 10. 제약 사항 및 가정
-
-### 제약 사항
-1. 무신사 공식 API 없이 공개 데이터만 사용하는 경우 데이터 수집에 제약이 있을 수 있음
-2. KNU SentiLex는 일반 도메인 기반으로 러닝화 특화 용어에 점수가 없을 수 있음
-3. 리뷰 수가 적은 제품은 통계적 신뢰도가 낮으며 이를 사용자에게 명시적으로 표시
-
-### 가정
-1. 무신사 러닝화 카테고리의 한국어 리뷰가 분석의 주 데이터 소스
-2. 소비자 리뷰에 제품 속성에 대한 실질적인 정보가 충분히 포함되어 있음
-3. 6대 속성(무게감, 쿠션감, 디자인, 가격, 발볼, 착용감)이 러닝화 선택의 핵심 기준을 커버함
-
----
-
-*이 문서는 살아있는 명세서입니다. 개발 진행에 따라 업데이트됩니다.*
