@@ -201,3 +201,110 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | 조건 | 처리 주체 | 액션 |
 |---|---|---|
 | Claude API Timeout 발생 | Node.js API | Fallback 로직 가동 — 하드코딩된 안전한 추천 리스트 즉시 로드 후 반환 |
+
+---
+
+## origin/main 병합: STEP 1~4
+
+<!-- merged from local: docs/SPEC_STEP1_DATA.MD -->
+### STEP 1: 데이터 파이프라인
+- 목적: 무신사 리뷰 텍스트를 6개 신발 속성 점수로 변환하여 `product_profiles.json` 생성.
+- 수집 입력: `crawler/data/products.csv`, `crawler/data/reviews.csv`
+- 현재 수집 현황: 30개 제품, 466건 리뷰. 페이지네이션 버그로 제품당 20건으로 제한 발생.
+- 출력물: `product_profiles.json`
+- 핵심 속성: `goods_no`, `goods_name`, `brand`, `brand_en`, `price`, `normal_price`, `sale_rate`, `is_sold_out`, `thumbnail`, `url`, `gender`, `avg_rating`, `review_count`
+- 리뷰 속성: `review_no`, `goods_no`, `grade`, `content`, `size_option`, `like_count`, `has_image`, `user_height`, `user_weight`, `created_at`
+- LLM 처리: Claude Haiku로 리뷰를 배치 처리해 `width`, `cushion`, `weight`, `distance`, `breathability`, `fit` 6개 속성 점수를 추출.
+- 샘플 데이터: `reviews.csv` 앞부분 8건 리뷰는 품질 검증용 예시로 활용.
+
+<!-- merged from local: docs/SPEC_STEP2_FORM.MD -->
+### STEP 2: 사용자 입력 폼 / JSON 스키마
+- 목표: 사용자가 30초~1분 내에 클릭만으로 발 상태와 러닝 습관을 입력하여 추천 엔진이 이해할 수 있는 JSON 프로필로 변환.
+- 질문 구성:
+  1. 주로 달리는 거리 (`running_distance`): short / medium / long / marathon
+  2. 러닝 빈도 (`frequency`): casual / regular / intensive
+  3. 발볼 유형 (`foot_width`): wide / normal / narrow
+  4. 선호 쿠션감 (`preferred_cushion`): 1~5
+  5. 중요 요소 (`priorities`): speed / protection / comfort / breathability / design
+  6. 예산 (`budget`): low / mid / high / premium / null
+  7. 추가 설명 (`free_text`)
+- JSON 예시:
+```json
+{
+  "running_distance": "medium",
+  "frequency": "regular",
+  "foot_width": "wide",
+  "preferred_cushion": 4,
+  "priorities": ["protection", "comfort"],
+  "budget": "mid",
+  "free_text": "평발이라 발바닥이 자주 아파요"
+}
+```
+- 필드 상세:
+  - `running_distance`: short / medium / long / marathon
+  - `frequency`: casual / regular / intensive
+  - `foot_width`: wide / normal / narrow
+  - `preferred_cushion`: 1~5
+  - `priorities`: speed / protection / comfort / breathability / design
+  - `budget`: low / mid / high / premium / null
+  - `free_text`: 최대 200자 자유 입력
+- 유효성 검증:
+  - `running_distance`, `foot_width` 필수
+  - `priorities` 최대 3개
+  - `free_text` 최대 200자
+
+<!-- merged from local: docs/SPEC_STEP3_ENGINE.MD -->
+### STEP 3: 추천 엔진
+- 목표: 사용자 프로필과 제품 DB를 결합해 상위 3개 러닝화 추천 및 한국어 추천 이유 생성.
+- 방식 A: LLM 실시간 추천 (권장)
+  - 장점: free_text 반영, 자연어 추천 이유 생성
+  - 단점: API 비용, 응답 지연
+  - 필요: FastAPI 또는 Node.js 서버
+- 방식 B: 로컬 규칙 기반 매칭 (폴백)
+  - 장점: 서버 없음, GitHub Pages 배포 가능
+  - 단점: free_text 반영 제한, 추천 이유 템플릿화
+- LLM 프롬프트 구성:
+  - 사용자 프로필 라벨링
+  - 신발 DB 직렬화
+  - 추천 규칙 및 출력 JSON 형식 명시
+- 출력 JSON 예시:
+```json
+{
+  "recommendations": [
+    {
+      "goods_no": "3901126",
+      "rank": 1,
+      "match_score": 88,
+      "reason": "발볼이 넓은 고객에게 좋은 전족부 공간과 쿠션감 4/5를 제공합니다. 리뷰에 '발볼 넓어도 편안하다'는 후기가 다수 존재합니다.",
+      "highlight_features": ["넓은 발볼", "높은 쿠션", "장거리 적합"],
+      "caution": "통기성 2/5로 여름 착화 시 주의"
+    }
+  ],
+  "overall_advice": "발볼이 넓고 장거리 주행이 목적이라면 쿠션과 발볼 여유가 핵심입니다. 1순위 추천 제품부터 착용해 보세요."
+}
+```
+- 로컬 매칭 점수 예시:
+  - 발볼 매칭: 40점
+  - 쿠션 차이: 30점
+  - 거리 매칭: 20점
+  - 예산 만족: 10점
+
+<!-- merged from local: docs/SPEC_STEP4_FRONTEND.MD -->
+### STEP 4: 프론트엔드 웹 프로토타입
+- 파일 구조:
+  - `frontend/index.html`
+  - `frontend/result.html`
+  - `frontend/style.css`
+  - `frontend/app.js`
+  - `frontend/recommend.js`
+  - `frontend/data/product_profiles.json`
+- 핵심 페이지:
+  - `index.html`: 7개 질문 기반 러닝화 진단 폼
+  - `result.html`: 추천 결과 카드, AI 설명, 재진단 버튼
+- 주요 역할:
+  - `app.js`: 입력 수집, 유효성 검사, 로딩 상태, 결과 페이지 이동
+  - `recommend.js`: LLM API 호출 및 로컬 폴백 추천 로직
+- 배포 목표: GitHub Pages 공개 배포
+- UX 포인트: 모바일 퍼스트, 손쉬운 선택지, 추천 결과 카드 중심
+
+
