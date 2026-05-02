@@ -211,57 +211,67 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간주하여 평면화(Denormalization)된 구조를 가져갑니다.
 
-#### Sheet 1: `Shoes` (러닝화 메타 데이터 - 기준 정보)
-
-| Column Name | Type | Description | Example |
-|---|---|---|---|
-| id | String | 고유 식별자 (Brand_Model) | ASICS_KAYANO30 |
-| brand | String | 브랜드명 | Asics |
-| model | String | 모델명 | Gel-Kayano 30 |
-| type | String | 러닝화 타입 (안정화, 쿠션화, 레이싱 등) | Stability |
-| pronation | String | 적합 발 타입 (내전, 외전, 중립) | Overpronation |
-| price | Number | 정가 | 189000 |
-| review_summary | String | 수집된 리뷰들의 긍/부정 핵심 요약 | "발볼이 넓어 편하지만, 무게가 다소 무거움" |
-
-#### Sheet 2: `Logs` (사용자 이용 이력 및 피드백)
-
-| Column Name | Type | Description | Example |
-|---|---|---|---|
-| log_id | UUID | 이력 고유 ID | 123e4567-e89b... |
-| timestamp | DateTime | 조회 일시 | 2026-03-15 14:00:00 |
-| user_input | JSON | 사용자가 입력한 조건 전체 | {"foot_type":"overpronation", ...} |
-| recommended_shoes | String | 추천된 신발 ID 목록 | ASICS_KAYANO30, BROOKS_ADRENALINE23 |
-
-#### ERD (Entity Relationship Diagram)
-
-##### 관계 정의
+#### ERD — 관계 정의
 
 | 엔티티 | 관계 | 엔티티 | 설명 |
 |---|---|---|---|
 | `Logs` | 1 : N (논리적 참조) | `Shoes` | 하나의 로그에 여러 추천 신발 포함 가능 |
 
-> Google Sheets 환경이므로 물리적 FK 제약조건은 없으나, 애플리케이션 레벨에서 논리적 조인을 수행함
+> Google Sheets 환경이므로 물리적 FK 제약조건은 없으나, 애플리케이션 레벨에서 `goods_no` 기준으로 논리적 조인을 수행함
 
-##### Shoes 엔티티
+---
 
-| Column Name | Type | Key | Description | Example |
-|---|---|---|---|---|
-| id | String | PK | 고유 식별자 (Brand_Model) | ASICS_KAYANO30 |
-| brand | String | | 브랜드명 | Asics |
-| model | String | | 모델명 | Gel-Kayano 30 |
-| type | String | | 러닝화 타입 (안정화, 쿠션화, 레이싱 등) | Stability |
-| pronation | String | | 적합 발 타입 (내전, 외전, 중립) | Overpronation |
-| price | Number | | 정가 | 189000 |
-| review_summary | String | | 수집된 리뷰들의 긍/부정 핵심 요약 | "발볼이 넓어 편하지만, 무게가 다소 무거움" |
+#### Sheet 1: `Shoes` (러닝화 메타 데이터)
 
-##### Logs 엔티티
+| Column Name | Type | Key | 허용값 | Description | Example |
+|---|---|---|---|---|---|
+| goods_no | String | PK | 무신사 상품번호 | 고유 식별자 | `5005842` |
+| goods_name | String | | | 모델명 | `맥시마이저 26` |
+| brand | String | | | 브랜드명 | `미즈노` |
+| price | Number | | 정수 | 판매가 (원) | `59000` |
+| url | String | | URL | 무신사 상품 링크 | `https://www.musinsa.com/products/5005842` |
+| thumbnail | String | | URL | 상품 썸네일 이미지 URL | `` |
+| width | String | | `넓음` / `보통` / `좁음` | 발볼 너비 | `보통` |
+| cushion | Number | | 1~5 정수 | 쿠션감 (1=딱딱, 5=물렁) | `4` |
+| weight | Number | | 1~5 정수 | 무게감 (1=가벼움, 5=무거움) | `2` |
+| distance | String | | `단거리` / `중거리` / `장거리` / `전거리` | 적합 러닝 거리 | `중거리` |
+| breathability | Number | | 1~5 정수 | 통기성 | `4` |
+| fit | Number | | 1~5 정수 | 착화감 | `5` |
+| summary | String | | | 리뷰 기반 한줄 요약 | `가성비 좋은 데일리 러닝화, 쿠션감 우수` |
+| review_count_used | Number | | 정수 | 분석에 사용된 리뷰 수 | `20` |
+| confidence | String | | `high` / `medium` / `low` | 데이터 신뢰도 | `high` |
 
-| Column Name | Type | Key | Description | Example |
-|---|---|---|---|---|
-| log_id | UUID | PK | 이력 고유 ID | 123e4567-e89b... |
-| timestamp | DateTime | | 조회 일시 | 2026-03-15 14:00:00 |
-| user_input | JSON | | 사용자가 입력한 조건 전체 | `{"foot_type":"overpronation", ...}` |
-| recommended_shoes | String | | 추천된 신발 ID 목록 | ASICS_KAYANO30, BROOKS_ADRENALINE23 |
+##### Shoes 초기 샘플 데이터 (10개)
+
+| goods_no | goods_name | brand | price | width | cushion | weight | distance | breathability | fit | summary | review_count_used | confidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 5005842 | 맥시마이저 26 (오프 화이트) | 미즈노 | 59000 | 보통 | 4 | 2 | 중거리 | 4 | 5 | 가성비 좋은 데일리 러닝화, 쿠션감 우수 | 20 | high |
+| 3990544 | W480SK5 | 뉴발란스 | 75000 | 보통 | 3 | 2 | 단거리 | 4 | 4 | 가벼운 입문용 러닝화 | 20 | high |
+| 4521387 | 페가수스 41 | 나이키 | 159000 | 보통 | 4 | 3 | 전거리 | 4 | 4 | 범용 데일리 트레이너, 안정적 쿠션 | 20 | high |
+| 5123456 | 마파테 스피드 2 | 호카 | 239000 | 넓음 | 5 | 3 | 장거리 | 3 | 5 | 구름 같은 쿠션, 마라톤·장거리 최적 | 18 | high |
+| 4789123 | 엔돌핀 스피드 4 | 사코니 | 199000 | 보통 | 3 | 1 | 중거리 | 5 | 4 | 초경량 반발력 카본 플레이트 | 15 | high |
+| 4456789 | 노바블라스트 4 | 아식스 | 149000 | 넓음 | 5 | 3 | 장거리 | 3 | 4 | 푹신한 쿠션, 장거리 부상 방지 | 20 | high |
+| 4112233 | 젤 카야노 31 | 아식스 | 189000 | 보통 | 4 | 4 | 장거리 | 3 | 5 | 안정성 최고, 평발 러너에게 추천 | 20 | high |
+| 5234567 | 클리프턴 9 | 호카 | 169000 | 넓음 | 5 | 2 | 전거리 | 4 | 5 | 가벼우면서 푹신, 발볼 넓은 분께 | 20 | high |
+| 4998877 | 라이드 17 | 사코니 | 139000 | 좁음 | 3 | 2 | 중거리 | 4 | 3 | 발볼 좁은 분께 적합, 균형형 | 12 | high |
+| 4665544 | 글라이드라이드 3 | 아식스 | 129000 | 보통 | 4 | 4 | 장거리 | 3 | 4 | 에너지 세이빙 장거리 트레이너 | 8 | medium |
+
+---
+
+#### Sheet 2: `Logs` (사용자 이용 이력)
+
+| Column Name | Type | Key | 허용값 | Description | Example |
+|---|---|---|---|---|---|
+| log_id | String | PK | UUID | 이력 고유 ID (자동생성) | `550e8400-e29b-41d4-a716` |
+| timestamp | DateTime | | `YYYY-MM-DD HH:mm:ss` | 조회 일시 | `2026-05-03 14:00:00` |
+| running_distance | String | | `short` / `medium` / `long` / `marathon` | 달리는 거리 | `medium` |
+| frequency | String | | `casual` / `regular` / `intensive` | 러닝 빈도 | `regular` |
+| foot_width | String | | `wide` / `normal` / `narrow` | 발볼 너비 | `normal` |
+| preferred_cushion | Number | | 1~5 정수 | 선호 쿠션감 | `3` |
+| priorities | String | | 콤마 구분 | 중요 요소 | `protection,comfort` |
+| budget | String | | `low` / `mid` / `high` / `premium` | 예산 범위 | `high` |
+| free_text | String | | 최대 200자 | 자유 서술 내용 | `평발이에요` |
+| recommended_goods_no | String | FK→Shoes | 콤마 구분 | 추천된 goods_no 목록 | `4112233,5234567,4456789` |
 
 ---
 
