@@ -1,5 +1,6 @@
-﻿/* ============================================================
-   RunFit ??怨듯넻 ?ㅽ???   ============================================================ */
+/* ============================================================
+   RunFit — 공통 스타일
+   ============================================================ */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +26,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ?? ?ㅻ뜑 ?? */
+/* ── 헤더 ── */
 .header {
   background: linear-gradient(135deg, var(--primary), #ff7043);
   color: white;
@@ -41,7 +42,7 @@ body {
   opacity: 0.95;
 }
 
-/* ?? 而⑦뀒?대꼫 ?? */
+/* ── 컨테이너 ── */
 .container {
   max-width: 720px;
   margin: 0 auto;
@@ -61,7 +62,7 @@ body {
   color: var(--text-light);
 }
 
-/* ?? 吏덈Ц ?? */
+/* ── 질문 ── */
 .question {
   background: var(--card);
   padding: 20px;
@@ -86,7 +87,7 @@ body {
   font-size: 18px;
 }
 
-/* ?? ?듭뀡 洹몃━???? */
+/* ── 옵션 그리드 ── */
 .option-grid {
   display: grid;
   gap: 8px;
@@ -143,7 +144,7 @@ body {
   .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ?? ?щ씪?대뜑 ?? */
+/* ── 슬라이더 ── */
 .slider-container {
   display: flex;
   align-items: center;
@@ -172,7 +173,7 @@ body {
   font-size: 14px;
 }
 
-/* ?? ?띿뒪???낅젰 ?? */
+/* ── 텍스트 입력 ── */
 textarea {
   width: 100%;
   min-height: 70px;
@@ -194,7 +195,7 @@ textarea:focus {
   margin-top: 4px;
 }
 
-/* ?? ?쒖텧 踰꾪듉 ?? */
+/* ── 제출 버튼 ── */
 .btn-submit {
   display: block;
   width: 100%;
@@ -217,7 +218,7 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-/* ?? ?ㅻ쪟 ?? */
+/* ── 오류 ── */
 .errors {
   background: #ffebee;
   border-left: 4px solid var(--error);
@@ -231,10 +232,10 @@ textarea:focus {
   margin-top: 4px;
 }
 .errors li::before {
-  content: '??';
+  content: '• ';
 }
 
-/* ?? ?좎뒪???? */
+/* ── 토스트 ── */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -253,7 +254,7 @@ textarea:focus {
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* ?? 濡쒕뵫 ?ㅻ쾭?덉씠 ?? */
+/* ── 로딩 오버레이 ── */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -283,7 +284,7 @@ textarea:focus {
 }
 
 /* ============================================================
-   寃곌낵 ?섏씠吏
+   결과 페이지
    ============================================================ */
 
 .profile-summary {
@@ -316,7 +317,7 @@ textarea:focus {
   margin: 24px 0 12px;
 }
 
-/* ?? 異붿쿇 移대뱶 ?? */
+/* ── 추천 카드 ── */
 .rec-card {
   background: var(--card);
   border-radius: 14px;
@@ -415,7 +416,7 @@ textarea:focus {
 }
 .btn-musinsa:hover { background: #333; }
 
-/* ?? 鍮??곹깭 ?? */
+/* ── 빈 상태 ── */
 .empty-state {
   background: var(--card);
   border-radius: 14px;
@@ -434,7 +435,7 @@ textarea:focus {
 }
 .hint-list li { margin-bottom: 4px; }
 
-/* ?? ?≪뀡 踰꾪듉 ?? */
+/* ── 액션 버튼 ── */
 .actions {
   display: flex;
   gap: 12px;
@@ -463,7 +464,7 @@ textarea:focus {
   background: #fff3e0;
 }
 
-/* ?? 鍮꾧탳 紐⑤떖 ?? */
+/* ── 비교 모달 ── */
 .modal {
   position: fixed;
   inset: 0;
@@ -523,7 +524,7 @@ textarea:focus {
   font-weight: 600;
 }
 
-/* ?? ?명꽣 ?? */
+/* ── 푸터 ── */
 .footer {
   background: #f0f0f0;
   text-align: center;
