@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit ??異붿쿇 寃곌낵</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>?룂 RunFit</h1>
+    <p class="tagline">AI媛 異붿쿇???뱀떊???щ떇??/p>
+  </header>
+
+  <main class="container">
+    <div class="profile-summary" id="profile-summary"></div>
+
+    <div id="results-container"></div>
+
+    <div class="actions">
+      <button onclick="location.href='index.html'" class="btn-secondary">?ㅼ떆 吏꾨떒?섍린</button>
+      <button id="compare-btn" class="btn-secondary" style="display: none;">TOP 1 vs TOP 2 鍮꾧탳</button>
+    </div>
+  </main>
+
+  <!-- 鍮꾧탳 紐⑤떖 -->
+  <div id="compare-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">??/button>
+      <h2>?띿꽦 鍮꾧탳</h2>
+      <div id="compare-table"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>KAIST 11議???源湲고솚쨌源?뚰쁽쨌諛뺤쁺誘셋룹씠李쎌꽍쨌?⑹꽑??/p>
+  </footer>
+
+  <script src="recommend.js"></script>
+  <script src="result.js"></script>
+</body>
+</html>
