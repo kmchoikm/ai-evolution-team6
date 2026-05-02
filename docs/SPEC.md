@@ -1,7 +1,7 @@
 # SPEC.md
-## SoleMate — 상세 기능 및 기술 명세서
+## RunFit — 상세 기능 및 기술 명세서
 
-이 문서는 SoleMate 서비스의 MVP(Minimum Viable Product) 구현을 위한 상세 개발 스펙을 정의합니다. 모든 코드 작성 및 시스템 설계는 이 문서를 기준으로 진행됩니다.
+이 문서는 RunFit 서비스의 MVP(Minimum Viable Product) 구현을 위한 상세 개발 스펙을 정의합니다. 모든 코드 작성 및 시스템 설계는 이 문서를 기준으로 진행됩니다.
 
 ---
 

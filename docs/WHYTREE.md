@@ -1,4 +1,4 @@
-## SoleMate — Why Tree 분석
+## RunFit — Why Tree 분석
 
 > Rasmussen의 Work Domain Analysis에서 영감을 받은 수단-목적 연결 기법  
 > - **Why Up:** "왜?"를 반복하며 제품의 본질로 올라간다  
@@ -9,7 +9,7 @@
 ## Part 1. Why Up — "왜 이 서비스를 만드는가?"
 
 ### L1 — 제품 (Product)
-* **서비스명:** SoleMate
+* **서비스명:** RunFit
 * **핵심 정의:** 개인의 신체 조건, 기록, 대회 정보를 종합하여 최적의 러닝화를 찾아주는 데이터 기반 추천 서비스.
 
 ### L2 — 기능적 이유 (Functional Reason)
@@ -53,7 +53,7 @@
 ```text
 건강한 삶의 질 향상 (Why L5)
   └── 부상 방지 및 현명한 소비 (Why L3)
-      └── SoleMate 데이터 기반 추천 서비스 (L1)
+      └── RunFit 데이터 기반 추천 서비스 (L1)
           ├── 개인 프로파일 수집 (How L2)
           │     ├── 신체 조건 입력 폼 (How L3)
           │     ├── 러닝 조건 입력 폼 (How L3)
