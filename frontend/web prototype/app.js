@@ -1,13 +1,14 @@
-﻿/**
- * RunFit ??吏꾨떒 ??濡쒖쭅
- * index.html?먯꽌 ?ъ슜
+/**
+ * RunFit — 진단 폼 로직
+ * index.html에서 사용
  */
 
 // ============================================================
-// 1. UI ?명꽣?숈뀡
+// 1. UI 인터랙션
 // ============================================================
 
-// ?쇰뵒??泥댄겕諛뺤뒪 ?쒓컖 ?쇰뱶諛?document.querySelectorAll('.option-btn input').forEach((input) => {
+// 라디오/체크박스 시각 피드백
+document.querySelectorAll('.option-btn input').forEach((input) => {
   input.addEventListener('change', () => {
     const name = input.name;
     if (input.type === 'radio') {
@@ -23,15 +24,15 @@
   });
 });
 
-// Q5 理쒕? 3媛??쒗븳
+// Q5 최대 3개 제한
 function enforceMaxPriorities() {
   const checked = document.querySelectorAll('input[name="priorities"]:checked');
   if (checked.length > 3) {
-    // 留덉?留?泥댄겕 ?댁젣
+    // 마지막 체크 해제
     const last = checked[checked.length - 1];
     last.checked = false;
     last.closest('.option-btn').classList.remove('selected');
-    showInlineWarning('以묒슂 ?붿냼??理쒕? 3媛쒓퉴吏 ?좏깮?????덉뼱??');
+    showInlineWarning('중요 요소는 최대 3개까지 선택할 수 있어요.');
   }
 }
 
@@ -43,27 +44,28 @@ function showInlineWarning(msg) {
   setTimeout(() => div.remove(), 2000);
 }
 
-// Q4 ?щ씪?대뜑 媛??쒖떆
-const cushionLabels = ['', '留ㅼ슦 ?깅뵳', '?쎄컙 ?깅뵳', '以묎컙', '?쎄컙 臾쇰쟻', '留ㅼ슦 臾쇰쟻'];
+// Q4 슬라이더 값 표시
+const cushionLabels = ['', '매우 딱딱', '약간 딱딱', '중간', '약간 물렁', '매우 물렁'];
 const slider = document.getElementById('cushion-slider');
 const cushionValue = document.getElementById('cushion-value');
 slider.addEventListener('input', () => {
   cushionValue.textContent = `${slider.value} (${cushionLabels[slider.value]})`;
 });
 
-// Q7 湲?먯닔 移댁슫??const freeText = document.getElementById('free-text');
+// Q7 글자수 카운트
+const freeText = document.getElementById('free-text');
 const charCount = document.getElementById('char-count');
 freeText.addEventListener('input', () => {
   charCount.textContent = freeText.value.length;
 });
 
-// 湲곕낯 ?좏깮???쇰뵒???쒓컖 諛섏쁺 (Q2 regular)
+// 기본 선택된 라디오 시각 반영 (Q2 regular)
 document.querySelectorAll('.option-btn input:checked').forEach((input) => {
   input.closest('.option-btn').classList.add('selected');
 });
 
 // ============================================================
-// 2. ???곗씠???섏쭛
+// 2. 폼 데이터 수집
 // ============================================================
 function collectFormData() {
   return {
@@ -85,21 +87,22 @@ function collectFormData() {
 }
 
 // ============================================================
-// 3. 寃利?// ============================================================
+// 3. 검증
+// ============================================================
 function validateForm(profile) {
   const errors = [];
-  if (!profile.running_distance) errors.push("Q1 '?щ━??嫄곕━'瑜??좏깮??二쇱꽭??");
-  if (!profile.foot_width) errors.push("Q3 '諛쒕낵 ?좏삎'???좏깮??二쇱꽭??");
+  if (!profile.running_distance) errors.push("Q1 '달리는 거리'를 선택해 주세요.");
+  if (!profile.foot_width) errors.push("Q3 '발볼 유형'을 선택해 주세요.");
   if (profile.priorities.length > 3)
-    errors.push("Q5 '以묒슂 ?붿냼'??理쒕? 3媛쒓퉴吏 ?좏깮 媛?ν빀?덈떎.");
+    errors.push("Q5 '중요 요소'는 최대 3개까지 선택 가능합니다.");
   if (profile.free_text.length > 200)
-    errors.push('Q7 異붽? ?댁슜? 200???대궡濡??낅젰??二쇱꽭??');
+    errors.push('Q7 추가 내용은 200자 이내로 입력해 주세요.');
   return errors;
 }
 
 function showErrors(errors) {
   const el = document.getElementById('errors');
-  el.innerHTML = '<strong>?낅젰 ?뺤씤 ?꾩슂</strong><ul>' +
+  el.innerHTML = '<strong>입력 확인 필요</strong><ul>' +
     errors.map((e) => `<li>${e}</li>`).join('') + '</ul>';
   el.style.display = 'block';
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -110,7 +113,7 @@ function hideErrors() {
 }
 
 // ============================================================
-// 4. ?쒖텧
+// 4. 제출
 // ============================================================
 const submitBtn = document.getElementById('submit-btn');
 const form = document.getElementById('diagnosis-form');
@@ -119,10 +122,10 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErrors();
 
-  // CEO Critical Fix #3: ?붾툝?대┃ 諛⑹?
+  // CEO Critical Fix #3: 더블클릭 방지
   if (submitBtn.disabled) return;
   submitBtn.disabled = true;
-  submitBtn.textContent = '吏꾨떒 以?..';
+  submitBtn.textContent = '진단 중...';
 
   const profile = collectFormData();
   const errors = validateForm(profile);
@@ -130,15 +133,17 @@ form.addEventListener('submit', async (e) => {
   if (errors.length > 0) {
     showErrors(errors);
     submitBtn.disabled = false;
-    submitBtn.textContent = '異붿쿇 諛쏄린 ??;
+    submitBtn.textContent = '추천 받기 →';
     return;
   }
 
-  showLoading('AI媛 理쒖쟻???щ떇?붾? 李얘퀬 ?덉뼱??.. ?뵇');
+  showLoading('AI가 최적의 러닝화를 찾고 있어요... 🔍');
 
-  // ?ъ슜???꾨줈?????  sessionStorage.setItem('user_profile', JSON.stringify(profile));
+  // 사용자 프로필 저장
+  sessionStorage.setItem('user_profile', JSON.stringify(profile));
 
-  // ?쎄컙???쒕젅??(泥닿컧 UX) ??寃곌낵 ?섏씠吏濡?  setTimeout(() => {
+  // 약간의 딜레이 (체감 UX) 후 결과 페이지로
+  setTimeout(() => {
     window.location.href = 'result.html';
   }, 800);
 });
