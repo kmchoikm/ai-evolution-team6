@@ -1,4 +1,3 @@
-=======
 ## SoleMate — Why Tree 분석
 
 > Rasmussen의 Work Domain Analysis에서 영감을 받은 수단-목적 연결 기법  
@@ -65,5 +64,3 @@
                 ├── 발 타입/기록 필터링 (How L3)
                 └── 자연어 맞춤형 사유 생성 (How L3)
 
-[※ 상세한 기술 스택(프레임워크, API, DB 구조) 및 화면 UI 설계는 SPEC.md 문서에 별도 정의함]
->>>>>>> b5125a22581f63db169bd294fc7aaba3c6734b8e
