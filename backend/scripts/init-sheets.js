@@ -8,7 +8,7 @@
  *   3. Logs  시트 생성 및 헤더 설정
  */
 
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // backend/.env (npm run 실행 시 CWD = backend/)
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
