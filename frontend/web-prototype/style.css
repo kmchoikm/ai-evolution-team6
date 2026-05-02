@@ -140,8 +140,78 @@ body {
   color: var(--primary-dark);
 }
 
+/* ============================================================
+   반응형 레이아웃 (Responsive Design)
+   브레이크포인트: 600px / 480px / 375px
+   ============================================================ */
+
+/* 일반 스마트폰 (≤ 600px) */
 @media (max-width: 600px) {
   .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
+
+  .container { padding: 16px 12px 80px; }
+
+  .header { padding: 20px 16px; }
+  .header h1 { font-size: 26px; }
+}
+
+/* 소형 스마트폰 (≤ 480px) */
+@media (max-width: 480px) {
+  .header h1 { font-size: 22px; }
+  .tagline { font-size: 13px; }
+
+  .intro h2 { font-size: 20px; }
+
+  .question { padding: 14px 12px; }
+  .question h3 { font-size: 15px; }
+
+  /* 3열 → 2열 */
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+
+  /* 터치 타겟 최소 48px 확보 */
+  .option-btn { padding: 10px 6px; min-height: 52px; font-size: 13px; }
+  .option-btn small { font-size: 10px; }
+
+  /* 결과 카드 세로 정렬 */
+  .rec-card { flex-direction: column; gap: 8px; }
+  .rec-rank { font-size: 22px; min-width: auto; }
+  .rec-header { flex-direction: column; gap: 4px; }
+  .rec-score { align-self: flex-start; }
+  .rec-footer { flex-direction: column; gap: 8px; align-items: stretch; }
+  .btn-musinsa { display: block; text-align: center; padding: 10px; }
+
+  /* 비교 모달 테이블 */
+  .modal-content { padding: 16px; border-radius: 12px; }
+  .compare-table { font-size: 12px; }
+  .compare-table th,
+  .compare-table td { padding: 7px 5px; }
+  .compare-table tbody th { width: 64px; font-size: 11px; }
+
+  /* 제출 버튼 */
+  .btn-submit { font-size: 15px; padding: 14px; }
+
+  /* 액션 버튼 전체폭 */
+  .actions { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; text-align: center; padding: 13px; }
+
+  /* 로딩 오버레이 */
+  .loading-content { padding: 24px 28px; }
+}
+
+/* 초소형 스마트폰 (≤ 375px, iPhone SE 등) */
+@media (max-width: 375px) {
+  .header h1 { font-size: 20px; }
+
+  /* 모든 그리드 2열 고정 */
+  .grid-3,
+  .grid-4,
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+
+  .question { padding: 12px 10px; }
+  .option-btn { padding: 8px 4px; min-height: 48px; font-size: 12px; }
+  .option-btn small { font-size: 9px; }
+
+  .slider-marks { padding: 0 40px; }
 }
 
 /* 슬라이더 스타일 */
