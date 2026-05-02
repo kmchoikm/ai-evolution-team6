@@ -1,5 +1,5 @@
 /* ============================================================
-   RunFit — 공통 스타일
+   RunFit 공통 스타일 시트
    ============================================================ */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,7 +26,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── 헤더 ── */
+/* 헤더 스타일 */
 .header {
   background: linear-gradient(135deg, var(--primary), #ff7043);
   color: white;
@@ -42,7 +42,7 @@ body {
   opacity: 0.95;
 }
 
-/* ── 컨테이너 ── */
+/* 컨테이너 */
 .container {
   max-width: 720px;
   margin: 0 auto;
@@ -62,7 +62,7 @@ body {
   color: var(--text-light);
 }
 
-/* ── 질문 ── */
+/* 질문 스타일 */
 .question {
   background: var(--card);
   padding: 20px;
@@ -87,7 +87,7 @@ body {
   font-size: 18px;
 }
 
-/* ── 옵션 그리드 ── */
+/* 선택지 그리드 */
 .option-grid {
   display: grid;
   gap: 8px;
@@ -144,7 +144,7 @@ body {
   .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── 슬라이더 ── */
+/* 슬라이더 스타일 */
 .slider-container {
   display: flex;
   align-items: center;
@@ -173,7 +173,7 @@ body {
   font-size: 14px;
 }
 
-/* ── 텍스트 입력 ── */
+/* 텍스트에어리어 스타일 */
 textarea {
   width: 100%;
   min-height: 70px;
@@ -195,7 +195,7 @@ textarea:focus {
   margin-top: 4px;
 }
 
-/* ── 제출 버튼 ── */
+/* 제출 버튼 */
 .btn-submit {
   display: block;
   width: 100%;
@@ -218,7 +218,7 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-/* ── 오류 ── */
+/* 오류 메시지 */
 .errors {
   background: #ffebee;
   border-left: 4px solid var(--error);
@@ -232,10 +232,10 @@ textarea:focus {
   margin-top: 4px;
 }
 .errors li::before {
-  content: '• ';
+  content: '✕ ';
 }
 
-/* ── 토스트 ── */
+/* 토스트 메시지 */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -254,7 +254,7 @@ textarea:focus {
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* ── 로딩 오버레이 ── */
+/* 로딩 오버레이 */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -284,7 +284,7 @@ textarea:focus {
 }
 
 /* ============================================================
-   결과 페이지
+   결과 페이지 스타일
    ============================================================ */
 
 .profile-summary {
@@ -317,7 +317,7 @@ textarea:focus {
   margin: 24px 0 12px;
 }
 
-/* ── 추천 카드 ── */
+/* 추천 카드 */
 .rec-card {
   background: var(--card);
   border-radius: 14px;
@@ -416,7 +416,7 @@ textarea:focus {
 }
 .btn-musinsa:hover { background: #333; }
 
-/* ── 빈 상태 ── */
+/* 빈 상태 */
 .empty-state {
   background: var(--card);
   border-radius: 14px;
@@ -435,7 +435,7 @@ textarea:focus {
 }
 .hint-list li { margin-bottom: 4px; }
 
-/* ── 액션 버튼 ── */
+/* 액션 버튼 */
 .actions {
   display: flex;
   gap: 12px;
@@ -464,7 +464,7 @@ textarea:focus {
   background: #fff3e0;
 }
 
-/* ── 비교 모달 ── */
+/* 비교 모달 */
 .modal {
   position: fixed;
   inset: 0;
@@ -524,7 +524,7 @@ textarea:focus {
   font-weight: 600;
 }
 
-/* ── 푸터 ── */
+/* 푸터 */
 .footer {
   background: #f0f0f0;
   text-align: center;

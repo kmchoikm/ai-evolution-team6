@@ -1,13 +1,13 @@
-/**
- * RunFit — 진단 폼 로직
+﻿/**
+ * RunFit 진단 페이지 메인 로직
  * index.html에서 사용
  */
 
 // ============================================================
-// 1. UI 인터랙션
+// 1. UI 이벤트 처리
 // ============================================================
 
-// 라디오/체크박스 시각 피드백
+// 라디오/체크박스 클릭 시 스타일 업데이트
 document.querySelectorAll('.option-btn input').forEach((input) => {
   input.addEventListener('change', () => {
     const name = input.name;
@@ -32,7 +32,7 @@ function enforceMaxPriorities() {
     const last = checked[checked.length - 1];
     last.checked = false;
     last.closest('.option-btn').classList.remove('selected');
-    showInlineWarning('중요 요소는 최대 3개까지 선택할 수 있어요.');
+    showInlineWarning('중요 요소는 최대 3개까지 선택 가능합니다.');
   }
 }
 
@@ -44,7 +44,7 @@ function showInlineWarning(msg) {
   setTimeout(() => div.remove(), 2000);
 }
 
-// Q4 슬라이더 값 표시
+// Q4 슬라이더 값 업데이트
 const cushionLabels = ['', '매우 딱딱', '약간 딱딱', '중간', '약간 물렁', '매우 물렁'];
 const slider = document.getElementById('cushion-slider');
 const cushionValue = document.getElementById('cushion-value');
@@ -52,14 +52,14 @@ slider.addEventListener('input', () => {
   cushionValue.textContent = `${slider.value} (${cushionLabels[slider.value]})`;
 });
 
-// Q7 글자수 카운트
+// Q7 글자수 카운팅
 const freeText = document.getElementById('free-text');
 const charCount = document.getElementById('char-count');
 freeText.addEventListener('input', () => {
   charCount.textContent = freeText.value.length;
 });
 
-// 기본 선택된 라디오 시각 반영 (Q2 regular)
+// 기본값 선택사항 스타일 반영 (Q2 regular)
 document.querySelectorAll('.option-btn input:checked').forEach((input) => {
   input.closest('.option-btn').classList.add('selected');
 });
@@ -87,7 +87,7 @@ function collectFormData() {
 }
 
 // ============================================================
-// 3. 검증
+// 3. 유효성 검증
 // ============================================================
 function validateForm(profile) {
   const errors = [];
@@ -102,7 +102,7 @@ function validateForm(profile) {
 
 function showErrors(errors) {
   const el = document.getElementById('errors');
-  el.innerHTML = '<strong>입력 확인 필요</strong><ul>' +
+  el.innerHTML = '<strong>입력 검인 필요</strong><ul>' +
     errors.map((e) => `<li>${e}</li>`).join('') + '</ul>';
   el.style.display = 'block';
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -122,10 +122,10 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErrors();
 
-  // CEO Critical Fix #3: 더블클릭 방지
+  // 중복 제출 방지
   if (submitBtn.disabled) return;
   submitBtn.disabled = true;
-  submitBtn.textContent = '진단 중...';
+  submitBtn.textContent = '진단 중..';
 
   const profile = collectFormData();
   const errors = validateForm(profile);
@@ -137,12 +137,12 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  showLoading('AI가 최적의 러닝화를 찾고 있어요... 🔍');
+  showLoading('AI가 최적의 러닝화를 찾고 있어요...');
 
   // 사용자 프로필 저장
   sessionStorage.setItem('user_profile', JSON.stringify(profile));
 
-  // 약간의 딜레이 (체감 UX) 후 결과 페이지로
+  // 적절한 시간(딱딱 UX) 후 결과 페이지로
   setTimeout(() => {
     window.location.href = 'result.html';
   }, 800);

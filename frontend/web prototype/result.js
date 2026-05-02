@@ -1,5 +1,5 @@
-/**
- * RunFit — 결과 페이지 렌더링
+﻿/**
+ * RunFit 결과 페이지 렌더링 로직
  * result.html에서 사용
  */
 
@@ -7,7 +7,7 @@ const PROFILE_LABELS = {
   running_distance: {
     short: '5km 이하 조깅',
     medium: '5~10km 일반 훈련',
-    long: '10~21km 장거리',
+    long: '10~21km 장거리 훈련',
     marathon: '21km+ 마라톤',
   },
   foot_width: { wide: '넓음', normal: '보통', narrow: '좁음' },
@@ -18,18 +18,18 @@ const PROFILE_LABELS = {
     premium: '20만원+',
   },
   priorities: {
-    speed: '⚡ 속도감',
-    protection: '🛡️ 부상 방지',
-    comfort: '💆 편안함',
-    breathability: '🌬️ 통기성',
-    design: '✨ 디자인',
+    speed: '속도감/경량',
+    protection: '부상 방지',
+    comfort: '편안함',
+    breathability: '통기성',
+    design: '디자인',
   },
 };
 
 let currentRecommendations = [];
 
 // ============================================================
-// 메인 흐름
+// 메인 초기화
 // ============================================================
 async function init() {
   const profileRaw = sessionStorage.getItem('user_profile');
@@ -41,19 +41,19 @@ async function init() {
 
   renderProfileSummary(profile);
 
-  // CEO Critical Fix #2: fetch 실패 처리
+  // 상품 데이터 로드
   let products;
   try {
     const response = await fetch('product_profiles.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     products = await response.json();
   } catch (err) {
-    renderError(`상품 데이터를 불러올 수 없어요. (${err.message})`);
+    renderError(`상품 데이터를 불러올 수 없습니다 (${err.message})`);
     return;
   }
 
   if (!products || products.length === 0) {
-    renderError('상품 데이터가 비어있어요.');
+    renderError('상품 데이터가 비어있습니다');
     return;
   }
 
@@ -78,7 +78,7 @@ function renderProfileSummary(profile) {
     <div class="profile-tags">
       <span class="tag">🏃 ${dist}</span>
       <span class="tag">👣 발볼 ${width}</span>
-      <span class="tag">☁️ 쿠션 ${profile.preferred_cushion}/5</span>
+      <span class="tag">🛠️ 쿠션 ${profile.preferred_cushion}/5</span>
       <span class="tag">💰 ${budget}</span>
       ${priorities ? `<span class="tag">${priorities}</span>` : ''}
     </div>
@@ -86,23 +86,23 @@ function renderProfileSummary(profile) {
 }
 
 // ============================================================
-// 결과 렌더 (CEO 빈 상태 UI 포함)
+// 결과 렌더링 (CEO 비즈니스 UI 아키텍처)
 // ============================================================
 function renderResults(recs, profile) {
   const container = document.getElementById('results-container');
 
-  // 모든 점수가 30 미만이면 매칭 실패로 간주
+  // 모든 추천이 30 미만이면 매칭 실패로 간주
   const goodMatches = recs.filter((r) => r.match_score >= 30);
 
   if (goodMatches.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🤔</div>
-        <h2>딱 맞는 추천이 없어요</h2>
-        <p>조건을 조금 완화해서 다시 시도해 보시겠어요?</p>
+        <div class="empty-icon">🔍</div>
+        <h2>맞는 추천이 없습니다</h2>
+        <p>조건을 조정해서 다시 진단해 보세요</p>
         <ul class="hint-list">
           <li>예산 범위를 넓혀 보세요</li>
-          <li>발볼 유형을 '보통'으로 시도해 보세요</li>
+          <li>발볼 유형을 '보통'으로 바꿔 보세요</li>
           <li>중요 요소를 1~2개로 줄여 보세요</li>
         </ul>
         <button onclick="location.href='index.html'" class="btn-primary">다시 진단하기</button>
@@ -112,10 +112,10 @@ function renderResults(recs, profile) {
   }
 
   container.innerHTML =
-    '<h2 class="section-title">🎯 추천 러닝화 TOP ' + goodMatches.length + '</h2>' +
+    '<h2 class="section-title">최고 추천 러닝화 TOP ' + goodMatches.length + '</h2>' +
     goodMatches.map((shoe, i) => renderRecommendationCard(shoe, i + 1)).join('');
 
-  // 비교 버튼 표시 (TOP2 이상 있을 때)
+  // 비교 버튼 표시 (TOP2 이상일 때)
   if (goodMatches.length >= 2) {
     document.getElementById('compare-btn').style.display = 'inline-block';
     document.getElementById('compare-btn').onclick = () => openCompareModal(goodMatches);
@@ -137,7 +137,7 @@ function renderRecommendationCard(shoe, rank) {
       <div class="rec-body">
         <div class="rec-header">
           <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
-          <div class="rec-score">매칭 ${shoe.match_score}점</div>
+          <div class="rec-score">매칭 ${shoe.match_score}%</div>
         </div>
         <p class="rec-summary">${shoe.summary || ''}</p>
         <div class="rec-tags">
@@ -147,9 +147,9 @@ function renderRecommendationCard(shoe, rank) {
           ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
           ${confidenceBadge}
         </div>
-        <p class="rec-reason">💡 ${shoe.reason}</p>
+        <p class="rec-reason">💬 ${shoe.reason}</p>
         <div class="rec-footer">
-          <span class="rec-price">${price}원</span>
+          <span class="rec-price">₩${price}</span>
           <a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>
         </div>
       </div>
@@ -173,14 +173,14 @@ function closeModal() {
 }
 
 function renderCompareTable(a, b) {
-  // 방어 처리: b가 없을 때
-  if (!a || !b) return '<p>비교할 신발이 부족해요.</p>';
+  // 방어: b가 없을 경우
+  if (!a || !b) return '<p>비교할 신발이 부족합니다</p>';
 
   const rows = [
     ['브랜드', a.brand, b.brand],
     ['모델', a.goods_name, b.goods_name],
-    ['매칭 점수', `${a.match_score}점`, `${b.match_score}점`],
-    ['가격', `${parseInt(a.price).toLocaleString()}원`, `${parseInt(b.price).toLocaleString()}원`],
+    ['매칭 점수', `${a.match_score}%`, `${b.match_score}%`],
+    ['가격', `₩${parseInt(a.price).toLocaleString()}`, `₩${parseInt(b.price).toLocaleString()}`],
     ['발볼', a.width || '-', b.width || '-'],
     ['쿠션감', a.cushion ? `${a.cushion}/5` : '-', b.cushion ? `${b.cushion}/5` : '-'],
     ['무게감', a.weight ? `${a.weight}/5` : '-', b.weight ? `${b.weight}/5` : '-'],
@@ -211,7 +211,7 @@ function renderCompareTable(a, b) {
   `;
 }
 
-// 모달 배경 클릭 시 닫기
+// 모달 바깥쪽 클릭 시 닫기
 document.getElementById('compare-modal').addEventListener('click', (e) => {
   if (e.target.id === 'compare-modal') closeModal();
 });
@@ -224,7 +224,7 @@ function renderError(message) {
   container.innerHTML = `
     <div class="empty-state">
       <div class="empty-icon">⚠️</div>
-      <h2>일시적인 오류가 발생했어요</h2>
+      <h2>일시적인 오류가 발생했습니다</h2>
       <p>${message}</p>
       <button onclick="location.reload()" class="btn-primary">다시 시도</button>
     </div>
