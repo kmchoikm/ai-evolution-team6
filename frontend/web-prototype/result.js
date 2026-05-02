@@ -1,7 +1,16 @@
-﻿/**
+/**
  * RunFit 결과 페이지 렌더링 로직
- * result.html에서 사용
+ * result.html에서 사용 — 백엔드 /api/recommend 연동
  */
+
+// 백엔드 URL: 로컬 개발이면 localhost:3000, 프로덕션이면 실제 서버 주소로 변경
+// file:// 로 열거나 localhost일 때 모두 로컬 백엔드 사용
+// 프로덕션 배포 시 'https://your-backend.railway.app' 으로 교체
+const API_BASE = (window.location.protocol === 'file:' ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000'
+  : '';
 
 const PROFILE_LABELS = {
   running_distance: {
@@ -31,41 +40,90 @@ let currentRecommendations = [];
 // ============================================================
 // 메인 초기화
 // ============================================================
+
 async function init() {
   const profileRaw = sessionStorage.getItem('user_profile');
   if (!profileRaw) {
     location.href = 'index.html';
     return;
   }
-  const profile = JSON.parse(profileRaw);
+
+  let profile;
+  try {
+    profile = JSON.parse(profileRaw);
+  } catch {
+    location.href = 'index.html';
+    return;
+  }
 
   renderProfileSummary(profile);
+  await fetchAndRenderRecommendations(profile);
+}
 
-  // 상품 데이터 로드
-  let products;
+// ============================================================
+// 백엔드 API 호출
+// ============================================================
+
+async function fetchAndRenderRecommendations(profile) {
+  showLoading(true);
+
+  let data;
   try {
-    const response = await fetch('product_profiles.json');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    products = await response.json();
+    const res = await fetch(`${API_BASE}/api/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_profile: profile }),
+    });
+
+    data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || `서버 오류 (HTTP ${res.status})`);
+    }
   } catch (err) {
-    renderError(`상품 데이터를 불러올 수 없습니다 (${err.message})`);
+    showLoading(false);
+    renderError(err.message || '추천을 불러올 수 없습니다');
     return;
   }
 
-  if (!products || products.length === 0) {
-    renderError('상품 데이터가 비어있습니다');
+  showLoading(false);
+
+  if (data.status === 'no_match') {
+    renderNoMatch(data.message);
     return;
   }
 
-  currentRecommendations = getRecommendations(profile, products);
-  renderResults(currentRecommendations, profile);
+  if (data.status !== 'success' || !data.recommendations?.length) {
+    renderError(data.message || '추천 결과를 받지 못했습니다');
+    return;
+  }
+
+  currentRecommendations = data.recommendations;
+  renderResults(currentRecommendations);
+
+  // 폴백 여부 안내 (D1 투명성)
+  if (currentRecommendations[0]?.is_fallback) {
+    showToast('AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다.', 4000);
+  }
+}
+
+// ============================================================
+// 로딩 토글
+// ============================================================
+
+function showLoading(on) {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.style.display = on ? 'flex' : 'none';
 }
 
 // ============================================================
 // 프로필 요약
 // ============================================================
+
 function renderProfileSummary(profile) {
   const el = document.getElementById('profile-summary');
+  if (!el) return;
+
   const dist = PROFILE_LABELS.running_distance[profile.running_distance] || '?';
   const width = PROFILE_LABELS.foot_width[profile.foot_width] || '?';
   const budget = PROFILE_LABELS.budget[profile.budget] || '상관없음';
@@ -78,7 +136,7 @@ function renderProfileSummary(profile) {
     <div class="profile-tags">
       <span class="tag">🏃 ${dist}</span>
       <span class="tag">👣 발볼 ${width}</span>
-      <span class="tag">🛠️ 쿠션 ${profile.preferred_cushion}/5</span>
+      <span class="tag">🛠️ 쿠션 ${profile.preferred_cushion || 3}/5</span>
       <span class="tag">💰 ${budget}</span>
       ${priorities ? `<span class="tag">${priorities}</span>` : ''}
     </div>
@@ -86,39 +144,30 @@ function renderProfileSummary(profile) {
 }
 
 // ============================================================
-// 결과 렌더링 (CEO 비즈니스 UI 아키텍처)
+// 결과 렌더링
 // ============================================================
-function renderResults(recs, profile) {
-  const container = document.getElementById('results-container');
 
-  // 모든 추천이 30 미만이면 매칭 실패로 간주
+function renderResults(recs) {
+  const container = document.getElementById('results-container');
+  if (!container) return;
+
   const goodMatches = recs.filter((r) => r.match_score >= 30);
 
   if (goodMatches.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <h2>맞는 추천이 없습니다</h2>
-        <p>조건을 조정해서 다시 진단해 보세요</p>
-        <ul class="hint-list">
-          <li>예산 범위를 넓혀 보세요</li>
-          <li>발볼 유형을 '보통'으로 바꿔 보세요</li>
-          <li>중요 요소를 1~2개로 줄여 보세요</li>
-        </ul>
-        <button onclick="location.href='index.html'" class="btn-primary">다시 진단하기</button>
-      </div>
-    `;
+    renderNoMatch('매칭 점수 30점 미만 — 조건을 조정해 보세요');
     return;
   }
 
   container.innerHTML =
-    '<h2 class="section-title">최고 추천 러닝화 TOP ' + goodMatches.length + '</h2>' +
+    `<h2 class="section-title">최고 추천 러닝화 TOP ${goodMatches.length}</h2>` +
     goodMatches.map((shoe, i) => renderRecommendationCard(shoe, i + 1)).join('');
 
-  // 비교 버튼 표시 (TOP2 이상일 때)
   if (goodMatches.length >= 2) {
-    document.getElementById('compare-btn').style.display = 'inline-block';
-    document.getElementById('compare-btn').onclick = () => openCompareModal(goodMatches);
+    const btn = document.getElementById('compare-btn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.onclick = () => openCompareModal(goodMatches);
+    }
   }
 }
 
@@ -147,7 +196,7 @@ function renderRecommendationCard(shoe, rank) {
           ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
           ${confidenceBadge}
         </div>
-        <p class="rec-reason">💬 ${shoe.reason}</p>
+        <p class="rec-reason">💬 ${shoe.reason || ''}</p>
         <div class="rec-footer">
           <span class="rec-price">₩${price}</span>
           <a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>
@@ -160,20 +209,20 @@ function renderRecommendationCard(shoe, rank) {
 // ============================================================
 // 비교 모달
 // ============================================================
+
 function openCompareModal(recs) {
-  const a = recs[0];
-  const b = recs[1];
   const tableEl = document.getElementById('compare-table');
-  tableEl.innerHTML = renderCompareTable(a, b);
-  document.getElementById('compare-modal').style.display = 'flex';
+  if (tableEl) tableEl.innerHTML = renderCompareTable(recs[0], recs[1]);
+  const modal = document.getElementById('compare-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
 function closeModal() {
-  document.getElementById('compare-modal').style.display = 'none';
+  const modal = document.getElementById('compare-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 function renderCompareTable(a, b) {
-  // 방어: b가 없을 경우
   if (!a || !b) return '<p>비교할 신발이 부족합니다</p>';
 
   const rows = [
@@ -211,16 +260,20 @@ function renderCompareTable(a, b) {
   `;
 }
 
-// 모달 바깥쪽 클릭 시 닫기
-document.getElementById('compare-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'compare-modal') closeModal();
-});
+const modal = document.getElementById('compare-modal');
+if (modal) {
+  modal.addEventListener('click', (e) => {
+    if (e.target.id === 'compare-modal') closeModal();
+  });
+}
 
 // ============================================================
-// 오류
+// 에러 / 매칭 없음 / 토스트
 // ============================================================
+
 function renderError(message) {
   const container = document.getElementById('results-container');
+  if (!container) return;
   container.innerHTML = `
     <div class="empty-state">
       <div class="empty-icon">⚠️</div>
@@ -229,6 +282,37 @@ function renderError(message) {
       <button onclick="location.reload()" class="btn-primary">다시 시도</button>
     </div>
   `;
+}
+
+function renderNoMatch(message) {
+  const container = document.getElementById('results-container');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h2>맞는 추천이 없습니다</h2>
+      <p>${message}</p>
+      <ul class="hint-list">
+        <li>예산 범위를 넓혀 보세요</li>
+        <li>발볼 유형을 '보통'으로 바꿔 보세요</li>
+        <li>중요 요소를 1~2개로 줄여 보세요</li>
+      </ul>
+      <button onclick="location.href='index.html'" class="btn-primary">다시 진단하기</button>
+    </div>
+  `;
+}
+
+function showToast(message, duration = 2000) {
+  let toast = document.getElementById('toast-message');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-message';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, duration);
 }
 
 // 시작

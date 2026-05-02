@@ -9,7 +9,7 @@
     "init-sheets": "node scripts/init-sheets.js"
   },
   "dependencies": {
-    "anthropic": "^0.52.0",
+    "@anthropic-ai/sdk": "^0.92.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
