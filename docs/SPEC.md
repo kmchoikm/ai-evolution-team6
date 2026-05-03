@@ -36,7 +36,7 @@
    - `sessionStorage`에 프로필이 없을 경우: `index.html`로 자동 리다이렉트한다.
 
 ---
-git add docs/SPEC.md
+
 ### 2. 타겟 단말 (Client)
 * **디바이스:** 모바일 단말(스마트폰) 최우선 고려 (Mobile-First Design)
 * **환경:** 모바일 웹 브라우저 (Safari, Chrome, Samsung Internet 등)
@@ -173,20 +173,32 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 ### 6. API 명세 (API Specifications)
 
 **[POST] `/api/recommend`**
-* **기능:** 사용자 데이터를 받아 최적의 러닝화 3종과 추천 사유 반환
+* **기능:** 사용자 데이터를 받아 최적의 러닝화 최대 5종과 추천 사유 반환
 * **Request (Body):**
   ```json
   {
     "user_profile": {
-      "gender": "male",
-      "weight_kg": 75,
-      "foot_type": "overpronation",
+      "running_distance": "short",
+      "frequency": "regular",
       "foot_width": "wide",
-      "budget_max": 200000,
-      "target_race": "seoul_marathon"
+      "preferred_cushion": 3,
+      "priorities": ["protection", "comfort"],
+      "budget": "high",
+      "free_text": "평발이에요"
     }
   }
   ```
+
+  | 필드명 | 타입 | 허용값 | 필수 | 설명 |
+  |---|---|---|---|---|
+  | `running_distance` | string | `short` / `medium` / `long` / `marathon` | ✅ | 주로 달리는 거리 |
+  | `frequency` | string | `casual` / `regular` / `intensive` | - | 러닝 빈도 (기본값: `regular`) |
+  | `foot_width` | string | `wide` / `normal` / `narrow` | ✅ | 발볼 너비 |
+  | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
+  | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
+  | `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
+  | `free_text` | string | 최대 200자 | - | 자유 서술 |
+
 * **Response (Success - 200 OK):**
   ```json
   {
@@ -194,16 +206,67 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
     "recommendations": [
       {
         "rank": 1,
-        "brand": "Asics",
-        "model": "Gel-Kayano 30",
+        "match_score": 85,
+        "goods_no": "4112233",
+        "goods_name": "젤 카야노 31",
+        "brand": "아식스",
         "price": 189000,
-        "image_url": "https://...",
-        "reason": "입력하신 체중(75kg)과 내전 성향을 고려할 때 가장 확실한 부상 방지 효과를 제공합니다. 또한 예산(20만 원) 내에서 구매 가능한 최적의 안정화입니다."
+        "url": "https://www.musinsa.com/products/4112233",
+        "thumbnail": "https://...",
+        "width": "보통",
+        "cushion": 4,
+        "weight": 4,
+        "distance": "장거리",
+        "breathability": 3,
+        "fit": 5,
+        "summary": "안정성 최고, 평발 러너에게 추천",
+        "review_count_used": 20,
+        "confidence": "high",
+        "reason": "평발이신 점과 넓은 발볼을 고려할 때 안정성이 가장 뛰어난 선택입니다.",
+        "is_fallback": false
       }
     ]
   }
   ```
-* **Response (Error/Fallback - 503):** Claude API 장애 시 미리 정의된 폴백 JSON 구조 반환.
+
+  | 필드명 | 타입 | 설명 |
+  |---|---|---|
+  | `rank` | number | 추천 순위 (1~5) |
+  | `match_score` | number | 매칭 점수 (0~100) |
+  | `goods_no` | string | Google Sheets 상품 고유번호 (PK) |
+  | `goods_name` | string | 모델명 |
+  | `brand` | string | 브랜드명 |
+  | `price` | number | 판매가 (원) |
+  | `url` | string | 무신사 상품 링크 |
+  | `thumbnail` | string | 상품 썸네일 이미지 URL |
+  | `width` | string | 발볼 (`넓음` / `보통` / `좁음`) |
+  | `cushion` | number | 쿠션감 1~5 |
+  | `weight` | number | 무게감 1~5 |
+  | `distance` | string | 적합 거리 (`단거리` / `중거리` / `장거리` / `전거리`) |
+  | `breathability` | number | 통기성 1~5 |
+  | `fit` | number | 착화감 1~5 |
+  | `summary` | string | 리뷰 기반 한줄 요약 |
+  | `review_count_used` | number | 분석에 사용된 리뷰 수 |
+  | `confidence` | string | 데이터 신뢰도 (`high` / `medium` / `low`) |
+  | `reason` | string | Claude AI가 생성한 맞춤형 추천 사유 |
+  | `is_fallback` | boolean | Claude API 장애로 폴백 처리된 경우 `true` |
+
+* **Response (No Match - 200 OK):** 매칭 점수 30점 미만인 결과만 존재하는 경우
+  ```json
+  {
+    "status": "no_match",
+    "message": "입력하신 조건에 맞는 러닝화가 없습니다. 예산 범위나 발볼 조건을 조정해 보세요.",
+    "recommendations": []
+  }
+  ```
+
+* **Response (Error - 4xx/5xx):** 서버 오류 또는 Claude API 장애 시
+  ```json
+  {
+    "status": "error",
+    "message": "오류 메시지"
+  }
+  ```
 
 ---
 
