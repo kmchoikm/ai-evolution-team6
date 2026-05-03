@@ -4,13 +4,12 @@
  */
 
 // 백엔드 URL: 로컬 개발이면 localhost:3000, 프로덕션이면 실제 서버 주소로 변경
-// file:// 로 열거나 localhost일 때 모두 로컬 백엔드 사용
-// 프로덕션 배포 시 'https://your-backend.railway.app' 으로 교체
+// 로컬 개발: localhost:3000, 프로덕션: Railway 백엔드
 const API_BASE = (window.location.protocol === 'file:' ||
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1')
   ? 'http://localhost:3000'
-  : '';
+  : 'https://ai-evolution-team6-production.up.railway.app';
 
 const PROFILE_LABELS = {
   running_distance: {
