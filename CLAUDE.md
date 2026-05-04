@@ -29,7 +29,52 @@
 
 ---
 
-## 5. gstack 워크플로우 (AI-Assisted Development Process)
+## 5. 로컬 개발 환경 실행 (Local Dev Setup)
+
+> 팀원이 "로컬 서버 띄워줘" 또는 "개발 환경 실행해줘" 라고 하면 아래 순서를 그대로 실행한다.
+
+### 전제 조건 확인
+1. Node.js 설치 여부 확인: `node -v` → 버전이 나오면 OK, 없으면 https://nodejs.org 에서 설치 안내
+2. `backend/.env` 파일 존재 여부 확인: 없으면 아래 환경변수 세팅 안내
+
+### backend/.env 파일 세팅 (최초 1회)
+`.env.example` 파일을 복사해서 `backend/.env` 를 만들고, 아래 값을 팀장(kmchoikm@gmail.com)에게 받아서 채운다:
+```
+SPREADSHEET_ID=1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4
+GOOGLE_CLIENT_EMAIL=<팀장에게 받기>
+GOOGLE_PRIVATE_KEY=<팀장에게 받기>
+ANTHROPIC_API_KEY=<팀장에게 받기>
+PORT=3000
+NODE_ENV=development
+```
+
+### 실행 순서 (매번)
+
+**Step 1 — 패키지 설치 (최초 1회 또는 package.json 변경 시)**
+```bash
+npm run setup
+```
+
+**Step 2 — FE + BE 동시 실행**
+```bash
+npm run dev
+```
+
+실행 후 접속 주소:
+- 프론트엔드: http://localhost:5500
+- 백엔드 헬스체크: http://localhost:3000/health
+
+### 서버 종료
+터미널에서 `Ctrl + C`
+
+### 트러블슈팅
+- `포트 이미 사용 중(EADDRINUSE)` 오류 → `netstat -ano | findstr :3000` 으로 PID 확인 후 종료
+- `Cannot find module` 오류 → `npm run setup` 재실행
+- Google Sheets 연결 실패 → `backend/.env` 파일의 환경변수 값 확인
+
+---
+
+## 6. gstack 워크플로우 (AI-Assisted Development Process)
 
 사용하는 모든 웹 브라우징에는 `/browse` (gstack의 실제 Chromium 브라우저)를 사용하세요. 절대 `mcp__claude-in-chrome__*` 도구를 사용하지 마세요.
 

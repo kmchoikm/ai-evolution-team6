@@ -1,0 +1,15 @@
+{
+  "name": "runfit",
+  "version": "1.0.0",
+  "description": "RunFit 로컬 개발 환경 실행 스크립트",
+  "scripts": {
+    "setup": "cd backend && npm install",
+    "start:be": "cd backend && node server.js",
+    "start:fe": "npx serve frontend/web-prototype -p 5500 --no-clipboard",
+    "dev": "npx concurrently -n BE,FE -c bgBlue,bgGreen \"npm run start:be\" \"npm run start:fe\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "serve": "^14.2.4"
+  }
+}
