@@ -1,0 +1,365 @@
+# SPEC.md
+## RunFit — 상세 기능 및 기술 명세서
+
+이 문서는 RunFit 서비스의 MVP(Minimum Viable Product) 구현을 위한 상세 개발 스펙을 정의합니다. 모든 코드 작성 및 시스템 설계는 이 문서를 기준으로 진행됩니다.
+
+---
+
+### 1. 사용자 시나리오 (User Scenario)
+> **목적:** 사용자가 서비스에 진입하여 결과를 얻기까지의 핵심 흐름 정의 (이탈률 최소화 관점)
+
+1. **진입:** 사용자가 모바일 웹(`index.html`)에 접속하면 "3분 진단 — 7개 질문에 답하면 AI가 가장 적합한 러닝화를 추천합니다" 문구와 함께 단일 스크롤 폼이 표시된다.
+
+2. **7개 질문 입력 (단일 페이지 스크롤 방식):**
+
+   | 번호 | 질문 | 입력 방식 | 필수 여부 |
+   |------|------|-----------|-----------|
+   | Q1 | 주로 달리는 거리 | 라디오 (4개 옵션) | 필수 |
+   | Q2 | 러닝 빈도 | 라디오 (3개 옵션) | 선택 (기본값: 주 3~4회) |
+   | Q3 | 발볼 너비 | 라디오 (3개 옵션) | 필수 |
+   | Q4 | 선호 쿠션감 | 슬라이더 (1~5단계) | 선택 (기본값: 3) |
+   | Q5 | 중요 요소 | 체크박스 (최대 3개) | 선택 |
+   | Q6 | 예산 범위 | 라디오 (5개 옵션) | 선택 |
+   | Q7 | 추가 자유 서술 | 텍스트에어리어 (200자 이내) | 선택 |
+
+3. **유효성 검증 및 제출:** "추천 받기" 버튼 클릭 시 필수 항목(Q1, Q3) 누락 여부를 검증한다. 오류가 있으면 에러 메시지를 노출하고 제출을 막는다. 통과 시 중복 제출을 방지하고 로딩 오버레이("AI가 최적의 러닝화를 찾고 있어요...")를 띄운다.
+
+4. **데이터 전달:** 입력된 사용자 프로필을 `sessionStorage`에 JSON으로 저장한 뒤 `result.html`로 페이지 이동한다.
+
+5. **결과 확인 (`result.html`):** 사용자 프로필 요약 태그(거리·발볼·쿠션·예산·우선순위)가 상단에 표시되고, 매칭 점수 기준 상위 최대 5개의 러닝화가 카드 형태로 노출된다. 각 카드에는 브랜드·모델명·매칭 점수(%)·추천 이유·주요 스펙 태그·가격·무신사 링크가 포함된다.
+
+6. **TOP 비교:** 매칭 결과가 2개 이상일 경우 "TOP 1 vs TOP 2 비교" 버튼이 활성화되며, 모달 팝업으로 브랜드·쿠션·발볼·무게·통기성·착화감 등을 나란히 비교할 수 있다.
+
+7. **예외 처리:**
+   - 매칭 점수 30점 미만인 결과만 존재할 경우: "맞는 추천이 없습니다" empty-state UI와 조건 재조정 힌트를 제공한다.
+   - 상품 데이터 로드 실패 시: 에러 메시지와 "다시 시도" 버튼을 표시한다.
+   - `sessionStorage`에 프로필이 없을 경우: `index.html`로 자동 리다이렉트한다.
+
+---
+
+### 2. 타겟 단말 (Client)
+* **디바이스:** 모바일 단말(스마트폰) 최우선 고려 (Mobile-First Design)
+* **환경:** 모바일 웹 브라우저 (Safari, Chrome, Samsung Internet 등)
+* **UI/UX 원칙:** 반응형 웹(Responsive Web)으로 구현하되, 터치 친화적인 큼직한 버튼과 스와이프 가능한 카드 UI를 적극 활용한다. (가로 스크롤 지양, 세로 스크롤 위주)
+
+---
+
+### 3. 기능 요구사항 (Functional Requirements)
+
+#### 3.1. 사용자 입력 폼 (프론트엔드)
+
+**입력 항목 상세 (Q1~Q7)**
+
+| 질문 | name 속성 | 입력 타입 | 선택지 | 필수 | 기본값 |
+|------|-----------|-----------|--------|------|--------|
+| Q1. 달리는 거리 | `distance` | radio | short(5km↓) / medium(5~10km) / long(10~21km) / marathon(21km↑) | ✅ | 없음 |
+| Q2. 러닝 빈도 | `frequency` | radio | casual(주1~2회) / regular(주3~4회) / intensive(주5회↑) | - | regular |
+| Q3. 발볼 너비 | `width` | radio | wide(넓음) / normal(보통) / narrow(좁음) | ✅ | 없음 |
+| Q4. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
+| Q5. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
+| Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
+| Q7. 자유 서술 | `free-text` | textarea | 최대 200자 자유 입력 | - | 없음 |
+
+**UI 인터랙션 규칙**
+
+* **단일 페이지 스크롤:** Progressive Disclosure 방식이 아닌 7개 질문을 한 페이지에서 세로 스크롤로 노출한다. (PREMORTEM C1 대응 — 필수 항목을 Q1·Q3 두 개로 최소화하여 이탈률 억제)
+* **카드 선택 피드백:** 라디오/체크박스 선택 시 해당 카드에 `selected` 클래스가 즉시 적용되어 시각적 선택 상태를 표시한다.
+* **Q5 최대 3개 제한:** 체크박스 4번째 선택 시 마지막 항목이 자동 해제되고 토스트 경고("중요 요소는 최대 3개까지 선택 가능합니다.")가 2초 표시된다.
+* **Q4 실시간 레이블:** 슬라이더 조작 시 값에 대응하는 한국어 레이블(매우 딱딱 / 약간 딱딱 / 중간 / 약간 물렁 / 매우 물렁)을 즉시 갱신한다.
+* **Q7 글자수 카운팅:** 입력 중 실시간으로 `현재 글자수 / 200` 표시.
+
+**반응형 레이아웃 (Responsive Design)**
+
+모바일 퍼스트(Mobile-First) 원칙으로 설계하며, 3단계 브레이크포인트로 대응한다.
+
+| 브레이크포인트 | 대상 기기 | 주요 레이아웃 변경 |
+|---|---|---|
+| `> 600px` (기본) | 태블릿·데스크탑 | 컨테이너 `max-width: 720px` 중앙 정렬, 그리드 최대 5열 |
+| `≤ 600px` | 일반 스마트폰 | grid-4·grid-5 → 2열, 컨테이너 패딩 축소 |
+| `≤ 480px` | 소형 스마트폰 | grid-3 → 2열, 헤더·질문카드 폰트 축소, 결과카드 세로 정렬, 액션버튼 전체폭 |
+| `≤ 375px` | 초소형(iPhone SE 등) | 모든 그리드 2열 고정, 옵션 버튼 패딩 최소화 |
+
+세부 규칙:
+* **선택지 그리드:** 화면 너비에 따라 열 수를 자동 조정하여 터치 타겟이 최소 48px 이상 확보되도록 한다.
+* **결과 카드:** `≤ 480px`에서 가로(flex-row) → 세로(flex-column) 레이아웃으로 전환하여 브랜드·모델명·매칭점수·추천 이유가 잘 보이도록 한다.
+* **비교 모달 테이블:** `≤ 480px`에서 셀 패딩과 폰트를 줄이고, 속성 열 너비를 축소하여 모달 내 가로 스크롤 없이 표시한다.
+* **액션 버튼:** `≤ 480px`에서 세로 배열 + 전체폭(100%)으로 전환하여 터치 조작 편의성을 높인다.
+
+**유효성 검증 (Validation)**
+
+* 제출 버튼 클릭 시 아래 규칙을 순서대로 검사한다:
+
+  | 조건 | 에러 메시지 |
+  |------|-------------|
+  | Q1 미선택 | "Q1 '달리는 거리'를 선택해 주세요." |
+  | Q3 미선택 | "Q3 '발볼 유형'을 선택해 주세요." |
+  | Q5 4개 이상 선택 | "Q5 '중요 요소'는 최대 3개까지 선택 가능합니다." |
+  | Q7 200자 초과 | "Q7 추가 내용은 200자 이내로 입력해 주세요." |
+
+* 에러가 하나라도 있으면 제출을 막고, 에러 영역(`#errors`)을 노출한 뒤 해당 영역으로 부드럽게 스크롤한다.
+* 중복 제출 방지: 제출 후 버튼을 `disabled` 처리하고 텍스트를 "진단 중.."으로 변경한다.
+
+**로딩 상태**
+
+* 유효성 통과 시 전체 화면 로딩 오버레이(`#loading-overlay`)가 표시되고 "AI가 최적의 러닝화를 찾고 있어요..." 문구가 노출된다.
+* 사용자 프로필 JSON을 `sessionStorage`에 저장 후 800ms 뒤 `result.html`로 이동한다.
+
+**수집되는 사용자 프로필 JSON 구조**
+
+```json
+{
+  "running_distance": "medium",
+  "frequency": "regular",
+  "foot_width": "wide",
+  "preferred_cushion": 3,
+  "priorities": ["protection", "comfort"],
+  "budget": "high",
+  "free_text": "평발이에요"
+}
+```
+
+#### 3.2. 추천 엔진 및 LLM 연동 (백엔드)
+* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 내전 여부)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
+* **Claude API 호출 (2차):** 필터링된 후보군 N개와 사용자 프로파일을 Claude API 프롬프트에 주입하여 최종 3개를 선정하고, **"자연어로 된 맞춤형 추천 사유"**를 생성한다.
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 10초 이상 지연될 경우 통신을 끊고, DB에 하드코딩된 '안정성 위주의 베스트셀러(예: 브룩스 아드레날린, 아식스 카야노 등)'를 폴백 데이터로 즉시 반환한다.
+
+---
+
+### 4. 시스템 구성도 (Architecture)
+
+MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대신 서버리스(Serverless) 개념을 차용한 3-Tier 아키텍처로 구성합니다.
+
+#### 구성 레이어
+
+| 레이어 | 구성 요소 | 기술 스택 |
+|---|---|---|
+| **Client** | Mobile Web Browser | React / Vercel |
+| **WAS** | Backend / API Server | Node.js Express |
+| **WAS** | LLM 처리 로직 | Claude Logic |
+| **WAS** | DB 연결 모듈 | Google Sheets API |
+| **External** | LLM 서비스 | Anthropic Claude 3.5 Sonnet |
+| **External** | 데이터베이스 | Google Sheets |
+
+#### 데이터 흐름
+
+| 순서 | 송신 | 수신 | 내용 |
+|---|---|---|---|
+| 1 | Mobile Web UI | Node.js API | 사용자 프로파일 전송 `POST /api/recommend` |
+| 2 | Node.js API | Google Sheets API | 기초 데이터 조회 |
+| 3 | Google Sheets API | Google Sheets | 러닝화 메타/리뷰 데이터 조회 (양방향) |
+| 4 | Node.js API | Claude Logic | 프롬프트 + 후보군 전송 |
+| 5 | Claude Logic | Claude API | 분석 및 사유 생성 (양방향) |
+| 6 | Node.js API | Mobile Web UI | 최종 추천 결과 반환 (JSON) |
+
+> **설계 의도 (Why):** 데이터베이스를 Google Sheets로 활용하여 기획/데이터 팀이 실시간으로 러닝화 스펙이나 리뷰 요약본을 직접 수정할 수 있게 하여 개발 의존도를 낮춥니다.
+
+---
+
+### 5. 기술 스택 (Tech Stack)
+
+* **Frontend:**
+  * **Framework:** React.js (Vite 기반)
+  * **Styling:** Tailwind CSS (빠른 모바일 UI 컴포넌트 구성)
+  * **State Management:** React Context API (단순한 스텝 폼 상태 관리)
+* **Backend (WAS):**
+  * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
+  * **API Client:** Axios (외부 API 통신용)
+* **Database & LLM:**
+  * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
+  * **LLM:** Anthropic Claude API (모델: `claude-3-5-sonnet-20240620` - 추론 및 근거 생성에 탁월)
+
+---
+
+### 6. API 명세 (API Specifications)
+
+**[POST] `/api/recommend`**
+* **기능:** 사용자 데이터를 받아 최적의 러닝화 최대 5종과 추천 사유 반환
+* **Request (Body):**
+  ```json
+  {
+    "user_profile": {
+      "running_distance": "short",
+      "frequency": "regular",
+      "foot_width": "wide",
+      "preferred_cushion": 3,
+      "priorities": ["protection", "comfort"],
+      "budget": "high",
+      "free_text": "평발이에요"
+    }
+  }
+  ```
+
+  | 필드명 | 타입 | 허용값 | 필수 | 설명 |
+  |---|---|---|---|---|
+  | `running_distance` | string | `short` / `medium` / `long` / `marathon` | ✅ | 주로 달리는 거리 |
+  | `frequency` | string | `casual` / `regular` / `intensive` | - | 러닝 빈도 (기본값: `regular`) |
+  | `foot_width` | string | `wide` / `normal` / `narrow` | ✅ | 발볼 너비 |
+  | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
+  | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
+  | `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
+  | `free_text` | string | 최대 200자 | - | 자유 서술 |
+
+* **Response (Success - 200 OK):**
+  ```json
+  {
+    "status": "success",
+    "recommendations": [
+      {
+        "rank": 1,
+        "match_score": 85,
+        "goods_no": "4112233",
+        "goods_name": "젤 카야노 31",
+        "brand": "아식스",
+        "price": 189000,
+        "url": "https://www.musinsa.com/products/4112233",
+        "thumbnail": "https://...",
+        "width": "보통",
+        "cushion": 4,
+        "weight": 4,
+        "distance": "장거리",
+        "breathability": 3,
+        "fit": 5,
+        "summary": "안정성 최고, 평발 러너에게 추천",
+        "review_count_used": 20,
+        "confidence": "high",
+        "reason": "평발이신 점과 넓은 발볼을 고려할 때 안정성이 가장 뛰어난 선택입니다.",
+        "is_fallback": false
+      }
+    ]
+  }
+  ```
+
+  | 필드명 | 타입 | 설명 |
+  |---|---|---|
+  | `rank` | number | 추천 순위 (1~5) |
+  | `match_score` | number | 매칭 점수 (0~100) |
+  | `goods_no` | string | Google Sheets 상품 고유번호 (PK) |
+  | `goods_name` | string | 모델명 |
+  | `brand` | string | 브랜드명 |
+  | `price` | number | 판매가 (원) |
+  | `url` | string | 무신사 상품 링크 |
+  | `thumbnail` | string | 상품 썸네일 이미지 URL |
+  | `width` | string | 발볼 (`넓음` / `보통` / `좁음`) |
+  | `cushion` | number | 쿠션감 1~5 |
+  | `weight` | number | 무게감 1~5 |
+  | `distance` | string | 적합 거리 (`단거리` / `중거리` / `장거리` / `전거리`) |
+  | `breathability` | number | 통기성 1~5 |
+  | `fit` | number | 착화감 1~5 |
+  | `summary` | string | 리뷰 기반 한줄 요약 |
+  | `review_count_used` | number | 분석에 사용된 리뷰 수 |
+  | `confidence` | string | 데이터 신뢰도 (`high` / `medium` / `low`) |
+  | `reason` | string | Claude AI가 생성한 맞춤형 추천 사유 |
+  | `is_fallback` | boolean | Claude API 장애로 폴백 처리된 경우 `true` |
+
+* **Response (No Match - 200 OK):** 매칭 점수 30점 미만인 결과만 존재하는 경우
+  ```json
+  {
+    "status": "no_match",
+    "message": "입력하신 조건에 맞는 러닝화가 없습니다. 예산 범위나 발볼 조건을 조정해 보세요.",
+    "recommendations": []
+  }
+  ```
+
+* **Response (Error - 4xx/5xx):** 서버 오류 또는 Claude API 장애 시
+  ```json
+  {
+    "status": "error",
+    "message": "오류 메시지"
+  }
+  ```
+
+---
+
+### 7. 데이터 구조 (Google Sheets 기반 DB & ERD)
+
+Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간주하여 평면화(Denormalization)된 구조를 가져갑니다.
+
+#### ERD — 관계 정의
+
+| 엔티티 | 관계 | 엔티티 | 설명 |
+|---|---|---|---|
+| `Logs` | 1 : N (논리적 참조) | `Shoes` | 하나의 로그에 여러 추천 신발 포함 가능 |
+
+> Google Sheets 환경이므로 물리적 FK 제약조건은 없으나, 애플리케이션 레벨에서 `goods_no` 기준으로 논리적 조인을 수행함
+
+---
+
+#### Sheet 1: `Shoes` (러닝화 메타 데이터)
+
+| Column Name | Type | Key | 허용값 | Description | Example |
+|---|---|---|---|---|---|
+| goods_no | String | PK | 무신사 상품번호 | 고유 식별자 | `5005842` |
+| goods_name | String | | | 모델명 | `맥시마이저 26` |
+| brand | String | | | 브랜드명 | `미즈노` |
+| price | Number | | 정수 | 판매가 (원) | `59000` |
+| url | String | | URL | 무신사 상품 링크 | `https://www.musinsa.com/products/5005842` |
+| thumbnail | String | | URL | 상품 썸네일 이미지 URL | `` |
+| width | String | | `넓음` / `보통` / `좁음` | 발볼 너비 | `보통` |
+| cushion | Number | | 1~5 정수 | 쿠션감 (1=딱딱, 5=물렁) | `4` |
+| weight | Number | | 1~5 정수 | 무게감 (1=가벼움, 5=무거움) | `2` |
+| distance | String | | `단거리` / `중거리` / `장거리` / `전거리` | 적합 러닝 거리 | `중거리` |
+| breathability | Number | | 1~5 정수 | 통기성 | `4` |
+| fit | Number | | 1~5 정수 | 착화감 | `5` |
+| summary | String | | | 리뷰 기반 한줄 요약 | `가성비 좋은 데일리 러닝화, 쿠션감 우수` |
+| review_count_used | Number | | 정수 | 분석에 사용된 리뷰 수 | `20` |
+| confidence | String | | `high` / `medium` / `low` | 데이터 신뢰도 | `high` |
+
+##### Shoes 초기 샘플 데이터 (10개)
+
+| goods_no | goods_name | brand | price | width | cushion | weight | distance | breathability | fit | summary | review_count_used | confidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 5005842 | 맥시마이저 26 (오프 화이트) | 미즈노 | 59000 | 보통 | 4 | 2 | 중거리 | 4 | 5 | 가성비 좋은 데일리 러닝화, 쿠션감 우수 | 20 | high |
+| 3990544 | W480SK5 | 뉴발란스 | 75000 | 보통 | 3 | 2 | 단거리 | 4 | 4 | 가벼운 입문용 러닝화 | 20 | high |
+| 4521387 | 페가수스 41 | 나이키 | 159000 | 보통 | 4 | 3 | 전거리 | 4 | 4 | 범용 데일리 트레이너, 안정적 쿠션 | 20 | high |
+| 5123456 | 마파테 스피드 2 | 호카 | 239000 | 넓음 | 5 | 3 | 장거리 | 3 | 5 | 구름 같은 쿠션, 마라톤·장거리 최적 | 18 | high |
+| 4789123 | 엔돌핀 스피드 4 | 사코니 | 199000 | 보통 | 3 | 1 | 중거리 | 5 | 4 | 초경량 반발력 카본 플레이트 | 15 | high |
+| 4456789 | 노바블라스트 4 | 아식스 | 149000 | 넓음 | 5 | 3 | 장거리 | 3 | 4 | 푹신한 쿠션, 장거리 부상 방지 | 20 | high |
+| 4112233 | 젤 카야노 31 | 아식스 | 189000 | 보통 | 4 | 4 | 장거리 | 3 | 5 | 안정성 최고, 평발 러너에게 추천 | 20 | high |
+| 5234567 | 클리프턴 9 | 호카 | 169000 | 넓음 | 5 | 2 | 전거리 | 4 | 5 | 가벼우면서 푹신, 발볼 넓은 분께 | 20 | high |
+| 4998877 | 라이드 17 | 사코니 | 139000 | 좁음 | 3 | 2 | 중거리 | 4 | 3 | 발볼 좁은 분께 적합, 균형형 | 12 | high |
+| 4665544 | 글라이드라이드 3 | 아식스 | 129000 | 보통 | 4 | 4 | 장거리 | 3 | 4 | 에너지 세이빙 장거리 트레이너 | 8 | medium |
+
+---
+
+#### Sheet 2: `Logs` (사용자 이용 이력)
+
+| Column Name | Type | Key | 허용값 | Description | Example |
+|---|---|---|---|---|---|
+| log_id | String | PK | UUID | 이력 고유 ID (자동생성) | `550e8400-e29b-41d4-a716` |
+| timestamp | DateTime | | `YYYY-MM-DD HH:mm:ss` | 조회 일시 | `2026-05-03 14:00:00` |
+| running_distance | String | | `short` / `medium` / `long` / `marathon` | 달리는 거리 | `medium` |
+| frequency | String | | `casual` / `regular` / `intensive` | 러닝 빈도 | `regular` |
+| foot_width | String | | `wide` / `normal` / `narrow` | 발볼 너비 | `normal` |
+| preferred_cushion | Number | | 1~5 정수 | 선호 쿠션감 | `3` |
+| priorities | String | | 콤마 구분 | 중요 요소 | `protection,comfort` |
+| budget | String | | `low` / `mid` / `high` / `premium` | 예산 범위 | `high` |
+| free_text | String | | 최대 200자 | 자유 서술 내용 | `평발이에요` |
+| recommended_goods_no | String | FK→Shoes | 콤마 구분 | 추천된 goods_no 목록 | `4112233,5234567,4456789` |
+
+---
+
+### 8. 서비스 흐름도 (Call Flow)
+
+사용자가 추천 버튼을 누른 후 화면에 결과가 뜨기까지의 백엔드 내부 로직 흐름입니다.
+
+#### 정상 흐름
+
+| 단계 | 주체 | 대상 | 액션 | 비고 |
+|---|---|---|---|---|
+| 1 | User | Mobile Web UI | 프로파일 입력 및 추천 요청 | |
+| 2 | Mobile Web UI | Mobile Web UI | 입력값 유효성 검사 (Validation) | 클라이언트 내부 처리 |
+| 3 | Mobile Web UI | Node.js API | `POST /api/recommend` 전송 | 로딩 UI 활성화 |
+| 4 | Node.js API | Google Sheets | 전체 러닝화 메타 데이터 조회 (Sheet: Shoes) | |
+| 5 | Google Sheets | Node.js API | 데이터 반환 (JSON array) | |
+| 6 | Node.js API | Node.js API | 1차 필터링 로직 실행 (예산, 발볼, 내전 여부 매칭) | 내부 처리 |
+| 7 | Node.js API | Claude 3.5 API | 필터링된 후보군 + 사용자 프로파일 전송 (Prompt) | System Prompt: MANIFESTO 원칙 적용 (부상 방지 우선) |
+| 8 | Claude 3.5 API | Node.js API | 최종 3개 선정 및 맞춤형 사유(Reason) 응답 | |
+| 9 | Node.js API | Google Sheets | 로그 저장 (Sheet: Logs) | **비동기 처리** |
+| 10 | Node.js API | Mobile Web UI | 최종 결과 반환 | |
+| 11 | Mobile Web UI | User | 추천 결과 카드 UI 렌더링 | 로딩 종료 |
+
+#### Fallback 처리 (API 장애 또는 시간 초과 시)
+
+| 조건 | 처리 주체 | 액션 |
+|---|---|---|
+| Claude API Timeout 발생 | Node.js API | Fallback 로직 가동 — 하드코딩된 안전한 추천 리스트 즉시 로드 후 반환 |
