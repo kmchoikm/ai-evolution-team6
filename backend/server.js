@@ -48,7 +48,7 @@ app.post('/api/recommend', async (req, res) => {
     try {
       allShoes = await getAllShoes();
     } catch (sheetsErr) {
-      console.error('[Server] Sheets 조회 실패:', sheetsErr.message, sheetsErr.stack);
+      console.error('[Server] Sheets 조회 실패:', sheetsErr.message);
       return res.status(503).json({
         status: 'error',
         message: '상품 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
