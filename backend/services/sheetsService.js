@@ -8,9 +8,13 @@ const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
 function createAuth() {
+  // Railway UI에서 따옴표 포함 붙여넣기 시 자동 제거
+  const rawKey = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/^["']|["']$/g, '');
+  const privateKey = rawKey.replace(/\\n/g, '\n');
+  console.log('[Sheets] KEY 시작:', privateKey.slice(0, 35));
   return new JWT({
     email: process.env.GOOGLE_CLIENT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    key: privateKey,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 }
