@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -7,102 +7,380 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="header">
-    <h1>🏃 RunFit</h1>
-    <p class="tagline">내 발에 맞는 러닝화를 찾아드립니다</p>
-  </header>
+
+  <!-- 히어로 카드 -->
+  <div class="hero-wrapper">
+    <header class="hero">
+      <img src="hero-banner.png" alt="RunFit - 내 발에 맞는 러닝화를 찾아드립니다" class="hero-img" />
+      <div class="hero-content"></div>
+    </header>
+  </div>
 
   <main class="container">
-    <div class="intro">
-      <h2>3분 진단</h2>
-      <p>7개 질문에 답하면 AI가 가장 적합한 러닝화를 추천합니다</p>
+
+    <!-- 안내 바 -->
+    <div class="info-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="8"  x2="12"   y2="12"   stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="16" x2="12.01" y2="16.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      선택하신 정보를 바탕으로 최적의 러닝화를 추천해드릴게요!
     </div>
 
     <form id="diagnosis-form">
 
       <!-- Q1 -->
       <section class="question">
-        <h3>Q1. 주로 달리는 거리는? <span class="required">*</span></h3>
+        <div class="question-header">
+          <span class="q-num">01</span>
+          <h3>주로 달리는 거리는? <span class="required">*</span></h3>
+        </div>
         <div class="option-grid grid-4">
-          <label class="option-btn"><input type="radio" name="distance" value="short" /><span>🚶<br>가볍게 조깅<br><small>5km 이하</small></span></label>
-          <label class="option-btn"><input type="radio" name="distance" value="medium" /><span>🏃<br>일반 훈련<br><small>5~10km</small></span></label>
-          <label class="option-btn"><input type="radio" name="distance" value="long" /><span>🏃‍♂️<br>장거리 훈련<br><small>10~21km</small></span></label>
-          <label class="option-btn"><input type="radio" name="distance" value="marathon" /><span>🏅<br>마라톤<br><small>21km 이상</small></span></label>
+
+          <label class="option-btn">
+            <input type="radio" name="distance" value="short" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <line x1="4" y1="22" x2="13" y2="22" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+                <line x1="6" y1="28" x2="14" y2="28" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+                <circle cx="32" cy="11" r="4" fill="currentColor"/>
+                <path d="M32 15 L27 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M29 19 L37 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M29 19 L22 22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M27 24 L34 33 L27 40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M27 24 L19 31" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">가볍게 조깅</span>
+            <span class="opt-sub">5km 이하</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="distance" value="medium" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <circle cx="30" cy="11" r="4" fill="currentColor"/>
+                <path d="M30 15 L25 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M27 19 L35 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M27 19 L20 22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M25 24 L32 33 L25 40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M25 24 L17 32" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">일반 훈련</span>
+            <span class="opt-sub">5~10km</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="distance" value="long" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <line x1="4" y1="23" x2="13" y2="23" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+                <line x1="5" y1="29" x2="13" y2="29" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>
+                <line x1="4" y1="35" x2="11" y2="35" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.3"/>
+                <circle cx="34" cy="9" r="4" fill="currentColor"/>
+                <path d="M34 13 L28 22" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M31 17 L39 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M31 17 L23 21" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M28 22 L36 31 L29 38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M28 22 L20 29" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">장거리 훈련</span>
+            <span class="opt-sub">10~21km</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="distance" value="marathon" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M16 8 L24 8 L32 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M16 8 L12 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M32 8 L36 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="24" cy="30" r="13" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M24 22 L25.8 27.4 L31.4 27.4 L26.9 30.7 L28.6 36.1 L24 32.8 L19.4 36.1 L21.1 30.7 L16.6 27.4 L22.2 27.4 Z"
+                      fill="currentColor" opacity="0.35"/>
+              </svg>
+            </div>
+            <span class="opt-label">마라톤</span>
+            <span class="opt-sub">21km 이상</span>
+          </label>
+
         </div>
       </section>
 
       <!-- Q2 -->
       <section class="question">
-        <h3>Q2. 러닝 빈도는?</h3>
+        <div class="question-header">
+          <span class="q-num">02</span>
+          <h3>러닝 빈도는?</h3>
+        </div>
         <div class="option-grid grid-3">
-          <label class="option-btn"><input type="radio" name="frequency" value="casual" /><span>주 1~2회<br><small>취미 러너</small></span></label>
-          <label class="option-btn"><input type="radio" name="frequency" value="regular" checked /><span>주 3~4회<br><small>꾸준한 훈련</small></span></label>
-          <label class="option-btn"><input type="radio" name="frequency" value="intensive" /><span>주 5회 이상<br><small>매일 수준</small></span></label>
+
+          <label class="option-btn">
+            <input type="radio" name="frequency" value="casual" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <rect x="7" y="12" width="34" height="28" rx="4" stroke="currentColor" stroke-width="2.5"/>
+                <line x1="7"  y1="22" x2="41" y2="22" stroke="currentColor" stroke-width="2"/>
+                <line x1="16" y1="8"  x2="16" y2="16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="32" y1="8"  x2="32" y2="16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="16" cy="30" r="2" fill="currentColor"/>
+                <circle cx="24" cy="30" r="2" fill="currentColor"/>
+                <circle cx="32" cy="30" r="2" fill="currentColor"/>
+                <circle cx="16" cy="37" r="2" fill="currentColor"/>
+                <circle cx="24" cy="37" r="2" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="opt-label">주 1~2회</span>
+            <span class="opt-sub">취미 러너</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="frequency" value="regular" checked />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <rect x="6"  y="30" width="10" height="12" rx="2" fill="currentColor" opacity="0.4"/>
+                <rect x="19" y="20" width="10" height="22" rx="2" fill="currentColor" opacity="0.7"/>
+                <rect x="32" y="10" width="10" height="32" rx="2" fill="currentColor"/>
+                <line x1="4" y1="42" x2="44" y2="42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">주 3~4회</span>
+            <span class="opt-sub">꾸준한 훈련</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="frequency" value="intensive" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M24 6 C26 12 32 18 30 26 C29 30 27 32 25 33 C27 27 23 22 23 22 C23 22 20 30 16 32 C14 30 12 26 12 22 C12 14 22 8 24 6Z"
+                      fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M24 24 C26 28 28 32 26 37 C24 40 22 42 19 42 C15 42 11 38 11 34 C11 28 17 25 20 29 C19 24 22 20 24 24Z"
+                      fill="currentColor" opacity="0.6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">주 5회 이상</span>
+            <span class="opt-sub">매일 수준</span>
+          </label>
+
         </div>
       </section>
 
       <!-- Q3 -->
       <section class="question">
-        <h3>Q3. 발볼이 넓은 편인가요? <span class="required">*</span></h3>
+        <div class="question-header">
+          <span class="q-num">03</span>
+          <h3>발볼이 넓은 편인가요? <span class="required">*</span></h3>
+        </div>
         <div class="option-grid grid-3">
-          <label class="option-btn"><input type="radio" name="width" value="wide" /><span>😣<br>발볼이 넓음<br><small>신발이 항상 조임</small></span></label>
-          <label class="option-btn"><input type="radio" name="width" value="normal" /><span>😊<br>보통<br><small>대부분의 신발이 잘 맞음</small></span></label>
-          <label class="option-btn"><input type="radio" name="width" value="narrow" /><span>😕<br>발볼이 좁음<br><small>신발이 넓게 느껴짐</small></span></label>
+
+          <label class="option-btn">
+            <input type="radio" name="width" value="wide" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 56 48" fill="none">
+                <!-- 발 윤곽 -->
+                <path d="M22 38 C22 38 19 32 19 25 L19 18 C19 13 21 9 25 9 C29 9 31 12 31 16 L31 20 L35 20 C39 20 42 24 42 28 C42 33 39 37 35 37 Z"
+                      stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                <!-- 왼쪽 화살표 (바깥) -->
+                <line x1="14" y1="26" x2="6" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 23 L6 26 L9 29" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- 오른쪽 화살표 (바깥) -->
+                <line x1="44" y1="28" x2="52" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M49 25 L52 28 L49 31" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">발볼이 넓음</span>
+            <span class="opt-sub">신발이 항상 조임</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="width" value="normal" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 56 48" fill="none">
+                <path d="M22 38 C22 38 19 32 19 25 L19 18 C19 13 21 9 25 9 C29 9 31 12 31 16 L31 20 L35 20 C39 20 42 24 42 28 C42 33 39 37 35 37 Z"
+                      stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                <circle cx="23" cy="39" r="2"   fill="currentColor"/>
+                <circle cx="28" cy="40" r="2.2" fill="currentColor"/>
+                <circle cx="33" cy="39" r="2"   fill="currentColor"/>
+                <circle cx="38" cy="37" r="1.6" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="opt-label">보통</span>
+            <span class="opt-sub">대부분 잘 맞음</span>
+          </label>
+
+          <label class="option-btn">
+            <input type="radio" name="width" value="narrow" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 56 48" fill="none">
+                <path d="M22 38 C22 38 19 32 19 25 L19 18 C19 13 21 9 25 9 C29 9 31 12 31 16 L31 20 L35 20 C39 20 42 24 42 28 C42 33 39 37 35 37 Z"
+                      stroke="currentColor" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                <!-- 왼쪽 화살표 (안쪽) -->
+                <line x1="6" y1="26" x2="14" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M11 23 L14 26 L11 29" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- 오른쪽 화살표 (안쪽) -->
+                <line x1="52" y1="28" x2="44" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M47 25 L44 28 L47 31" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">발볼이 좁음</span>
+            <span class="opt-sub">신발이 넓게 느껴짐</span>
+          </label>
+
         </div>
       </section>
 
       <!-- Q4 -->
       <section class="question">
-        <h3>Q4. 원하는 쿠션감</h3>
-        <div class="slider-container">
-          <span class="slider-label-left">딱딱함</span>
+        <div class="question-header">
+          <span class="q-num">04</span>
+          <h3>원하는 쿠션감</h3>
+        </div>
+        <div class="cushion-wrap">
+          <div class="cushion-labels">
+            <span>딱딱함</span>
+            <span>물렁함</span>
+          </div>
           <input type="range" id="cushion-slider" min="1" max="5" value="3" />
-          <span class="slider-label-right">물렁함</span>
+          <div class="slider-ticks">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          </div>
+          <div class="slider-value-display">
+            선택값 <strong id="cushion-value">3 (중간)</strong>
+          </div>
         </div>
-        <div class="slider-marks">
-          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-        </div>
-        <div class="slider-value">선택값 <strong id="cushion-value">3</strong> (중간 쿠션)</div>
       </section>
 
       <!-- Q5 -->
       <section class="question">
-        <h3>Q5. 중요하게 생각하는 요소 <small>(최대 3개)</small></h3>
+        <div class="question-header">
+          <span class="q-num">05</span>
+          <h3>중요하게 생각하는 요소 <small>최대 3개</small></h3>
+        </div>
         <div class="option-grid grid-3">
-          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="speed" /><span>⚡ 속도감/경량</span></label>
-          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="protection" /><span>🛡️ 부상 방지</span></label>
-          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="comfort" /><span>💆 편안함</span></label>
-          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="breathability" /><span>🌬️ 통기성</span></label>
-          <label class="option-btn checkbox"><input type="checkbox" name="priorities" value="design" /><span>✨ 디자인</span></label>
+
+          <label class="option-btn checkbox">
+            <input type="checkbox" name="priorities" value="speed" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M6 24 L42 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M34 16 L42 24 L34 32" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="6"  y1="16" x2="20" y2="16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="6"  y1="32" x2="20" y2="32" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">속도감/경량</span>
+          </label>
+
+          <label class="option-btn checkbox">
+            <input type="checkbox" name="priorities" value="protection" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M24 6 L38 12 L38 24 C38 32 31 39 24 42 C17 39 10 32 10 24 L10 12 Z"
+                      stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" opacity="0.1"/>
+                <path d="M18 24 L22 28 L30 20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">부상 방지</span>
+          </label>
+
+          <label class="option-btn checkbox">
+            <input type="checkbox" name="priorities" value="comfort" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M24 38 C24 38 8 28 8 18 C8 13 12 10 16 10 C19 10 22 12 24 14 C26 12 29 10 32 10 C36 10 40 13 40 18 C40 28 24 38 24 38Z"
+                      stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" opacity="0.15"/>
+              </svg>
+            </div>
+            <span class="opt-label">편안함</span>
+          </label>
+
+          <label class="option-btn checkbox">
+            <input type="checkbox" name="priorities" value="breathability" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M24 10 C24 10 16 18 16 26 C16 30 19 34 24 34 C29 34 32 30 32 26 C32 18 24 10 24 10Z"
+                      stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" opacity="0.1"/>
+                <line x1="10" y1="24" x2="16" y2="24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="32" y1="24" x2="38" y2="24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="24" y1="38" x2="24" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="13" y1="35" x2="17" y2="31" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="35" y1="35" x2="31" y2="31" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="opt-label">통기성</span>
+          </label>
+
+          <label class="option-btn checkbox">
+            <input type="checkbox" name="priorities" value="design" />
+            <div class="opt-icon-wrap">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M24 8 L26.9 17.6 L37 17.6 L28.6 23.5 L31.4 33.1 L24 27.2 L16.6 33.1 L19.4 23.5 L11 17.6 L21.1 17.6 Z"
+                      stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" opacity="0.15"/>
+              </svg>
+            </div>
+            <span class="opt-label">디자인</span>
+          </label>
+
         </div>
       </section>
 
       <!-- Q6 -->
       <section class="question">
-        <h3>Q6. 예산 범위 <small>(선택)</small></h3>
-        <div class="option-grid grid-5">
-          <label class="option-btn"><input type="radio" name="budget" value="low" /><span>~7만원</span></label>
-          <label class="option-btn"><input type="radio" name="budget" value="mid" /><span>7~12만원</span></label>
-          <label class="option-btn"><input type="radio" name="budget" value="high" /><span>12~20만원</span></label>
-          <label class="option-btn"><input type="radio" name="budget" value="premium" /><span>20만원+</span></label>
-          <label class="option-btn"><input type="radio" name="budget" value="" checked /><span>상관없음</span></label>
+        <div class="question-header">
+          <span class="q-num">06</span>
+          <h3>예산 범위 <small>선택</small></h3>
+        </div>
+        <div class="option-grid grid-budget">
+          <label class="option-btn budget-btn">
+            <input type="radio" name="budget" value="low" />
+            <span class="opt-label">~7만원</span>
+          </label>
+          <label class="option-btn budget-btn">
+            <input type="radio" name="budget" value="mid" />
+            <span class="opt-label">7~12만원</span>
+          </label>
+          <label class="option-btn budget-btn">
+            <input type="radio" name="budget" value="high" />
+            <span class="opt-label">12~20만원</span>
+          </label>
+          <label class="option-btn budget-btn">
+            <input type="radio" name="budget" value="premium" />
+            <span class="opt-label">20만원+</span>
+          </label>
+          <label class="option-btn budget-btn">
+            <input type="radio" name="budget" value="" checked />
+            <span class="opt-label">상관없음</span>
+          </label>
         </div>
       </section>
 
       <!-- Q7 -->
       <section class="question">
-        <h3>Q7. 추가로 알려주실 내용 <small>(선택)</small></h3>
-        <textarea id="free-text" maxlength="200" placeholder="예) 평발이에요 / 아킬레스건이 약해요 / 가을 마라톤 준비 중"></textarea>
+        <div class="question-header">
+          <span class="q-num">07</span>
+          <h3>추가로 알려주실 내용 <small>선택</small></h3>
+        </div>
+        <textarea id="free-text" maxlength="200"
+          placeholder="예) 평발이에요 / 아킬레스건이 약해요 / 가을 마라톤 준비 중"></textarea>
         <div class="char-count"><span id="char-count">0</span> / 200</div>
       </section>
 
       <!-- 오류 영역 -->
       <div id="errors" class="errors" style="display: none;"></div>
 
-      <!-- 제출 -->
+      <!-- 제출 버튼 -->
       <button type="submit" id="submit-btn" class="btn-submit">
-        추천 받기 →
+        AI 추천 받기
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 12H19M19 12L12 5M19 12L12 19"
+                stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
+
     </form>
   </main>
 
