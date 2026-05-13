@@ -1,13 +1,13 @@
 /**
- * 추천 오케스트레이션 모듈
- * 1단계: 예산·발볼 기반 1차 필터링
- * 2단계: Claude API 맞춤 추천 이유 생성
- * 폴백: Claude 실패 시 점수 기반 상위 3개 즉시 반환
+ * 추천 오케스트레이션 모듈 (v2.0)
+ * - recommend        : Q1~Q7 기반 기본 추천
+ * - recommendByRace  : 대회 코스 기반 추천 (Feature 5)
+ *
+ * 공통 구조: 1차 필터링 → Claude API → 폴백
  */
 
-const { getAiRecommendations } = require('./claudeService');
+const { getAiRecommendations, getAiRaceRecommendations } = require('./claudeService');
 
-// 예산 코드 → 최대 가격 매핑
 const BUDGET_MAX = {
   low: 70_000,
   mid: 120_000,
@@ -15,7 +15,6 @@ const BUDGET_MAX = {
   premium: Infinity,
 };
 
-// 거리 코드 → 한국어 매핑 (필터 비교용)
 const DISTANCE_MAP = {
   short: '단거리',
   medium: '중거리',
@@ -26,7 +25,7 @@ const DISTANCE_MAP = {
 const WIDTH_MAP = { wide: '넓음', normal: '보통', narrow: '좁음' };
 
 // ============================================================
-// 점수 계산 (폴백 및 정렬용)
+// Q1~Q7 기반 점수 계산
 // ============================================================
 
 function calcScore(user, shoe) {
@@ -36,7 +35,7 @@ function calcScore(user, shoe) {
   const userWidth = WIDTH_MAP[user.foot_width];
   if (shoe.width === userWidth) score += 40;
   else if (shoe.width === '보통') score += 20;
-  else if (user.foot_width === 'wide' && shoe.width === '좁음') score -= 20;
+  else if (user.foot_width === 'wide'   && shoe.width === '좁음') score -= 20;
   else if (user.foot_width === 'narrow' && shoe.width === '넓음') score -= 10;
 
   // 쿠션 (30점)
@@ -54,18 +53,15 @@ function calcScore(user, shoe) {
 
   // 우선순위 보너스
   for (const p of user.priorities || []) {
-    if (p === 'speed' && shoe.weight <= 2) score += 5;
-    if (p === 'protection' && shoe.cushion >= 4) score += 5;
-    if (p === 'comfort' && shoe.fit >= 4) score += 5;
-    if (p === 'breathability' && shoe.breathability >= 4) score += 5;
+    if (p === 'speed'        && shoe.weight <= 2)        score += 5;
+    if (p === 'protection'   && shoe.cushion >= 4)       score += 5;
+    if (p === 'comfort'      && shoe.fit >= 4)           score += 5;
+    if (p === 'breathability'&& shoe.breathability >= 4) score += 5;
   }
 
   return Math.max(0, Math.min(100, score));
 }
 
-/**
- * 폴백용 간단 추천 이유 생성
- */
 function fallbackReason(user, shoe) {
   const parts = [];
   const userWidth = WIDTH_MAP[user.foot_width];
@@ -78,28 +74,23 @@ function fallbackReason(user, shoe) {
 }
 
 // ============================================================
-// 1차 필터링
+// 1차 필터링 (Q1~Q7)
 // ============================================================
 
 function filterCandidates(user, shoes) {
   const cap = BUDGET_MAX[user.budget] ?? Infinity;
-  const userWidth = WIDTH_MAP[user.foot_width];
 
   let filtered = shoes.filter((s) => {
-    // 예산 초과 제외
     if (s.price > cap) return false;
-    // 발볼 반대 극단 제외 (wide ↔ narrow)
-    if (user.foot_width === 'wide' && s.width === '좁음') return false;
+    if (user.foot_width === 'wide'   && s.width === '좁음') return false;
     if (user.foot_width === 'narrow' && s.width === '넓음') return false;
     return true;
   });
 
-  // 필터 후 너무 적으면 예산만 적용한 버전으로 재시도
   if (filtered.length < 3) {
     filtered = shoes.filter((s) => s.price <= cap);
   }
 
-  // 점수 순 정렬 후 상위 10개만 Claude에 전달 (토큰 절약)
   return filtered
     .map((s) => ({ ...s, _score: calcScore(user, s) }))
     .sort((a, b) => b._score - a._score)
@@ -107,27 +98,68 @@ function filterCandidates(user, shoes) {
 }
 
 // ============================================================
-// 메인 추천 함수
+// 대회 코스 기반 점수 계산 (Feature 5)
 // ============================================================
 
-/**
- * @param {object} userProfile
- * @param {object[]} allShoes - sheetsService.getAllShoes() 결과
- * @returns {Promise<object[]>} recommendations 배열 (rank, match_score, reason 포함)
- */
+function calcRaceScore(race, shoe) {
+  let score = 50;
+
+  // 코스 난이도 → 쿠션·안정성 중시
+  if (race.difficulty >= 4) {
+    score += (shoe.cushion - 3) * 8;
+    score += (shoe.fit - 3) * 5;
+  } else if (race.difficulty <= 2) {
+    // 빠른 코스 → 경량 중시
+    score += (4 - shoe.weight) * 8;
+  } else {
+    score += (shoe.cushion - 3) * 4;
+    score += (4 - shoe.weight) * 4;
+  }
+
+  // 고온 → 통기성 중시
+  if (race.avg_temp_celsius >= 20) {
+    score += (shoe.breathability - 3) * 5;
+  }
+
+  // 고도 차이 → 쿠션·착화감 중시
+  if (race.elevation_gain_m >= 150) {
+    score += (shoe.cushion - 3) * 5;
+    score += (shoe.fit - 3) * 3;
+  }
+
+  // shoe_priority_hint 키워드 매칭 보너스
+  const hints = (race.shoe_priority_hint || '').toLowerCase();
+  if (hints.includes('경량') && shoe.weight <= 2)        score += 8;
+  if (hints.includes('쿠션') && shoe.cushion >= 4)       score += 8;
+  if (hints.includes('안정성') && shoe.fit >= 4)         score += 6;
+  if (hints.includes('통기성') && shoe.breathability >= 4) score += 6;
+  if (hints.includes('카본') && shoe.has_carbon_plate)   score += 10;
+  if (hints.includes('반발력') && shoe.weight <= 2)      score += 6;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function raceFilterCandidates(race, shoes) {
+  return shoes
+    .map((s) => ({ ...s, _score: calcRaceScore(race, s) }))
+    .sort((a, b) => b._score - a._score)
+    .slice(0, 10);
+}
+
+// ============================================================
+// 메인 추천 함수 — Q1~Q7
+// ============================================================
+
 async function recommend(userProfile, allShoes) {
   const candidates = filterCandidates(userProfile, allShoes);
 
-  if (candidates.length === 0) {
-    return [];
-  }
+  if (candidates.length === 0) return [];
 
   let aiResults;
   try {
     aiResults = await getAiRecommendations(userProfile, candidates);
   } catch (err) {
     console.warn('[Recommend] Claude API 실패, 폴백 사용:', err.message);
-    // 폴백: 점수 상위 3개를 직접 반환
     return candidates.slice(0, 3).map((shoe, i) => ({
       rank: i + 1,
       ...shoe,
@@ -137,20 +169,53 @@ async function recommend(userProfile, allShoes) {
     }));
   }
 
-  // Claude 결과 + Shoes 메타데이터 병합
   return aiResults
     .map((ai, i) => {
       const shoe = candidates.find((s) => s.goods_no === ai.goods_no);
       if (!shoe) return null;
-      return {
-        rank: ai.rank ?? i + 1,
-        ...shoe,
-        match_score: shoe._score,
-        reason: ai.reason,
-        is_fallback: false,
-      };
+      return { rank: ai.rank ?? i + 1, ...shoe, match_score: shoe._score, reason: ai.reason, is_fallback: false };
     })
     .filter(Boolean);
 }
 
-module.exports = { recommend };
+// ============================================================
+// 메인 추천 함수 — 대회 코스 (Feature 5)
+// ============================================================
+
+async function recommendByRace(race, userProfile, allShoes) {
+  const candidates = raceFilterCandidates(race, allShoes);
+
+  if (candidates.length === 0) return [];
+
+  // 사용자 프로필이 있으면 점수에 일부 반영
+  const scoredCandidates = userProfile
+    ? candidates.map((s) => ({
+        ...s,
+        _score: Math.round(s._score * 0.7 + calcScore(userProfile, s) * 0.3),
+      })).sort((a, b) => b._score - a._score)
+    : candidates;
+
+  let aiResults;
+  try {
+    aiResults = await getAiRaceRecommendations(race, scoredCandidates, userProfile);
+  } catch (err) {
+    console.warn('[RecommendRace] Claude API 실패, 폴백 사용:', err.message);
+    return scoredCandidates.slice(0, 3).map((shoe, i) => ({
+      rank: i + 1,
+      ...shoe,
+      match_score: shoe._score,
+      reason: `${race.race_name}(${race.course_summary}) 코스에 최적화된 추천입니다.`,
+      is_fallback: true,
+    }));
+  }
+
+  return aiResults
+    .map((ai, i) => {
+      const shoe = scoredCandidates.find((s) => s.goods_no === ai.goods_no);
+      if (!shoe) return null;
+      return { rank: ai.rank ?? i + 1, ...shoe, match_score: shoe._score, reason: ai.reason, is_fallback: false };
+    })
+    .filter(Boolean);
+}
+
+module.exports = { recommend, recommendByRace };

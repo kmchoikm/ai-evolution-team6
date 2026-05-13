@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 교체 시기 계산기</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── 폼 카드 ── */
+    .calc-form {
+      background: white;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .calc-form h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text); letter-spacing: -0.2px; }
+
+    /* ── 드롭다운 ── */
+    .select-wrap { position: relative; margin-bottom: 10px; }
+    .select-wrap select, .select-wrap input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fafafa;
+      color: var(--text);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .select-wrap select:focus, .select-wrap input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+    .select-arrow {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--text-light);
+      font-size: 11px;
+    }
+    .select-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* ── 구매 날짜 행 ── */
+    .date-row { display: flex; gap: 10px; }
+    .date-row .select-wrap { flex: 1; }
+
+    /* ── km 입력 방식 선택 ── */
+    .km-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .km-mode-btn {
+      padding: 11px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .km-mode-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--text); border-width: 2px; }
+
+    /* ── 숫자 입력 ── */
+    .km-input-wrap { display: flex; align-items: center; gap: 10px; }
+    .km-input-wrap input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      font-family: inherit;
+    }
+    .km-input-wrap input:focus { outline: none; border-color: var(--primary); }
+    .km-unit { font-size: 14px; color: var(--text-light); white-space: nowrap; }
+
+    /* ── 결과 카드 ── */
+    .result-card {
+      background: white;
+      border-radius: 10px;
+      padding: 22px 18px;
+      border: 1px solid var(--border);
+    }
+    .result-shoe-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
+    .result-brand { font-size: 13px; color: var(--text-light); margin-bottom: 18px; }
+
+    /* ── 진행 바 ── */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+    .progress-bar-bg {
+      height: 14px;
+      background: #eee;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 7px;
+      transition: width 0.8s ease;
+    }
+    .fill-good        { background: #4caf50; }
+    .fill-caution     { background: #ff9800; }
+    .fill-replace_soon{ background: #f44336; }
+    .fill-replace_now { background: #b71c1c; }
+
+    /* ── 상태 배지 ── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .status-good         { background: #e8f5e9; color: #2e7d32; }
+    .status-caution      { background: #fff8e1; color: #e65100; }
+    .status-replace_soon { background: #ffebee; color: #c62828; }
+    .status-replace_now  { background: #b71c1c; color: white; }
+
+    /* ── 결과 메시지 ── */
+    .result-message {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      padding: 14px;
+      background: #f9f9f9;
+      border-radius: 10px;
+    }
+    .result-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+    .rs-item { background: var(--primary-light); border-radius: 8px; padding: 10px; text-align: center; }
+    .rs-val { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .rs-lbl { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+
+    /* ── 카본 플레이트 경고 ── */
+    .carbon-warn {
+      background: #fffbf0;
+      border-left: 3px solid var(--warning);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #8a5000;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>🔄 교체 시기 계산기</h1>
+    <p class="tagline">내 러닝화 수명이 얼마나 남았는지 확인하세요</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 신발 선택 -->
+    <div class="calc-form">
+      <h3>어떤 신발을 신고 계세요?</h3>
+      <label class="select-label">브랜드 / 모델 선택 <span class="required">*</span></label>
+      <div class="select-wrap">
+        <select id="shoe-select">
+          <option value="">신발을 선택해 주세요</option>
+        </select>
+        <span class="select-arrow">▾</span>
+      </div>
+    </div>
+
+    <!-- 구매 시점 -->
+    <div class="calc-form">
+      <h3>언제 구매하셨나요?</h3>
+      <div class="date-row">
+        <div class="select-wrap">
+          <select id="purchase-year">
+            <option value="">연도</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+        <div class="select-wrap">
+          <select id="purchase-month">
+            <option value="">월</option>
+            <option value="1">1월</option><option value="2">2월</option>
+            <option value="3">3월</option><option value="4">4월</option>
+            <option value="5">5월</option><option value="6">6월</option>
+            <option value="7">7월</option><option value="8">8월</option>
+            <option value="9">9월</option><option value="10">10월</option>
+            <option value="11">11월</option><option value="12">12월</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주행 거리 입력 -->
+    <div class="calc-form">
+      <h3>총 주행 거리를 입력해 주세요</h3>
+      <div class="km-mode-grid">
+        <button class="km-mode-btn active" id="mode-weekly" onclick="setKmMode('weekly')">
+          📅 주간 평균 거리 입력
+        </button>
+        <button class="km-mode-btn" id="mode-total" onclick="setKmMode('total')">
+          📊 총 누적 거리 직접 입력
+        </button>
+      </div>
+
+      <div id="weekly-input" class="km-input-wrap">
+        <input type="number" id="weekly-km" placeholder="예: 30" min="0" max="300" />
+        <span class="km-unit">km / 주<br><small style="font-size:10px;color:var(--text-light);">(구매일 기준 자동 계산)</small></span>
+      </div>
+      <div id="total-input" class="km-input-wrap" style="display:none;">
+        <input type="number" id="total-km" placeholder="예: 650" min="0" max="9999" />
+        <span class="km-unit">km<br><small style="font-size:10px;color:var(--text-light);">(총 누적 거리)</small></span>
+      </div>
+    </div>
+
+    <!-- 오류 영역 -->
+    <div id="calc-errors" class="errors" style="display:none;"></div>
+
+    <!-- 계산 버튼 -->
+    <button class="btn-submit" id="calc-btn" onclick="calculate()">
+      교체 시기 계산하기 →
+    </button>
+
+    <!-- 결과 영역 -->
+    <div id="result-area" style="display:none; margin-top:24px;"></div>
+
+    <!-- 결과 이후 액션 -->
+    <div id="result-actions" class="actions" style="display:none; margin-top:16px;">
+      <button class="btn-secondary" onclick="location.href='home.html'">홈으로</button>
+      <button class="btn-primary"   onclick="location.href='index.html'" id="recommend-link">새 신발 추천받기 →</button>
+    </div>
+
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>수명을 계산하고 있어요...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="calculator.js"></script>
+</body>
+</html>

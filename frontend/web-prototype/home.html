@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 달리는 사람의 편에서</title>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css');
+    /* ── 공통 리셋 & 변수 ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:       #111111;
+      --primary-dark:  #000000;
+      --primary-light: #f5f5f5;
+      --bg:            #f7f7f7;
+      --card:          #ffffff;
+      --text:          #111111;
+      --text-light:    #888888;
+      --border:        #e8e8e8;
+      --success:       #05c072;
+      --warning:       #ff9800;
+    }
+    body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+        'Segoe UI', 'Noto Sans KR', Roboto, 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      background: #111111;
+      color: white;
+      padding: 30px 24px 24px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 6px; letter-spacing: -0.5px; font-weight: 900; }
+    .header .tagline { font-size: 13px; opacity: 0.65; }
+
+    /* ── 컨테이너 ── */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 16px 80px;
+    }
+
+    /* ── 재방문자 배너 (기본 숨김) ── */
+    .returning-banner {
+      display: none;
+      background: white;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warning);
+    }
+    .returning-banner.visible { display: block; }
+    .returning-banner .banner-label {
+      font-size: 12px;
+      color: var(--warning);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .returning-banner .banner-shoe {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .returning-banner .banner-meta {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 14px;
+    }
+    .banner-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-banner-primary {
+      flex: 1;
+      padding: 11px 16px;
+      background: var(--warning);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      min-width: 140px;
+    }
+    .btn-banner-secondary {
+      flex: 1;
+      padding: 11px 16px;
+      background: white;
+      color: var(--text-light);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      min-width: 100px;
+    }
+    .btn-banner-secondary:hover { background: #f5f5f5; }
+
+    /* ── 메인 히어로 CTA ── */
+    .hero {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 22px;
+      text-align: center;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .hero .hero-badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--text-light);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hero h2 {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--text);
+      line-height: 1.3;
+      letter-spacing: -0.5px;
+    }
+    .hero p {
+      font-size: 14px;
+      color: var(--text-light);
+      margin-bottom: 22px;
+      line-height: 1.6;
+    }
+    .btn-hero {
+      display: block;
+      width: 100%;
+      padding: 17px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.12s;
+      letter-spacing: -0.3px;
+      font-family: inherit;
+    }
+    .btn-hero:hover { background: var(--primary-dark); }
+    .hero-hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    /* ── 섹션 제목 ── */
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-light);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ── 보조 서비스 카드 그리드 ── */
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .service-card {
+      background: white;
+      border-radius: 10px;
+      padding: 18px 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .service-card:hover {
+      border-color: #aaaaaa;
+      background: #fafafa;
+    }
+    .service-card:active { background: var(--primary-light); }
+    .service-card .card-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .service-card .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.3;
+      letter-spacing: -0.2px;
+    }
+    .service-card .card-desc {
+      font-size: 11px;
+      color: var(--text-light);
+      line-height: 1.4;
+    }
+    .service-card .card-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      margin-top: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── 인기 대회 섹션 ── */
+    .quick-race {
+      margin-bottom: 24px;
+    }
+    .race-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .race-scroll::-webkit-scrollbar { display: none; }
+    .race-chip {
+      flex-shrink: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .race-chip:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .race-chip .chip-flag { font-size: 15px; }
+
+    /* ── 하단 정보 카드 ── */
+    .info-card {
+      background: #111111;
+      border-radius: 10px;
+      padding: 20px 18px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .info-card .info-icon { font-size: 32px; flex-shrink: 0; }
+    .info-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px; }
+    .info-card p { font-size: 12px; opacity: 0.6; line-height: 1.5; }
+
+    /* ── 푸터 ── */
+    .footer {
+      background: #f0f0f0;
+      text-align: center;
+      padding: 18px 20px;
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── 데모 컨트롤 (개발 확인용) ── */
+    .demo-bar {
+      background: #1a1a1a;
+      color: #888888;
+      padding: 8px 16px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .demo-bar span { font-weight: 600; color: #aaaaaa; }
+    .demo-actions { display: flex; gap: 6px; }
+    .btn-demo {
+      background: #333333;
+      color: #aaaaaa;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-demo:hover { background: #444444; color: white; }
+
+    /* ── 모달 (서비스 미구현 안내) ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+    }
+    .modal-icon { font-size: 40px; margin-bottom: 12px; }
+    .modal-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .modal-box p { font-size: 14px; color: var(--text-light); line-height: 1.6; margin-bottom: 20px; }
+    .modal-close-btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 600px) {
+      .header { padding: 28px 16px 20px; }
+      .header h1 { font-size: 26px; }
+      .container { padding: 20px 12px 80px; }
+      .hero { padding: 22px 18px; }
+      .hero h2 { font-size: 20px; }
+      .btn-hero { font-size: 16px; padding: 16px; }
+      .service-grid { gap: 10px; }
+    }
+    @media (max-width: 480px) {
+      .header h1 { font-size: 22px; }
+      .hero h2 { font-size: 18px; }
+      .service-card { padding: 16px 10px; }
+      .service-card .card-icon { font-size: 28px; margin-bottom: 8px; }
+      .service-card .card-title { font-size: 12px; }
+      .info-card { flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 360px) {
+      .service-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .service-card .card-desc { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 개발 확인용 데모 컨트롤 바 (실제 배포 시 제거) -->
+  <div class="demo-bar">
+    <span>[ 레이아웃 프리뷰 ]</span>
+    <div class="demo-actions">
+      <button class="btn-demo" onclick="simulateFirstVisit()">첫 방문자 화면</button>
+      <button class="btn-demo" onclick="simulateReturningUser()">재방문자 화면</button>
+      <button class="btn-demo" onclick="clearStorage()">localStorage 초기화</button>
+    </div>
+  </div>
+
+  <!-- 헤더 -->
+  <header class="header">
+    <h1>🏃 RunFit</h1>
+    <p class="tagline">달리는 사람의 편에서, 데이터가 말하게 한다</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 재방문자 개인화 배너 (localStorage 감지 시 표시) -->
+    <div class="returning-banner" id="returning-banner">
+      <div class="banner-label">지난번 추천</div>
+      <div class="banner-shoe" id="banner-shoe-name">젤 카야노 31</div>
+      <div class="banner-meta" id="banner-date">2025년 11월 추천 · 총 주행 거리 약 320km</div>
+      <div class="banner-actions">
+        <button class="btn-banner-primary" onclick="location.href='calculator.html'">
+          교체 시기 확인하기 →
+        </button>
+        <button class="btn-banner-secondary" onclick="goToRecommend()">
+          다시 추천받기
+        </button>
+      </div>
+    </div>
+
+    <!-- 메인 히어로 CTA -->
+    <div class="hero" id="hero-section">
+      <div class="hero-badge">AI 러닝화 추천</div>
+      <h2>7가지 질문으로<br>내 발에 딱 맞는 신발 찾기</h2>
+      <p>거리·발볼·쿠션·예산을 분석해<br>수천 개 리뷰 데이터 기반으로 추천합니다</p>
+      <button class="btn-hero" onclick="goToRecommend()">
+        내 러닝화 추천받기 →
+      </button>
+      <p class="hero-hint">약 3분 소요 · 무료</p>
+    </div>
+
+    <!-- 보조 서비스 카드 -->
+    <div class="section-label">다른 서비스</div>
+    <div class="service-grid">
+
+      <div class="service-card" onclick="location.href='calculator.html'">
+        <span class="card-icon">🔄</span>
+        <div class="card-title">교체 시기<br>계산기</div>
+        <div class="card-desc">내 신발 수명<br>얼마나 남았나</div>
+        <span class="card-badge">무료</span>
+      </div>
+
+      <div class="service-card" onclick="location.href='race.html'">
+        <span class="card-icon">🏁</span>
+        <div class="card-title">대회 코스<br>맞춤 추천</div>
+        <div class="card-desc">JTBC·보스턴<br>코스 분석</div>
+        <span class="card-badge">NEW</span>
+      </div>
+
+      <div class="service-card" onclick="location.href='winners.html'">
+        <span class="card-icon">⭐</span>
+        <div class="card-title">셀럽 /우승자<br>신발 탐색</div>
+        <div class="card-desc">키파초게가<br>신는 그 신발</div>
+        <span class="card-badge">NEW</span>
+      </div>
+
+    </div>
+
+    <!-- 빠른 대회 선택 -->
+    <div class="quick-race">
+      <div class="section-label">인기 대회 바로가기</div>
+      <div class="race-scroll">
+        <div class="race-chip" onclick="location.href='race.html?id=jtbc_full'">
+          <span class="chip-flag">🇰🇷</span> JTBC 서울 마라톤
+        </div>
+        <div class="race-chip" onclick="location.href='race.html?id=berlin_full'">
+          <span class="chip-flag">🇩🇪</span> 베를린 마라톤
+        </div>
+        <div class="race-chip" onclick="location.href='race.html?id=tokyo_full'">
+          <span class="chip-flag">🇯🇵</span> 도쿄 마라톤
+        </div>
+        <div class="race-chip" onclick="location.href='race.html?id=boston_full'">
+          <span class="chip-flag">🇺🇸</span> 보스턴 마라톤
+        </div>
+        <div class="race-chip" onclick="location.href='race.html?id=chuncheon_full'">
+          <span class="chip-flag">🇰🇷</span> 춘천 마라톤
+        </div>
+        <div class="race-chip" onclick="location.href='race.html?id=london_full'">
+          <span class="chip-flag">🇬🇧</span> 런던 마라톤
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 안내 카드 -->
+    <div class="info-card">
+      <div class="info-icon">📐</div>
+      <div>
+        <h3>사이즈 핏 가이드</h3>
+        <p>아식스 260mm → 뉴발란스는 몇 mm?<br>브랜드 간 사이즈 편차를 반영해 추천합니다</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 푸터 -->
+  <footer class="footer">
+    <p>powered by KAIST IMMS</p>
+    <p style="margin-top:4px; font-size:11px; opacity:0.7;">
+      본 추천은 데이터 기반 참고 정보이며, 실제 착화감은 개인차가 있습니다
+    </p>
+  </footer>
+
+  <!-- 미구현 서비스 안내 모달 -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-box">
+      <div class="modal-icon" id="modal-icon">🚧</div>
+      <h3 id="modal-title">준비 중입니다</h3>
+      <p id="modal-desc">현재 개발 중인 기능입니다.<br>곧 만나보실 수 있습니다!</p>
+      <button class="modal-close-btn" onclick="closeModal()">확인</button>
+    </div>
+  </div>
+
+  <script>
+    /* ── localStorage 키 ── */
+    const STORAGE_KEY = 'runfit_last_recommendation';
+
+    /* ── 초기 렌더링: 재방문자 여부 감지 ── */
+    function renderHome() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+
+      try {
+        const data = JSON.parse(saved);
+        const banner = document.getElementById('returning-banner');
+        const shoeName = document.getElementById('banner-shoe-name');
+        const dateMeta = document.getElementById('banner-date');
+
+        shoeName.textContent = data.goods_name || '추천 신발';
+
+        const recommended = new Date(data.recommend_date);
+        const now = new Date();
+        const diffKm = Math.round(
+          data.weekly_km_avg * ((now - recommended) / (7 * 24 * 60 * 60 * 1000))
+        );
+        const dateStr = `${recommended.getFullYear()}년 ${recommended.getMonth() + 1}월 추천`;
+        dateMeta.textContent = `${dateStr} · 총 주행 거리 약 ${diffKm}km`;
+
+        banner.classList.add('visible');
+      } catch (e) { /* 파싱 실패 시 무시 */ }
+    }
+
+    /* ── 라우팅 ── */
+    function goToRecommend() {
+      window.location.href = 'index.html';
+    }
+
+    /* ── 모달 ── */
+    const MODAL_CONTENTS = {
+      lifespan: {
+        icon: '🔄',
+        title: '러닝화 교체 시기 계산기',
+        desc: '구매 시점과 주간 러닝 거리를 입력하면\n교체 필요 여부를 알려드립니다.\n\n현재 개발 중 — 곧 출시됩니다!'
+      },
+      race: {
+        icon: '🏁',
+        title: '대회 코스 맞춤 추천',
+        desc: 'JTBC 하프, 베를린 풀코스 등\n11개 국내외 대회 코스를 분석해\n최적 러닝화를 추천합니다.\n\n현재 개발 중 — 곧 출시됩니다!'
+      },
+      celeb: {
+        icon: '⭐',
+        title: '셀럽 / 우승자 신발 탐색',
+        desc: '기성용, 키파초게 등 셀럽과\n마라톤 대회 우승자가 착용한\n신발을 탐색할 수 있습니다.\n\n현재 개발 중 — 곧 출시됩니다!'
+      }
+    };
+
+    function openModal(type) {
+      const content = MODAL_CONTENTS[type] || MODAL_CONTENTS.lifespan;
+      document.getElementById('modal-icon').textContent = content.icon;
+      document.getElementById('modal-title').textContent = content.title;
+      document.getElementById('modal-desc').style.whiteSpace = 'pre-line';
+      document.getElementById('modal-desc').textContent = content.desc;
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modal-overlay')) {
+        document.getElementById('modal-overlay').classList.remove('open');
+      }
+    }
+
+    /* ── 데모 컨트롤 함수 ── */
+    function simulateFirstVisit() {
+      localStorage.removeItem(STORAGE_KEY);
+      document.getElementById('returning-banner').classList.remove('visible');
+    }
+
+    function simulateReturningUser() {
+      const mockData = {
+        goods_name: '젤 카야노 31',
+        goods_no: '4112233',
+        recommend_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        weekly_km_avg: 25
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockData));
+      renderHome();
+    }
+
+    function clearStorage() {
+      localStorage.removeItem(STORAGE_KEY);
+      document.getElementById('returning-banner').classList.remove('visible');
+      alert('localStorage 초기화 완료');
+    }
+
+    /* ── 최초 실행 ── */
+    renderHome();
+  </script>
+
+</body>
+</html>

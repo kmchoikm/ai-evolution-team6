@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 대회 코스 맞춤 추천</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── 탭 ── */
+    .tab-bar {
+      display: flex;
+      background: white;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      background: transparent;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* ── 대회 카드 그리드 ── */
+    .race-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .race-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .race-card:hover  { border-color: #aaaaaa; background: #fafafa; }
+    .race-card.active { border-color: var(--primary); border-width: 2px; background: var(--primary-light); }
+    .race-card .rc-flag   { font-size: 20px; margin-bottom: 4px; display: block; }
+    .race-card .rc-name   { font-size: 13px; font-weight: 700; line-height: 1.35; margin-bottom: 4px; letter-spacing: -0.2px; }
+    .race-card .rc-meta   { font-size: 11px; color: var(--text-light); display: flex; gap: 6px; flex-wrap: wrap; }
+    .rc-diff-bar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-top: 6px;
+    }
+    .diff-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--border);
+    }
+    .diff-dot.filled { background: var(--primary); }
+
+    /* ── 코스 상세 카드 ── */
+    .course-detail {
+      background: white;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--primary);
+    }
+    .course-detail h3 { font-size: 16px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .course-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-item {
+      background: var(--primary-light);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-item .stat-val { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+    .stat-item .stat-lbl { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+    .course-summary-text {
+      font-size: 13px;
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      background: #f7f7f7;
+      padding: 10px 12px;
+      border-radius: 6px;
+    }
+    .hint-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+    .hint-tag {
+      background: var(--primary-light);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    /* ── 코스 타입 선택 ── */
+    .course-type-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .ct-btn {
+      flex: 1;
+      padding: 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .ct-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--text); }
+    .ct-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── 개인화 토글 ── */
+    .personalize-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--primary-light);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .toggle-switch {
+      width: 38px; height: 21px;
+      background: #cccccc;
+      border-radius: 11px;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-switch.on { background: var(--primary); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 17px; height: 17px;
+      background: white;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      transition: left 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .toggle-switch.on::after { left: 19px; }
+    .personalize-toggle .toggle-text { font-size: 13px; font-weight: 600; color: var(--text); }
+    .personalize-toggle .toggle-sub  { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+
+    /* ── 결과 카드 ── */
+    .results-section { margin-top: 8px; }
+    .results-section h3 { font-size: 17px; margin-bottom: 12px; }
+
+    /* ── 반응형 ── */
+    @media (max-width: 480px) {
+      .race-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .race-card { padding: 12px 10px; }
+      .race-card .rc-name { font-size: 12px; }
+      .course-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 360px) {
+      .race-grid { grid-template-columns: 1fr 1fr; }
+      .course-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>🏁 대회 코스 맞춤 추천</h1>
+    <p class="tagline">코스 특성을 분석해 최적의 러닝화를 찾아드립니다</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 탭: 국내 / 세계 7대 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-kr" onclick="switchTab('KR')">🇰🇷 국내 대회</button>
+      <button class="tab-btn"        id="tab-world" onclick="switchTab('WORLD')">🌍 세계 7대 메이저</button>
+    </div>
+
+    <!-- 대회 그리드 -->
+    <div id="race-grid" class="race-grid"></div>
+
+    <!-- 코스 상세 + 추천 (선택 후 표시) -->
+    <div id="course-section" style="display:none;">
+
+      <div class="course-detail" id="course-detail"></div>
+
+      <!-- 코스 타입 선택 -->
+      <div class="course-type-row" id="course-type-row"></div>
+
+      <!-- 개인화 토글 (이전 Q1~Q7 입력이 있을 때만 활성화) -->
+      <div class="personalize-toggle" id="personalize-toggle" onclick="togglePersonalize()">
+        <div class="toggle-switch" id="toggle-switch"></div>
+        <div>
+          <div class="toggle-text">내 발 조건도 함께 반영</div>
+          <div class="toggle-sub" id="toggle-sub">이전 Q1~Q7 답변을 추천에 반영합니다</div>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="recommend-btn" onclick="fetchRaceRecommendation()">
+        이 코스에 맞는 신발 추천받기 →
+      </button>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div id="results-section" class="results-section" style="display:none;">
+      <div id="results-container"></div>
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn-secondary" onclick="location.href='home.html'">홈으로</button>
+        <button class="btn-secondary" onclick="location.href='index.html'">내 조건으로 추천받기</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>코스를 분석하고 최적 신발을 찾고 있어요...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="race.js"></script>
+</body>
+</html>
