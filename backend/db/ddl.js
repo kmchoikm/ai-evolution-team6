@@ -1,31 +1,72 @@
 /**
  * RunFit Google Sheets DDL 스크립트
- * 실행: npm run db:ddl
+ * 실행 (backend/ 폴더에서):
+ *   npm run db:ddl             ← 개발 DB
+ *   npm run db:ddl -- --prod   ← 상용 DB (--prod 플래그 필수)
  *
- * - 시트(테이블)가 없을 때만 생성 + 헤더(컬럼) 설정
- * - 이미 존재하는 시트는 절대 건드리지 않음 → 기존 데이터 보존
+ * 동작 원칙:
+ *   - 시트가 없으면 신규 생성 + 헤더 설정
+ *   - 시트가 이미 있으면 누락 컬럼만 우측에 추가 (기존 데이터·컬럼 절대 수정 안 함)
+ *
+ * ⚠️  ERD 변경 시 필수:
+ *   SPEC.md §7 → 이 파일 하단 SCHEMA 객체 → npm run db:ddl 순으로 동기화
  */
 
+'use strict';
 require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
 // ============================================================
-// 스키마 정의 (컬럼 추가/변경 시 여기만 수정)
+// SCHEMA 정의 — SPEC.md §7 ERD와 항상 동기화 유지
+// 컬럼 추가·변경 시 이 객체만 수정 후 npm run db:ddl 재실행
 // ============================================================
 
-const SHOES_HEADERS = [
-  'goods_no', 'goods_name', 'brand', 'price', 'url', 'thumbnail',
-  'width', 'cushion', 'weight', 'distance',
-  'breathability', 'fit', 'summary', 'review_count_used', 'confidence',
-];
+const SCHEMA = {
 
-const LOGS_HEADERS = [
-  'log_id', 'timestamp',
-  'running_distance', 'frequency', 'foot_width', 'preferred_cushion',
-  'priorities', 'budget', 'free_text',
-  'recommended_goods_no',
-];
+  // §7.1 Sheet 1: Shoes (러닝화 메타데이터)
+  Shoes: [
+    'goods_no', 'goods_name', 'brand', 'price', 'url', 'thumbnail',
+    'width', 'cushion', 'weight', 'distance',
+    'breathability', 'fit', 'summary', 'review_count_used', 'confidence',
+    // v2.0 추가 컬럼
+    'main_color', 'accent_color',
+    'lifespan_km_min', 'lifespan_km_max', 'has_carbon_plate',
+  ],
+
+  // §7.2 Sheet 2: Logs (사용자 이용 이력) — 앱이 자동 생성, 시드 대상 아님
+  Logs: [
+    'log_id', 'timestamp',
+    'running_distance', 'frequency', 'foot_width', 'preferred_cushion',
+    'priorities', 'budget', 'free_text',
+    'recommended_goods_no',
+  ],
+
+  // §7.3 Sheet 3: Celebs (셀럽 착용 신발) — v2.0
+  Celebs: [
+    'celeb_id', 'celeb_name', 'celeb_type', 'celeb_image_url', 'goods_no', 'source_url',
+  ],
+
+  // §7.4 Sheet 4: RaceWinners (대회 우승자 착용 신발) — v2.0
+  RaceWinners: [
+    'winner_id', 'race_name', 'race_year', 'winner_name',
+    'winner_nationality', 'course_type', 'result_time', 'goods_no', 'source_url',
+  ],
+
+  // §7.5 Sheet 5: Races (대회 코스 정보) — v2.0
+  Races: [
+    'race_id', 'race_name', 'country', 'city', 'course_type',
+    'typical_month', 'avg_temp_celsius', 'surface_type', 'elevation_gain_m',
+    'difficulty', 'course_summary', 'shoe_priority_hint',
+    'is_world_major', 'is_active',
+  ],
+
+  // §7.6 Sheet 6: SizeGuide (브랜드별 사이즈 가이드) — v2.0
+  SizeGuide: [
+    'size_guide_id', 'brand', 'model_name',
+    'sizing_tendency', 'width_tendency', 'size_adjust_mm', 'fit_note',
+  ],
+};
 
 // ============================================================
 // 유틸
@@ -39,15 +80,32 @@ function validateEnv() {
   }
 }
 
-// 시트가 없을 때만 생성 — 있으면 데이터/헤더 그대로 보존
-async function ensureSheet(doc, title, headers) {
-  if (doc.sheetsByTitle[title]) {
-    console.log(`  ✓ "${title}" 시트 이미 존재 — 건드리지 않음`);
+/**
+ * 시트가 없으면 생성, 있으면 누락 컬럼만 우측 추가.
+ * 기존 데이터·컬럼 순서는 절대 변경하지 않는다.
+ */
+async function ensureSheet(doc, title, expectedHeaders) {
+  let sheet = doc.sheetsByTitle[title];
+
+  if (!sheet) {
+    sheet = await doc.addSheet({ title });
+    await sheet.setHeaderRow(expectedHeaders);
+    console.log(`  ✅ "${title}" 시트 신규 생성 + 헤더 ${expectedHeaders.length}개 설정`);
     return;
   }
-  const sheet = await doc.addSheet({ title });
-  await sheet.setHeaderRow(headers);
-  console.log(`  ✓ "${title}" 시트 새로 생성 + 헤더 설정 완료`);
+
+  // 기존 시트: 현재 헤더 로드 후 누락 컬럼만 추가
+  await sheet.loadHeaderRow();
+  const existing = sheet.headerValues || [];
+  const missing = expectedHeaders.filter((h) => !existing.includes(h));
+
+  if (missing.length === 0) {
+    console.log(`  ✓  "${title}" 컬럼 최신 상태 (${existing.length}개) — 변경 없음`);
+    return;
+  }
+
+  await sheet.setHeaderRow([...existing, ...missing]);
+  console.log(`  ✅ "${title}" 컬럼 ${missing.length}개 추가: ${missing.join(', ')}`);
 }
 
 // ============================================================
@@ -55,18 +113,23 @@ async function ensureSheet(doc, title, headers) {
 // ============================================================
 
 async function main() {
-  console.log('\n🏗️  RunFit Google Sheets DDL 시작\n');
+  const isProdFlag = process.argv.includes('--prod');
+  const PROD_ID = '1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4';
+  const isProdEnv = process.env.SPREADSHEET_ID === PROD_ID;
 
+  console.log('\n🏗️  RunFit Google Sheets DDL 시작\n');
   validateEnv();
 
-  const PROD_ID = '1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4';
-  const isProd = process.env.SPREADSHEET_ID === PROD_ID;
-  console.log(`⚠️  대상 DB: ${isProd ? '🔴 상용(PRODUCTION)' : '🟢 개발(DEVELOPMENT)'}`);
-  console.log(`   SPREADSHEET_ID: ${process.env.SPREADSHEET_ID}\n`);
-  if (isProd) {
-    console.error('❌ 상용 DB에 DDL을 실행할 수 없습니다. 중단합니다.');
+  // 상용 DB 실행 시 --prod 플래그 필수 (실수 방지)
+  if (isProdEnv && !isProdFlag) {
+    console.error('❌ 상용 DB에 DDL을 실행하려면 --prod 플래그가 필요합니다.');
+    console.error('   예: npm run db:ddl -- --prod');
     process.exit(1);
   }
+
+  const envLabel = isProdEnv ? '🔴 상용(PRODUCTION)' : '🟢 개발(DEVELOPMENT)';
+  console.log(`⚠️  대상 DB: ${envLabel}`);
+  console.log(`   SPREADSHEET_ID: ${process.env.SPREADSHEET_ID}\n`);
 
   const auth = new JWT({
     email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -78,11 +141,12 @@ async function main() {
   await doc.loadInfo();
   console.log(`📄 스프레드시트: "${doc.title}"\n`);
 
-  console.log('[1/2] Shoes 시트 확인 중...');
-  await ensureSheet(doc, 'Shoes', SHOES_HEADERS);
-
-  console.log('[2/2] Logs 시트 확인 중...');
-  await ensureSheet(doc, 'Logs', LOGS_HEADERS);
+  const sheetNames = Object.keys(SCHEMA);
+  for (let i = 0; i < sheetNames.length; i++) {
+    const name = sheetNames[i];
+    console.log(`[${i + 1}/${sheetNames.length}] ${name} 시트 확인 중...`);
+    await ensureSheet(doc, name, SCHEMA[name]);
+  }
 
   console.log('\n✅ DDL 완료!');
   console.log(`👉 확인: https://docs.google.com/spreadsheets/d/${process.env.SPREADSHEET_ID}\n`);

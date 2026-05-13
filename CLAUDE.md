@@ -63,7 +63,17 @@ NODE_ENV=development
 npm run setup
 ```
 
-**Step 2 — FE + BE 동시 실행**
+**Step 2 — DB 구조 및 초기 데이터 설정 (최초 1회)**
+```bash
+cd backend
+npm run db:ddl   # 시트(테이블) 생성 — 없는 시트만 생성, 기존 데이터 보존
+npm run db:dml   # 샘플 데이터 삽입 — 데이터 없는 시트에만 삽입
+```
+
+> DB 스크립트는 반드시 `backend/` 폴더에서 실행해야 한다 (`backend/.env` 로드 경로 때문).
+> 상용 DB 대상 실행 시 `--prod` 플래그 추가: `npm run db:ddl -- --prod`
+
+**Step 3 — FE + BE 동시 실행**
 ```bash
 npm run dev
 ```
@@ -79,6 +89,7 @@ npm run dev
 - `포트 이미 사용 중(EADDRINUSE)` 오류 → `netstat -ano | findstr :3000` 으로 PID 확인 후 종료
 - `Cannot find module` 오류 → `npm run setup` 재실행
 - Google Sheets 연결 실패 → `backend/.env` 파일의 환경변수 값 확인
+- `npm run db:ddl` 실패 → `backend/.env` 존재 여부 및 환경변수 값 확인
 
 ---
 
