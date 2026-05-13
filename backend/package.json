@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "init-sheets": "node scripts/init-sheets.js"
+    "db:ddl": "node db/ddl.js",
+    "db:seed": "node db/dml.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",

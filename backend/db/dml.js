@@ -1,19 +1,18 @@
 /**
- * Google Sheets DDL 초기화 스크립트
- * 실행: npm run init-sheets
+ * RunFit Google Sheets DML 시드 스크립트
+ * 실행: npm run db:seed           ← Shoes에 데이터가 없을 때만 삽입
+ *        npm run db:seed -- --force ← 기존 데이터와 무관하게 샘플 데이터 추가
  *
- * 수행 작업:
- *   1. Shoes 시트 생성 및 헤더 설정
- *   2. Shoes 샘플 데이터 10개 삽입
- *   3. Logs  시트 생성 및 헤더 설정
+ * - 구글시트가 마스터 데이터 → 기본값은 데이터가 있으면 건너뜀 (멱등성 보장)
+ * - --force: 기존 데이터 삭제 없이 샘플 행만 추가 (테스트 목적)
  */
 
-require('dotenv').config(); // backend/.env (npm run 실행 시 CWD = backend/)
+require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
 // ============================================================
-// 스키마 정의
+// 샘플 데이터 (product_profiles 기반 초기 러닝화 10종)
 // ============================================================
 
 const SHOES_HEADERS = [
@@ -21,17 +20,6 @@ const SHOES_HEADERS = [
   'width', 'cushion', 'weight', 'distance',
   'breathability', 'fit', 'summary', 'review_count_used', 'confidence',
 ];
-
-const LOGS_HEADERS = [
-  'log_id', 'timestamp',
-  'running_distance', 'frequency', 'foot_width', 'preferred_cushion',
-  'priorities', 'budget', 'free_text',
-  'recommended_goods_no',
-];
-
-// ============================================================
-// 샘플 데이터 (product_profiles.json 기반)
-// ============================================================
 
 const SAMPLE_SHOES = [
   { goods_no: '5005842', goods_name: '맥시마이저 26 (오프 화이트)', brand: '미즈노',   price: 59000,  url: 'https://www.musinsa.com/products/5005842', thumbnail: '', width: '보통', cushion: 4, weight: 2, distance: '중거리', breathability: 4, fit: 5, summary: '가성비 좋은 데일리 러닝화, 쿠션감 우수',       review_count_used: 20, confidence: 'high'   },
@@ -58,38 +46,25 @@ function validateEnv() {
   }
 }
 
-async function getOrCreateSheet(doc, title) {
-  let sheet = doc.sheetsByTitle[title];
-  if (sheet) {
-    console.log(`  ✓ "${title}" 시트 기존 존재 — 초기화 후 재설정`);
-    await sheet.clear();
-  } else {
-    sheet = await doc.addSheet({ title });
-    console.log(`  ✓ "${title}" 시트 새로 생성`);
-  }
-  return sheet;
-}
-
 // ============================================================
 // 메인
 // ============================================================
 
 async function main() {
-  console.log('\n🚀 RunFit Google Sheets 초기화 시작\n');
+  const isForce = process.argv.includes('--force');
+  console.log(`\n🌱 RunFit Google Sheets DML 시드 시작 ${isForce ? '(--force 모드)' : ''}\n`);
 
   validateEnv();
 
-  // 실수로 상용 DB를 초기화하는 사고 방지용 경고
   const PROD_ID = '1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4';
   const isProd = process.env.SPREADSHEET_ID === PROD_ID;
   console.log(`⚠️  대상 DB: ${isProd ? '🔴 상용(PRODUCTION)' : '🟢 개발(DEVELOPMENT)'}`);
   console.log(`   SPREADSHEET_ID: ${process.env.SPREADSHEET_ID}\n`);
   if (isProd) {
-    console.error('❌ 상용 DB에 init-sheets를 실행하면 기존 데이터가 삭제됩니다. 중단합니다.');
+    console.error('❌ 상용 DB에 DML 시드를 실행할 수 없습니다. 중단합니다.');
     process.exit(1);
   }
 
-  // 인증
   const auth = new JWT({
     email: process.env.GOOGLE_CLIENT_EMAIL,
     key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
@@ -100,28 +75,42 @@ async function main() {
   await doc.loadInfo();
   console.log(`📄 스프레드시트: "${doc.title}"\n`);
 
-  // ── Shoes 시트 ──────────────────────────────────────────
-  console.log('[1/2] Shoes 시트 설정 중...');
-  const shoesSheet = await getOrCreateSheet(doc, 'Shoes');
-  await shoesSheet.setHeaderRow(SHOES_HEADERS);
+  const shoesSheet = doc.sheetsByTitle['Shoes'];
+  if (!shoesSheet) {
+    console.error('❌ Shoes 시트가 없습니다. 먼저 npm run db:ddl 을 실행하세요.');
+    process.exit(1);
+  }
 
-  const shoeRows = SAMPLE_SHOES.map((shoe) =>
+  // 헤더 중복 등 시트 구조 이상 시 getRows()가 throw할 수 있으므로 방어 처리
+  let existingRowCount = 0;
+  try {
+    const existingRows = await shoesSheet.getRows();
+    existingRowCount = existingRows.length;
+  } catch {
+    // 헤더 파싱 실패 = 시트가 이미 팀원에 의해 커스텀 설정됨 → 건드리지 않음
+    console.log('  ⏭️  Shoes 시트 헤더 파싱 불가 (커스텀 구조). 건너뜁니다.\n');
+    console.log('✅ DML 완료 (삽입 없음)');
+    return;
+  }
+
+  if (existingRowCount > 0 && !isForce) {
+    console.log(`  ⏭️  Shoes 시트에 이미 ${existingRowCount}개 행이 있습니다. 건너뜁니다.`);
+    console.log('     강제 삽입이 필요하면: npm run db:seed -- --force\n');
+    console.log('✅ DML 완료 (삽입 없음)');
+    return;
+  }
+
+  const rows = SAMPLE_SHOES.map((shoe) =>
     SHOES_HEADERS.map((col) => shoe[col] ?? '')
   );
-  await shoesSheet.addRows(shoeRows);
+  await shoesSheet.addRows(rows);
   console.log(`  ✓ 샘플 데이터 ${SAMPLE_SHOES.length}개 삽입 완료\n`);
 
-  // ── Logs 시트 ───────────────────────────────────────────
-  console.log('[2/2] Logs 시트 설정 중...');
-  const logsSheet = await getOrCreateSheet(doc, 'Logs');
-  await logsSheet.setHeaderRow(LOGS_HEADERS);
-  console.log('  ✓ 헤더 설정 완료 (데이터는 백엔드 운영 중 자동 기록)\n');
-
-  console.log('✅ 초기화 완료!');
+  console.log('✅ DML 완료!');
   console.log(`👉 확인: https://docs.google.com/spreadsheets/d/${process.env.SPREADSHEET_ID}\n`);
 }
 
 main().catch((err) => {
-  console.error('\n❌ 초기화 실패:', err.message);
+  console.error('\n❌ DML 실패:', err.message);
   process.exit(1);
 });
