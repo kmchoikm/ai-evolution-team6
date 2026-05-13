@@ -79,6 +79,16 @@ async function main() {
 
   validateEnv();
 
+  // 실수로 상용 DB를 초기화하는 사고 방지용 경고
+  const PROD_ID = '1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4';
+  const isProd = process.env.SPREADSHEET_ID === PROD_ID;
+  console.log(`⚠️  대상 DB: ${isProd ? '🔴 상용(PRODUCTION)' : '🟢 개발(DEVELOPMENT)'}`);
+  console.log(`   SPREADSHEET_ID: ${process.env.SPREADSHEET_ID}\n`);
+  if (isProd) {
+    console.error('❌ 상용 DB에 init-sheets를 실행하면 기존 데이터가 삭제됩니다. 중단합니다.');
+    process.exit(1);
+  }
+
   // 인증
   const auth = new JWT({
     email: process.env.GOOGLE_CLIENT_EMAIL,

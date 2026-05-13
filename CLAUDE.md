@@ -40,13 +40,21 @@
 ### backend/.env 파일 세팅 (최초 1회)
 `.env.example` 파일을 복사해서 `backend/.env` 를 만들고, 아래 값을 팀장(kmchoikm@gmail.com)에게 받아서 채운다:
 ```
-SPREADSHEET_ID=1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4
+# 개발용 Google Sheet (로컬 전용 — 상용 DB와 분리됨)
+SPREADSHEET_ID=1XmcpXyod39ccYjiEAQjevBa0WvbIaSM0DA8L6-dLqr0
 GOOGLE_CLIENT_EMAIL=<팀장에게 받기>
 GOOGLE_PRIVATE_KEY=<팀장에게 받기>
 ANTHROPIC_API_KEY=<팀장에게 받기>
 PORT=3000
 NODE_ENV=development
 ```
+
+> **환경 분리 정책** — 로컬 `.env`는 개발 DB, 상용(Railway)은 Railway 대시보드 환경변수로 별도 관리
+>
+> | 환경 | SPREADSHEET_ID | 설정 위치 |
+> |------|----------------|-----------|
+> | 로컬 개발 | `1XmcpXyod39ccYjiEAQjevBa0WvbIaSM0DA8L6-dLqr0` | `backend/.env` |
+> | 상용 (Railway) | `1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4` | Railway 대시보드 |
 
 ### 실행 순서 (매번)
 
