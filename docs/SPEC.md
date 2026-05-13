@@ -22,6 +22,7 @@
 | v2.2 | 2026-05-14 | 수정 | §1.2 유효성 검증에 Q5·Q7 검증 항목 추가 | kmchoikm |
 | v2.3 | 2026-05-14 | 수정 | §5.3 홈 화면 허브 구조 — §1.0 블록 다이어그램·§1.1 시나리오와 1:1 정합성 맞춰 재작성 | kmchoikm |
 | v2.3 | 2026-05-14 | 수정 | §7 ERD 동기화 정책 추가 — §7이 단일 진실 소스, ddl.js·dml.js 동기화 규칙 명시 | kmchoikm |
+| v2.4 | 2026-05-14 | 수정 | §3 FE 기술 스택 변경: React+Vite+Tailwind → Vanilla HTML/CSS/JS+Custom CSS+sessionStorage; §4 아키텍처 표 동기화; §1.4·§5.4 "컴포넌트 재사용" → "렌더링 함수 재사용" | kmchoikm |
 | v2.1 | 2026-05-13 | 구조 개선 | §3 기술 스택을 §5 앞으로 이동 (§3↔§5 번호 교환). §3.X → §5.X 전체 참조 갱신 | kmchoikm |
 | v2.1 | 2026-05-13 | 구조 개선 | §6 API 명세 전면 재작성 — 표준 포맷(설명·시나리오·필드·요청·응답·예시) 적용 | kmchoikm |
 | v2.1 | 2026-05-13 | 삭제 | `docs/SEED_DATA.md` 제거 — `backend/db/dml.js`를 단일 시드 소스로 확정 | kmchoikm |
@@ -184,7 +185,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 
 **[셀럽 탭]**
 1. 셀럽 카드 목록 표시 (이미지·이름·유형: 운동선수·인플루언서·유튜버 등)
-2. 셀럽 선택 → 해당 셀럽 착용 신발 카드 목록 (기존 추천 결과 카드 컴포넌트 재사용)
+2. 셀럽 선택 → 해당 셀럽 착용 신발 카드 목록 (기존 결과 카드 렌더링 함수 재사용)
 
 **[대회 우승자 탭]**
 1. 대회명·연도 필터 → 우승자 카드 목록 (이름·기록·국적)
@@ -240,9 +241,9 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 ### 3. 기술 스택 (Tech Stack)
 
 * **Frontend:**
-  * **Framework:** React.js (Vite 기반)
-  * **Styling:** Tailwind CSS (빠른 모바일 UI 컴포넌트 구성)
-  * **State Management:** React Context API (단순한 스텝 폼 상태 관리)
+  * **Framework:** Vanilla HTML / CSS / JavaScript (ES6+) — 프레임워크 미사용
+  * **Styling:** Custom CSS (Mobile-First, 반응형)
+  * **State Management:** sessionStorage (페이지 간 상태 전달)
 * **Backend (WAS):**
   * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
   * **API Client:** Axios (외부 API 통신용)
@@ -260,7 +261,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 | 레이어 | 구성 요소 | 기술 스택 |
 |---|---|---|
-| **Client** | Mobile Web Browser | React / Vercel |
+| **Client** | Mobile Web Browser | Vanilla JS / Vercel |
 | **WAS** | Backend / API Server | Node.js Express |
 | **WAS** | LLM 처리 로직 | Claude Logic |
 | **WAS** | DB 연결 모듈 | Google Sheets API |
@@ -430,7 +431,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 **UI 흐름**
 
-홈 "셀럽/우승자" 카드 → 셀럽 탭 선택 → 셀럽 카드 목록(이미지·이름·유형) → 셀럽 선택 → 착용 신발 카드 (기존 결과 카드 컴포넌트 재사용)
+홈 "셀럽/우승자" 카드 → 셀럽 탭 선택 → 셀럽 카드 목록(이미지·이름·유형) → 셀럽 선택 → 착용 신발 카드 (기존 결과 카드 렌더링 함수 재사용)
 
 ---
 
