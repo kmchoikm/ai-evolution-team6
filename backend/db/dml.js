@@ -263,6 +263,46 @@ function validateEnv() {
   }
 }
 
+/** 0-based 컬럼 인덱스 → 스프레드시트 열 문자 (0→A, 25→Z, 26→AA ...) */
+function colIndexToLetter(idx) {
+  let letter = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const mod = (n - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
+/**
+ * 헤더 행의 중복 셀을 빈 문자열로 치환하여 loadHeaderRow() 오류를 방지한다.
+ * google-spreadsheet는 빈 헤더 셀을 무시하므로 기존 데이터 컬럼 매핑에 영향 없음.
+ */
+async function repairDuplicateHeaders(sheet) {
+  const readCols = sheet.columnCount;
+  await sheet.loadCells(`A1:${colIndexToLetter(readCols - 1)}1`);
+
+  const seen = new Set();
+  let fixed = false;
+
+  for (let i = 0; i < readCols; i++) {
+    const cell = sheet.getCell(0, i);
+    const val = cell.value;
+    if (!val) break;
+    const key = String(val);
+    if (seen.has(key)) {
+      cell.value = '';
+      fixed = true;
+      console.log(`  🔧 "${sheet.title}" 중복 헤더 "${key}" 제거 (열 ${i + 1})`);
+    } else {
+      seen.add(key);
+    }
+  }
+
+  if (fixed) await sheet.saveUpdatedCells();
+}
+
 /**
  * 시트에 데이터가 없을 때만 삽입 (멱등성 보장).
  * --force 플래그 시 기존 데이터 유무와 무관하게 addRows 실행.
@@ -279,12 +319,15 @@ async function seedSheet(doc, sheetTitle, headers, data, isForce) {
     return;
   }
 
+  // 중복 헤더가 있으면 제거 후 진행
+  await repairDuplicateHeaders(sheet);
+
   let existingRowCount = 0;
   try {
     const existingRows = await sheet.getRows();
     existingRowCount = existingRows.length;
-  } catch {
-    console.log(`  ⏭️  "${sheetTitle}" 헤더 파싱 불가 (커스텀 구조). 건너뜁니다.`);
+  } catch (err) {
+    console.log(`  ⏭️  "${sheetTitle}" 헤더 파싱 불가: ${err.message}. 건너뜁니다.`);
     return;
   }
 

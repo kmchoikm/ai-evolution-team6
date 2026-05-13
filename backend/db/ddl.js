@@ -80,9 +80,24 @@ function validateEnv() {
   }
 }
 
+/** 0-based 컬럼 인덱스 → 스프레드시트 열 문자 (0→A, 25→Z, 26→AA ...) */
+function colIndexToLetter(idx) {
+  let letter = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const mod = (n - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
 /**
  * 시트가 없으면 생성, 있으면 누락 컬럼만 우측 추가.
  * 기존 데이터·컬럼 순서는 절대 변경하지 않는다.
+ *
+ * loadHeaderRow() 대신 loadCells()로 raw 접근 —
+ * 기존 시트에 중복 헤더가 있어도 오류 없이 처리함.
  */
 async function ensureSheet(doc, title, expectedHeaders) {
   let sheet = doc.sheetsByTitle[title];
@@ -94,17 +109,39 @@ async function ensureSheet(doc, title, expectedHeaders) {
     return;
   }
 
-  // 기존 시트: 현재 헤더 로드 후 누락 컬럼만 추가
-  await sheet.loadHeaderRow();
-  const existing = sheet.headerValues || [];
-  const missing = expectedHeaders.filter((h) => !existing.includes(h));
+  // 기존 시트: raw cell 접근으로 헤더 행 읽기 (중복 헤더 오류 우회)
+  const readCols = sheet.columnCount;
+  await sheet.loadCells(`A1:${colIndexToLetter(readCols - 1)}1`);
+
+  const existing = [];
+  for (let i = 0; i < readCols; i++) {
+    const val = sheet.getCell(0, i).value;
+    if (!val) break;
+    existing.push(String(val));
+  }
+
+  // 중복 제거 기준으로 누락 컬럼 계산
+  const uniqueExisting = [...new Set(existing)];
+  const missing = expectedHeaders.filter((h) => !uniqueExisting.includes(h));
 
   if (missing.length === 0) {
-    console.log(`  ✓  "${title}" 컬럼 최신 상태 (${existing.length}개) — 변경 없음`);
+    console.log(`  ✓  "${title}" 컬럼 최신 상태 (${uniqueExisting.length}개) — 변경 없음`);
     return;
   }
 
-  await sheet.setHeaderRow([...existing, ...missing]);
+  // 누락 컬럼 추가: 시트 열 수 부족 시 resize 후 재로드
+  const startCol = existing.length;
+  const neededCols = startCol + missing.length;
+
+  if (neededCols > sheet.columnCount) {
+    await sheet.resize({ columnCount: neededCols });
+    await sheet.loadCells(`A1:${colIndexToLetter(neededCols - 1)}1`);
+  }
+
+  for (let i = 0; i < missing.length; i++) {
+    sheet.getCell(0, startCol + i).value = missing[i];
+  }
+  await sheet.saveUpdatedCells();
   console.log(`  ✅ "${title}" 컬럼 ${missing.length}개 추가: ${missing.join(', ')}`);
 }
 
