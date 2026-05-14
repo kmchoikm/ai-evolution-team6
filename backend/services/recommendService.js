@@ -127,8 +127,8 @@ async function recommend(userProfile, allShoes) {
     aiResults = await getAiRecommendations(userProfile, candidates);
   } catch (err) {
     console.warn('[Recommend] Claude API 실패, 폴백 사용:', err.message);
-    // 폴백: 점수 상위 3개를 직접 반환
-    return candidates.slice(0, 3).map((shoe, i) => ({
+    // 폴백: 점수 상위 5개를 직접 반환
+    return candidates.slice(0, 5).map((shoe, i) => ({
       rank: i + 1,
       ...shoe,
       match_score: shoe._score,

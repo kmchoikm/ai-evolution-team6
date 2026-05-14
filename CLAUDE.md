@@ -15,7 +15,7 @@
 ## 3. 바이브 코딩 및 코드 작성 원칙 (Coding Guidelines)
 
 * **완전한 코드 제공:** 코드를 수정할 때 "나머지 부분은 동일함" 같은 생략(Placeholder)을 지양하고, 복사-붙여넣기가 가능하도록 완전한 형태의 함수나 파일 전체를 제공한다.
-* **단일 책임 원칙 (SRP):** 모든 컴포넌트와 비즈니스 로직(특히 LLM 연동 로직과 DB 조회 로직)은 철저히 분리하여 모듈화한다.
+* **단일 책임 원칙 (SRP):** 모든 모듈(파일)과 비즈니스 로직(특히 LLM 연동 로직과 DB 조회 로직)은 철저히 분리하여 모듈화한다.
 * **명확한 에러 핸들링:** 외부 API(LLM 엔진, Google Sheets API 등) 호출 시 통신 장애를 기본값으로 가정하고 개발하라. 실패 시 사용자에게 보여줄 명확하고 친절한 예외 UI/UX 로직을 코드에 포함해라.
 * **모바일 퍼스트 UX:** 웹페이지 기반이라도 클라이언트는 모바일 폰 대상이므로, CSS 및 UI 레이아웃 설계 시 모바일 해상도를 최우선 기준으로 작성한다.
 * **Explain the 'Why':** 코드만 덩그러니 던져주지 마세요. 이 방식을 선택한 이유와 다른 대안(Trade-off)을 시스템 설계자 관점에서 설명하세요.
@@ -33,6 +33,13 @@
 
 > 팀원이 "로컬 서버 띄워줘" 또는 "개발 환경 실행해줘" 라고 하면 아래 순서를 그대로 실행한다.
 
+### 프로젝트 구조 및 배포 환경
+
+| 레이어 | 폴더 | 기술 스택 | 배포 |
+|--------|------|-----------|------|
+| Frontend | `frontend/web-prototype/` | Vanilla HTML / CSS / JavaScript (ES6+) | Vercel |
+| Backend | `backend/` | Node.js + Express | Railway |
+
 ### 전제 조건 확인
 1. Node.js 설치 여부 확인: `node -v` → 버전이 나오면 OK, 없으면 https://nodejs.org 에서 설치 안내
 2. `backend/.env` 파일 존재 여부 확인: 없으면 아래 환경변수 세팅 안내
@@ -40,13 +47,21 @@
 ### backend/.env 파일 세팅 (최초 1회)
 `.env.example` 파일을 복사해서 `backend/.env` 를 만들고, 아래 값을 팀장(kmchoikm@gmail.com)에게 받아서 채운다:
 ```
-SPREADSHEET_ID=1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4
+# 개발용 Google Sheet (로컬 전용 — 상용 DB와 분리됨)
+SPREADSHEET_ID=1XmcpXyod39ccYjiEAQjevBa0WvbIaSM0DA8L6-dLqr0
 GOOGLE_CLIENT_EMAIL=<팀장에게 받기>
 GOOGLE_PRIVATE_KEY=<팀장에게 받기>
 ANTHROPIC_API_KEY=<팀장에게 받기>
 PORT=3000
 NODE_ENV=development
 ```
+
+> **환경 분리 정책** — 로컬 `.env`는 개발 DB, 상용(Railway)은 Railway 대시보드 환경변수로 별도 관리
+>
+> | 환경 | SPREADSHEET_ID | 설정 위치 |
+> |------|----------------|-----------|
+> | 로컬 개발 | `1XmcpXyod39ccYjiEAQjevBa0WvbIaSM0DA8L6-dLqr0` | `backend/.env` |
+> | 상용 (Railway) | `1xtcYmcHy6HnyBdRtKtZ0Redunu5DrHPJ-SwNrrVUZ-4` | Railway 대시보드 |
 
 ### 실행 순서 (매번)
 
@@ -55,7 +70,17 @@ NODE_ENV=development
 npm run setup
 ```
 
-**Step 2 — FE + BE 동시 실행**
+**Step 2 — DB 구조 및 초기 데이터 설정 (최초 1회)**
+```bash
+cd backend
+npm run db:ddl   # 시트(테이블) 생성 — 없는 시트만 생성, 기존 데이터 보존
+npm run db:dml   # 샘플 데이터 삽입 — 데이터 없는 시트에만 삽입
+```
+
+> DB 스크립트는 반드시 `backend/` 폴더에서 실행해야 한다 (`backend/.env` 로드 경로 때문).
+> 상용 DB 대상 실행 시 `--prod` 플래그 추가: `npm run db:ddl -- --prod`
+
+**Step 3 — FE + BE 동시 실행**
 ```bash
 npm run dev
 ```
@@ -71,6 +96,7 @@ npm run dev
 - `포트 이미 사용 중(EADDRINUSE)` 오류 → `netstat -ano | findstr :3000` 으로 PID 확인 후 종료
 - `Cannot find module` 오류 → `npm run setup` 재실행
 - Google Sheets 연결 실패 → `backend/.env` 파일의 환경변수 값 확인
+- `npm run db:ddl` 실패 → `backend/.env` 존재 여부 및 환경변수 값 확인
 
 ---
 
