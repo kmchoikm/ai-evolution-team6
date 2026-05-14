@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 대회 코스 추천</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <a href="home.html" class="header-back">← 홈</a>
+    <h1>🏅 대회 코스 추천</h1>
+    <p class="tagline">코스 특성에 맞는 러닝화를 찾아드립니다</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 국내 / 세계 탭 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="domestic" onclick="switchTab('domestic')">🇰🇷 국내 대회</button>
+      <button class="tab-btn" data-tab="world" onclick="switchTab('world')">🌍 세계 대회</button>
+    </div>
+
+    <!-- 대회 목록 -->
+    <div id="race-list-container"></div>
+
+    <!-- 대회 선택 후: 코스 정보 + 하프/풀 선택 -->
+    <div id="race-detail" style="display:none;">
+      <div id="race-info-card" class="race-info-card"></div>
+
+      <div class="question" style="margin-top:16px;">
+        <h3>코스 유형 선택 <span class="required">*</span></h3>
+        <div class="option-grid grid-2">
+          <label class="option-btn">
+            <input type="radio" name="course_type" value="half" />
+            <span>🏃 하프 마라톤<br><small>21.0975km</small></span>
+          </label>
+          <label class="option-btn">
+            <input type="radio" name="course_type" value="full" />
+            <span>🏅 풀 마라톤<br><small>42.195km</small></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 개인 조건 선택적 반영 -->
+      <details class="personal-toggle">
+        <summary>내 발 조건도 함께 반영하기 (선택)</summary>
+        <div class="personal-form">
+          <div class="question">
+            <h3>발볼 너비</h3>
+            <div class="option-grid grid-3">
+              <label class="option-btn"><input type="radio" name="foot_width" value="wide" /><span>넓음</span></label>
+              <label class="option-btn"><input type="radio" name="foot_width" value="normal" checked /><span>보통</span></label>
+              <label class="option-btn"><input type="radio" name="foot_width" value="narrow" /><span>좁음</span></label>
+            </div>
+          </div>
+          <div class="question">
+            <h3>예산 범위</h3>
+            <div class="option-grid grid-4">
+              <label class="option-btn"><input type="radio" name="race_budget" value="low" /><span>~7만원</span></label>
+              <label class="option-btn"><input type="radio" name="race_budget" value="mid" /><span>7~12만원</span></label>
+              <label class="option-btn"><input type="radio" name="race_budget" value="high" /><span>12~20만원</span></label>
+              <label class="option-btn"><input type="radio" name="race_budget" value="premium" /><span>20만원+</span></label>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <button id="recommend-race-btn" class="btn-submit" onclick="fetchRaceRecommendations()">
+        이 코스에 맞는 신발 추천받기 →
+      </button>
+    </div>
+
+    <!-- 추천 결과 -->
+    <div id="race-results-container"></div>
+
+    <!-- 액션 -->
+    <div id="race-actions" class="actions" style="display:none;">
+      <button onclick="resetRaceSelection()" class="btn-secondary">다른 대회 선택</button>
+      <button onclick="location.href='index.html'" class="btn-secondary">내 맞춤 추천받기</button>
+    </div>
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-message">대회 정보를 불러오는 중...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="race.js"></script>
+</body>
+</html>
