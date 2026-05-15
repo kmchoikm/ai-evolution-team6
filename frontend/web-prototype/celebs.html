@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 셀럽/우승자 착용 신발</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <a href="home.html" class="header-back">← 홈</a>
+    <h1>⭐ 셀럽 · 우승자</h1>
+    <p class="tagline">그들이 신는 러닝화를 확인하세요</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 셀럽 / 우승자 탭 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="celebs" onclick="switchTab('celebs')">⭐ 셀럽</button>
+      <button class="tab-btn" data-tab="winners" onclick="switchTab('winners')">🏆 대회 우승자</button>
+    </div>
+
+    <!-- 셀럽 탭 -->
+    <div id="celebs-panel">
+      <!-- 셀럽 유형 필터 -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-type="" onclick="filterCelebs('')">전체</button>
+        <button class="filter-btn" data-type="athlete" onclick="filterCelebs('athlete')">운동선수</button>
+        <button class="filter-btn" data-type="influencer" onclick="filterCelebs('influencer')">인플루언서</button>
+        <button class="filter-btn" data-type="youtuber" onclick="filterCelebs('youtuber')">유튜버</button>
+      </div>
+      <div id="celebs-list-container"></div>
+      <!-- 셀럽 착용 신발 결과 -->
+      <div id="celeb-shoes-container"></div>
+    </div>
+
+    <!-- 우승자 탭 -->
+    <div id="winners-panel" style="display:none;">
+      <!-- 대회명 검색 -->
+      <div class="search-bar">
+        <input type="text" id="winner-search" placeholder="대회명 검색 (예: 베를린)" class="search-input" oninput="filterWinners()" />
+      </div>
+      <div id="winners-list-container"></div>
+    </div>
+
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-message">데이터를 불러오는 중...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="celebs.js"></script>
+</body>
+</html>

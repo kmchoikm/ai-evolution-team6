@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -8,23 +8,50 @@
 </head>
 <body>
   <header class="header">
+    <a href="home.html" class="header-back">← 홈</a>
     <h1>🏃 RunFit</h1>
-    <p class="tagline">AI가 추천하신 러닝화입니다</p>
+    <p class="tagline">AI가 추천한 러닝화입니다</p>
   </header>
 
   <main class="container">
+    <!-- 프로필 요약 태그 -->
     <div class="profile-summary" id="profile-summary"></div>
 
+    <!-- 추천 결과 카드 목록 -->
     <div id="results-container"></div>
 
+    <!-- 양말 색상 추천 섹션 -->
+    <section id="socks-section" class="socks-section" style="display:none;">
+      <div class="socks-header">
+        <h2>🧦 어울리는 양말 색상</h2>
+        <p class="section-sub">TOP 1 신발 색상 기반으로 AI가 추천합니다</p>
+      </div>
+      <div id="socks-container"></div>
+
+      <!-- 러닝 코디 추천 (양말 선택 후 노출) -->
+      <div id="outfit-section" style="display:none;">
+        <div class="socks-header" style="margin-top:24px;">
+          <h2>👕 러닝 코디 추천</h2>
+          <p class="section-sub" id="outfit-sub"></p>
+        </div>
+        <div id="outfit-container"></div>
+      </div>
+    </section>
+
+    <!-- 사이즈 가이드 링크 -->
+    <div id="size-link-section" class="size-link-section" style="display:none;">
+      <a href="size.html" class="btn-size-guide">📏 사이즈 변환 가이드 →</a>
+    </div>
+
+    <!-- 액션 버튼 -->
     <div class="actions">
       <button onclick="location.href='index.html'" class="btn-secondary">다시 진단하기</button>
-      <button id="compare-btn" class="btn-secondary" style="display: none;">TOP 1 vs TOP 2 비교</button>
+      <button id="compare-btn" class="btn-secondary" style="display:none;">TOP 1 vs TOP 2 비교</button>
     </div>
   </main>
 
-  <!-- 비교 모달 -->
-  <div id="compare-modal" class="modal" style="display: none;">
+  <!-- TOP 비교 모달 -->
+  <div id="compare-modal" class="modal" style="display:none;">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">✕</button>
       <h2>상세 비교</h2>
@@ -32,16 +59,17 @@
     </div>
   </div>
 
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-message">AI가 최적의 러닝화를 찾고 있어요...</p>
+    </div>
+  </div>
+
   <footer class="footer">
     <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
   </footer>
-
-  <!-- API 응답 대기 중 로딩 오버레이 -->
-  <div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
-    <div style="width:48px;height:48px;border:5px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-    <p style="color:#fff;font-size:16px;font-weight:600;">AI가 최적의 러닝화를 찾고 있어요...</p>
-  </div>
-  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
   <script src="result.js"></script>
 </body>

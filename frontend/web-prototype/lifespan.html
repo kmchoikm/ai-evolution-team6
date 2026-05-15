@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - 러닝화 교체 계산기</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <a href="home.html" class="header-back">← 홈</a>
+    <h1>🔄 교체 계산기</h1>
+    <p class="tagline">내 러닝화, 언제 바꿔야 할까요?</p>
+  </header>
+
+  <main class="container">
+
+    <div class="intro">
+      <p>신발 모델과 사용 정보를 입력하면<br>교체 시기와 남은 수명을 알려드립니다</p>
+    </div>
+
+    <form id="lifespan-form">
+
+      <!-- 신발 검색 -->
+      <div class="question">
+        <h3>신발 모델 선택 <span class="required">*</span></h3>
+        <div class="autocomplete-wrap">
+          <input
+            type="text"
+            id="shoe-search-input"
+            class="search-input"
+            placeholder="브랜드 또는 모델명 입력 (예: 아식스, 카야노)"
+            autocomplete="off"
+            oninput="handleShoeSearch()"
+          />
+          <div id="autocomplete-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
+        </div>
+        <input type="hidden" id="selected-goods-no" />
+        <p id="selected-shoe-label" class="selected-label" style="display:none;"></p>
+      </div>
+
+      <!-- 구매 시점 -->
+      <div class="question">
+        <h3>구매 시점 <span class="required">*</span></h3>
+        <div class="date-row">
+          <select id="purchase-year" class="select-input">
+            <option value="">년도</option>
+          </select>
+          <select id="purchase-month" class="select-input">
+            <option value="">월</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 거리 입력 방식 -->
+      <div class="question">
+        <h3>누적 거리 입력 방식 <span class="required">*</span></h3>
+        <div class="option-grid grid-2">
+          <label class="option-btn">
+            <input type="radio" name="km-mode" value="weekly" onchange="switchKmMode('weekly')" />
+            <span>📅 주간 평균 거리<br><small>자동으로 계산</small></span>
+          </label>
+          <label class="option-btn">
+            <input type="radio" name="km-mode" value="total" onchange="switchKmMode('total')" />
+            <span>📊 총 누적 거리<br><small>직접 입력</small></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 주간 평균 거리 입력 -->
+      <div id="weekly-km-section" class="question" style="display:none;">
+        <h3>주간 평균 달리는 거리 (km)</h3>
+        <div class="input-row">
+          <input type="number" id="weekly-km" class="number-input" placeholder="예: 30" min="1" max="300" />
+          <span class="input-unit">km / 주</span>
+        </div>
+      </div>
+
+      <!-- 총 누적 거리 입력 -->
+      <div id="total-km-section" class="question" style="display:none;">
+        <h3>총 누적 달린 거리 (km)</h3>
+        <div class="input-row">
+          <input type="number" id="total-km" class="number-input" placeholder="예: 350" min="1" max="5000" />
+          <span class="input-unit">km 누적</span>
+        </div>
+      </div>
+
+      <!-- 에러 영역 -->
+      <div id="errors" class="errors" style="display:none;"></div>
+
+      <button type="submit" id="calc-btn" class="btn-submit">계산하기 →</button>
+    </form>
+
+    <!-- 결과 영역 -->
+    <div id="result-container"></div>
+
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>계산 중...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="lifespan.js"></script>
+</body>
+</html>
