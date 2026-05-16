@@ -205,7 +205,7 @@ function renderResult(data, fromBrand, fromModel, fromSizeMm, toBrand, toModel) 
       <button onclick="document.getElementById('size-form').reset(); document.getElementById('result-container').innerHTML=''; resetFields();" class="btn-secondary">
         다시 변환하기
       </button>
-      <a href="index.html" class="btn-primary" style="text-decoration:none;">내 러닝화 추천받기</a>
+      <a href="diagnosis.html" class="btn-primary" style="text-decoration:none;">내 러닝화 추천받기</a>
     </div>`;
 
   document.getElementById('result-container').scrollIntoView({ behavior: 'smooth', block: 'start' });

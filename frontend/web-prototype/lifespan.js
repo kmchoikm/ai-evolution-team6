@@ -232,7 +232,7 @@ function renderResult(data) {
       <p class="lifespan-message">${data.message}</p>
 
       ${data.verdict === 'replace_required' || data.verdict === 'replace_recommended'
-        ? `<a href="index.html" class="btn-submit" style="display:block;text-align:center;text-decoration:none;margin-top:16px;">
+        ? `<a href="diagnosis.html" class="btn-submit" style="display:block;text-align:center;text-decoration:none;margin-top:16px;">
              지금 바로 추천받기 →
            </a>`
         : ''}

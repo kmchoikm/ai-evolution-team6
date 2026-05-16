@@ -31,11 +31,11 @@ let selectedSockColor = null;
 
 async function init() {
   const profileRaw = sessionStorage.getItem('user_profile');
-  if (!profileRaw) { location.href = 'home.html'; return; }
+  if (!profileRaw) { location.href = 'index.html'; return; }
 
   let profile;
   try { profile = JSON.parse(profileRaw); }
-  catch { location.href = 'home.html'; return; }
+  catch { location.href = 'index.html'; return; }
 
   renderProfileSummary(profile);
   await fetchAndRenderRecommendations(profile);
@@ -353,7 +353,7 @@ function renderNoMatch(message) {
         <li>발볼 유형을 '보통'으로 바꿔 보세요</li>
         <li>중요 요소를 1~2개로 줄여 보세요</li>
       </ul>
-      <button onclick="location.href='index.html'" class="btn-primary">다시 진단하기</button>
+      <button onclick="location.href='diagnosis.html'" class="btn-primary">다시 진단하기</button>
     </div>`;
 }
 
