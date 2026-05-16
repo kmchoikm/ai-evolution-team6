@@ -1,8 +1,25 @@
+# WHYTREE
 ## RunFit — Why Tree 분석
 
 > Rasmussen의 Work Domain Analysis에서 영감을 받은 수단-목적 연결 기법  
 > - **Why Up:** "왜?"를 반복하며 제품의 본질로 올라간다  
 > - **How Down:** "어떻게?"를 반복하며 구체적 하위 기능으로 내려간다
+
+---
+
+## 목차 (Table of Contents)
+
+- [Part 1. Why Up — "왜 이 서비스를 만드는가?"](#part-1-why-up--왜-이-서비스를-만드는가)
+  - [L1 — 제품](#l1--제품-product)
+  - [L2 — 기능적 이유](#l2--기능적-이유-functional-reason)
+  - [L3 — 사용자 가치](#l3--사용자-가치-user-value)
+  - [L4 — 심리적 욕구](#l4--심리적-욕구-psychological-need)
+  - [L5 — 본질적 욕구](#l5--본질적-욕구-core-desire)
+- [Part 2. How Down — "어떻게 만들 것인가?"](#part-2-how-down--어떻게-만들-것인가)
+  - [L1 — 목표](#l1--목표-goal)
+  - [L2 — 핵심 기능](#l2--핵심-기능-core-features)
+  - [L3 — 서브 기능](#l3--서브-기능-sub-features)
+- [Why & How 구조 시각화](#why--how-구조-시각화)
 
 ---
 
