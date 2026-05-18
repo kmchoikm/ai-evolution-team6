@@ -9,6 +9,10 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.5 | 2026-05-18 | 추가 | §1.2·§5.1: Q4 발 모양(족형 5종+이미지), Q5 발 움직임(내전·외전·중립+뒷꿈치 이미지), Q10 선호 색상 추가 → 전체 질문 7→10개 변경 | Juno |
+| v2.5 | 2026-05-18 | 수정 | §6.1: Request Body에 foot_shape·pronation·preferred_colors 필드 추가 | Juno |
+| v2.5 | 2026-05-18 | 추가 | §7.1 Shoes: shoe_image_url·foot_shape_compatibility·pronation_support 컬럼 추가 | Juno |
+| v2.5 | 2026-05-18 | 추가 | §7.2 Logs: foot_shape·pronation·preferred_colors 컬럼 추가 | Juno |
 | v2.2 | 2026-05-14 | 구조 개선 | §1 전면 재구성 — 홈 허브 중심 목차화 + §1.0 전체 시나리오 블록 다이어그램 추가 | kmchoikm |
 | v2.2 | 2026-05-14 | 구조 개선 | §8 전면 재구성 — §1 시나리오와 1:1 대응 콜 플로우, 시퀀스 다이어그램 시각화 | kmchoikm |
 | v2.2 | 2026-05-14 | 수정 | §5: Feature 번호 워딩 제거, §5.X 번호 체계로 통일 | kmchoikm |
@@ -127,19 +131,52 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 
 #### 1.2 AI 러닝화 추천
 
-1. **진입:** "내 러닝화 추천받기" 클릭 → "3분 진단 — 7개 질문에 답하면 AI가 가장 적합한 러닝화를 추천합니다" 문구와 함께 단일 스크롤 폼 표시.
+1. **진입:** "내 러닝화 추천받기" 클릭 → "5분 진단 — 10개 질문에 답하면 AI가 가장 적합한 러닝화를 추천합니다" 문구와 함께 단일 스크롤 폼 표시.
 
-2. **7개 질문 입력 (단일 페이지 스크롤):**
+2. **10개 질문 입력 (단일 페이지 스크롤):**
 
    | 번호 | 질문 | 입력 방식 | 필수 |
    |------|------|-----------|------|
    | Q1 | 주로 달리는 거리 | 라디오 (4개 옵션) | ✅ |
    | Q2 | 러닝 빈도 | 라디오 (3개 옵션) | - (기본: 주 3~4회) |
    | Q3 | 발볼 너비 | 라디오 (3개 옵션) | ✅ |
-   | Q4 | 선호 쿠션감 | 슬라이더 (1~5단계) | - (기본: 3) |
-   | Q5 | 중요 요소 | 체크박스 (최대 3개) | - |
-   | Q6 | 예산 범위 | 라디오 (5개 옵션) | - |
-   | Q7 | 추가 자유 서술 | 텍스트에어리어 (200자 이내) | - |
+   | Q4 | 발 모양(족형) | 라디오 (5개 옵션, 이미지 포함) | - |
+   | Q5 | 발 움직임(내전/외전) | 라디오 (3개 옵션, 뒷꿈치 이미지 포함) | - |
+   | Q6 | 선호 쿠션감 | 슬라이더 (1~5단계) | - (기본: 3) |
+   | Q7 | 중요 요소 | 체크박스 (최대 3개) | - |
+   | Q8 | 예산 범위 | 라디오 (5개 옵션) | - |
+   | Q9 | 선호 색상 | 체크박스 (5개 옵션, 복수 선택) | - |
+   | Q10 | 추가 자유 서술 | 텍스트에어리어 (200자 이내) | - |
+
+   **Q4 발 모양(족형) 선택지 및 이미지 안내:**
+   > 프론트엔드에서 각 족형 이미지(발가락 길이 비율 도식)를 선택지 카드에 포함하여 고객이 시각적으로 자신의 족형을 판단할 수 있도록 한다.
+
+   | 선택값 | 레이블 | 특징 요약 |
+   |--------|--------|-----------|
+   | `egyptian` | 이집트형 | 엄지발가락이 가장 길고 새끼발가락으로 갈수록 짧아지는 형태 |
+   | `roman` | 로마형 | 엄지~세 번째 발가락이 거의 같은 길이, 안정적인 형태 |
+   | `greek` | 그리스형 | 두 번째 발가락이 가장 길어 돌출된 형태 |
+   | `germanic` | 게르만형 | 엄지발가락이 유난히 크고 나머지가 뭉툭한 형태 |
+   | `celtic` | 켈트형 | 두 번째·세 번째 발가락이 비슷하게 길고 엄지보다 긴 형태 |
+
+   **Q5 발 움직임 선택지 및 이미지 안내:**
+   > 프론트엔드에서 신발 뒷꿈치가 각 유형별로 닳은 패턴 이미지 3가지를 선택지 카드에 포함하여 고객이 자신의 보행 패턴을 판단할 수 있도록 한다.
+
+   | 선택값 | 레이블 | 특징 요약 |
+   |--------|--------|-----------|
+   | `overpronation` | 내전 | 발이 안쪽으로 쏠림. 뒷꿈치 내측이 심하게 닳는 패턴 |
+   | `supination` | 외전 | 발이 바깥쪽으로 쏠림. 뒷꿈치 외측이 심하게 닳는 패턴 |
+   | `neutral` | 중립형 | 정상 보행. 뒷꿈치 중앙이 균일하게 닳는 패턴 |
+
+   **Q9 선호 색상 선택지:**
+
+   | 선택값 | 레이블 |
+   |--------|--------|
+   | `black` | 검정 |
+   | `white` | 흰색 |
+   | `red` | 레드 |
+   | `green` | 그린 |
+   | `blue` | 블루 |
 
 3. **유효성 검증 및 제출:** "추천 받기" 버튼 클릭 시 아래 조건을 순서대로 검사한다. 오류가 있으면 에러 메시지를 노출하고 제출을 막는다.
 
@@ -147,8 +184,8 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
    |------|------|
    | Q1 미선택 | 제출 차단, "Q1 '달리는 거리'를 선택해 주세요." 표시 |
    | Q3 미선택 | 제출 차단, "Q3 '발볼 유형'을 선택해 주세요." 표시 |
-   | Q5 4개 이상 선택 | 마지막 항목 자동 해제, 토스트 경고 2초 표시 |
-   | Q7 200자 초과 | 제출 차단, "Q7 추가 내용은 200자 이내로 입력해 주세요." 표시 |
+   | Q7 4개 이상 선택 | 마지막 항목 자동 해제, 토스트 경고 2초 표시 |
+   | Q10 200자 초과 | 제출 차단, "Q10 추가 내용은 200자 이내로 입력해 주세요." 표시 |
 
 4. **데이터 전달 및 이동:** 검증 통과 시 로딩 오버레이("AI가 최적의 러닝화를 찾고 있어요...") 표시. 프로필 JSON을 `sessionStorage`에 저장 후 800ms 뒤 `result.html`로 이동.
 
@@ -287,25 +324,30 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 #### 5.1. 사용자 입력 폼 (프론트엔드) — v1.0
 
-**입력 항목 상세 (Q1~Q7)**
+**입력 항목 상세 (Q1~Q10)**
 
 | 질문 | name 속성 | 입력 타입 | 선택지 | 필수 | 기본값 |
 |------|-----------|-----------|--------|------|--------|
 | Q1. 달리는 거리 | `distance` | radio | short(5km↓) / medium(5~10km) / long(10~21km) / marathon(21km↑) | ✅ | 없음 |
 | Q2. 러닝 빈도 | `frequency` | radio | casual(주1~2회) / regular(주3~4회) / intensive(주5회↑) | - | regular |
 | Q3. 발볼 너비 | `width` | radio | wide(넓음) / normal(보통) / narrow(좁음) | ✅ | 없음 |
-| Q4. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
-| Q5. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
-| Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
-| Q7. 자유 서술 | `free-text` | textarea | 최대 200자 자유 입력 | - | 없음 |
+| Q4. 발 모양(족형) | `foot_shape` | radio (이미지 카드) | egyptian(이집트형) / roman(로마형) / greek(그리스형) / germanic(게르만형) / celtic(켈트형) | - | 없음 |
+| Q5. 발 움직임 | `pronation` | radio (이미지 카드) | overpronation(내전) / supination(외전) / neutral(중립형) | - | 없음 |
+| Q6. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
+| Q7. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
+| Q8. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
+| Q9. 선호 색상 | `preferred_colors` | checkbox | black(검정) / white(흰색) / red(레드) / green(그린) / blue(블루) | - | 없음 |
+| Q10. 자유 서술 | `free-text` | textarea | 최대 200자 자유 입력 | - | 없음 |
 
 **UI 인터랙션 규칙**
 
-* **단일 페이지 스크롤:** Progressive Disclosure 방식이 아닌 7개 질문을 한 페이지에서 세로 스크롤로 노출한다. (PREMORTEM C1 대응 — 필수 항목을 Q1·Q3 두 개로 최소화하여 이탈률 억제)
+* **단일 페이지 스크롤:** Progressive Disclosure 방식이 아닌 10개 질문을 한 페이지에서 세로 스크롤로 노출한다. (PREMORTEM C1 대응 — 필수 항목을 Q1·Q3 두 개로 최소화하여 이탈률 억제)
 * **카드 선택 피드백:** 라디오/체크박스 선택 시 해당 카드에 `selected` 클래스가 즉시 적용되어 시각적 선택 상태를 표시한다.
-* **Q5 최대 3개 제한:** 체크박스 4번째 선택 시 마지막 항목이 자동 해제되고 토스트 경고("중요 요소는 최대 3개까지 선택 가능합니다.")가 2초 표시된다.
-* **Q4 실시간 레이블:** 슬라이더 조작 시 값에 대응하는 한국어 레이블(매우 딱딱 / 약간 딱딱 / 중간 / 약간 물렁 / 매우 물렁)을 즉시 갱신한다.
-* **Q7 글자수 카운팅:** 입력 중 실시간으로 `현재 글자수 / 200` 표시.
+* **Q4 족형 이미지 카드:** 각 선택지에 족형 도식 이미지(`/assets/foot-shape-{type}.png`)를 포함한 카드 형태로 렌더링한다. 이미지 로드 실패 시 텍스트 레이블만 표시한다.
+* **Q5 뒷꿈치 이미지 카드:** 각 선택지에 신발 뒷꿈치 닳은 패턴 이미지(`/assets/pronation-{type}.png`)를 포함한 카드 형태로 렌더링한다. 이미지 로드 실패 시 텍스트 레이블만 표시한다.
+* **Q7 최대 3개 제한:** 체크박스 4번째 선택 시 마지막 항목이 자동 해제되고 토스트 경고("중요 요소는 최대 3개까지 선택 가능합니다.")가 2초 표시된다.
+* **Q6 실시간 레이블:** 슬라이더 조작 시 값에 대응하는 한국어 레이블(매우 딱딱 / 약간 딱딱 / 중간 / 약간 물렁 / 매우 물렁)을 즉시 갱신한다.
+* **Q10 글자수 카운팅:** 입력 중 실시간으로 `현재 글자수 / 200` 표시.
 
 **반응형 레이아웃 (Responsive Design)**
 
@@ -331,8 +373,8 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
   |------|-------------|
   | Q1 미선택 | "Q1 '달리는 거리'를 선택해 주세요." |
   | Q3 미선택 | "Q3 '발볼 유형'을 선택해 주세요." |
-  | Q5 4개 이상 선택 | "Q5 '중요 요소'는 최대 3개까지 선택 가능합니다." |
-  | Q7 200자 초과 | "Q7 추가 내용은 200자 이내로 입력해 주세요." |
+  | Q7 4개 이상 선택 | "Q7 '중요 요소'는 최대 3개까지 선택 가능합니다." |
+  | Q10 200자 초과 | "Q10 추가 내용은 200자 이내로 입력해 주세요." |
 
 * 에러가 하나라도 있으면 제출을 막고, 에러 영역(`#errors`)을 노출한 뒤 해당 영역으로 부드럽게 스크롤한다.
 * 중복 제출 방지: 제출 후 버튼을 `disabled` 처리하고 텍스트를 "진단 중.."으로 변경한다.
@@ -356,9 +398,12 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
   "running_distance": "medium",
   "frequency": "regular",
   "foot_width": "wide",
+  "foot_shape": "egyptian",
+  "pronation": "neutral",
   "preferred_cushion": 3,
   "priorities": ["protection", "comfort"],
   "budget": "high",
+  "preferred_colors": ["black", "blue"],
   "free_text": "평발이에요"
 }
 ```
@@ -367,7 +412,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 #### 5.2. 추천 엔진 및 LLM 연동 (백엔드) — v1.0
 
-* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 내전 여부)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
+* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 족형 호환성, 내전/외전 지지 유형, 선호 색상)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
 * **Claude API 호출 (2차):** 필터링된 후보군 N개와 사용자 프로파일을 Claude API 프롬프트에 주입하여 최종 **5개**를 선정하고, **"자연어로 된 맞춤형 추천 사유"**를 생성한다.
 * **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **5초** 이상 지연될 경우 통신을 끊고, DB에 하드코딩된 '안정성 위주의 베스트셀러(예: 브룩스 아드레날린, 아식스 카야노 등)'를 폴백 데이터로 즉시 반환한다.
 
@@ -570,9 +615,12 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `running_distance` | string | `short` / `medium` / `long` / `marathon` | ✅ | 주로 달리는 거리 |
 | `frequency` | string | `casual` / `regular` / `intensive` | - | 러닝 빈도 (기본값: `regular`) |
 | `foot_width` | string | `wide` / `normal` / `narrow` | ✅ | 발볼 너비 |
+| `foot_shape` | string | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | - | 발 모양(족형) |
+| `pronation` | string | `overpronation` / `supination` / `neutral` | - | 발 움직임(내전·외전·중립) |
 | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
 | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
 | `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
+| `preferred_colors` | string[] | `black` / `white` / `red` / `green` / `blue` | - | 선호 색상 (복수 선택) |
 | `free_text` | string | 최대 200자 | - | 자유 서술 |
 
 **Request**
@@ -582,9 +630,12 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
     "running_distance": "medium",
     "frequency": "regular",
     "foot_width": "wide",
+    "foot_shape": "egyptian",
+    "pronation": "neutral",
     "preferred_cushion": 3,
     "priorities": ["protection", "comfort"],
     "budget": "high",
+    "preferred_colors": ["black", "blue"],
     "free_text": "평발이에요"
   }
 }
@@ -1263,6 +1314,9 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `lifespan_km_min` | Number | | **v2.0** | 정수 | 최소 권장 수명 (km, §5.9) |
 | `lifespan_km_max` | Number | | **v2.0** | 정수 | 최대 권장 수명 (km, §5.9) |
 | `has_carbon_plate` | Boolean | | **v2.0** | `true` / `false` | 카본 플레이트 유무. 카본화 수명(300~500km)은 일반 쿠션화(500~800km)와 별도 계산 (§5.9) |
+| `shoe_image_url` | String | | **v2.5** | URL | 신발 상품 상세 이미지 URL (썸네일보다 고해상도) |
+| `foot_shape_compatibility` | String | | **v2.5** | 콤마 구분 문자열 (`egyptian,roman,greek,germanic,celtic`) | 이 신발에 적합한 족형 목록. 비어있으면 전 족형 적합으로 간주 |
+| `pronation_support` | String | | **v2.5** | `overpronation` / `supination` / `neutral` / `all` | 주요 지지 내전 유형. `all`이면 모든 유형에 적합 |
 
 ---
 
@@ -1275,9 +1329,12 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `running_distance` | String | | v1.0 | `short` / `medium` / `long` / `marathon` | 달리는 거리 |
 | `frequency` | String | | v1.0 | `casual` / `regular` / `intensive` | 러닝 빈도 |
 | `foot_width` | String | | v1.0 | `wide` / `normal` / `narrow` | 발볼 너비 |
+| `foot_shape` | String | | **v2.5** | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | 발 모양(족형) |
+| `pronation` | String | | **v2.5** | `overpronation` / `supination` / `neutral` | 발 움직임 |
 | `preferred_cushion` | Number | | v1.0 | 1~5 정수 | 선호 쿠션감 |
 | `priorities` | String | | v1.0 | 콤마 구분 문자열 | 중요 요소 |
 | `budget` | String | | v1.0 | `low` / `mid` / `high` / `premium` | 예산 범위 |
+| `preferred_colors` | String | | **v2.5** | 콤마 구분 문자열 (`black,white,red,green,blue`) | 선호 색상 |
 | `free_text` | String | | v1.0 | 최대 200자 | 자유 서술 내용 |
 | `recommended_goods_no` | String | FK→Shoes | v1.0 | 콤마 구분 문자열 | 추천된 goods_no 목록 |
 
