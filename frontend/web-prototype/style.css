@@ -102,6 +102,13 @@ body {
   color: var(--text-light);
   font-weight: normal;
 }
+/* 질문 보조 설명 (선택 항목 안내 등) */
+.question-desc {
+  font-size: 13px;
+  color: var(--text-light);
+  margin: -8px 0 12px;
+  line-height: 1.5;
+}
 .required {
   color: var(--error);
   font-size: 16px;

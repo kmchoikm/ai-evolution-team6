@@ -25,6 +25,18 @@ const DISTANCE_MAP = {
 
 const WIDTH_MAP = { wide: '넓음', normal: '보통', narrow: '좁음' };
 
+/**
+ * 족형(foot_arch) → 적합 arch_support 목록 매핑
+ *  flat(평발)   → stability, motion_control이 우선, all도 허용
+ *  high(오목발) → neutral이 우선, all도 허용
+ *  neutral(정상)→ neutral, all 모두 허용, stability도 OK
+ */
+const ARCH_PREFERRED = {
+  flat: ['stability', 'motion_control', 'all'],
+  high: ['neutral', 'all'],
+  neutral: ['neutral', 'all', 'stability'],
+};
+
 // ============================================================
 // 점수 계산 (폴백 및 정렬용)
 // ============================================================
@@ -52,6 +64,15 @@ function calcScore(user, shoe) {
   const cap = BUDGET_MAX[user.budget] ?? Infinity;
   if (shoe.price <= cap) score += 10;
 
+  // 족형 매칭 보너스/패널티 (최대 15점)
+  if (user.foot_arch) {
+    const preferred = ARCH_PREFERRED[user.foot_arch] || [];
+    const shoeArch = shoe.arch_support || 'all';
+    if (preferred[0] === shoeArch) score += 15;        // 1순위 매칭 (최우선)
+    else if (preferred.includes(shoeArch)) score += 8; // 허용 범위 내
+    else if (user.foot_arch === 'flat' && shoeArch === 'neutral') score -= 10; // 평발에 중립화 비추천
+  }
+
   // 우선순위 보너스
   for (const p of user.priorities || []) {
     if (p === 'speed' && shoe.weight <= 2) score += 5;
@@ -74,6 +95,11 @@ function fallbackReason(user, shoe) {
   if (shoe.distance === DISTANCE_MAP[user.running_distance]) parts.push(`${shoe.distance} 러닝에 최적화`);
   if ((user.priorities || []).includes('protection') && shoe.cushion >= 4)
     parts.push('쿠션이 무릎·발목 충격을 완충하여 부상 위험 감소');
+  // 족형 안내 추가
+  if (user.foot_arch === 'flat' && ['stability', 'motion_control'].includes(shoe.arch_support))
+    parts.push('평발에 적합한 안정화 구조로 과내전 방지');
+  if (user.foot_arch === 'high' && shoe.arch_support === 'neutral')
+    parts.push('오목발에 적합한 중립 쿠션 구조');
   return parts.length ? parts.join(' · ') : '종합 스펙 기준 상위 매칭';
 }
 
