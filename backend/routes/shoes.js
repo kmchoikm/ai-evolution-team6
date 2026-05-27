@@ -7,7 +7,8 @@
 const express = require('express');
 const router = express.Router();
 const { getAllShoes, getShoeByNo } = require('../services/sheetsService');
-const { calcLifespan } = require('../services/lifespanService');
+const { calcLifespan, calcDdaySimulator } = require('../services/lifespanService');
+const { getRaces } = require('../services/sheetsService');
 
 // GET /api/shoes
 router.get('/', async (req, res) => {
@@ -116,6 +117,55 @@ router.post('/lifespan', async (req, res) => {
       status: 'error',
       message: '교체 시기 계산 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
     });
+  }
+});
+
+// POST /api/shoes/dday-simulator
+router.post('/dday-simulator', async (req, res) => {
+  const { goods_no, race_id, current_km, weekly_km } = req.body || {};
+
+  if (!goods_no) {
+    return res.status(400).json({ status: 'error', message: 'goods_no는 필수입니다.' });
+  }
+  if (!race_id) {
+    return res.status(400).json({ status: 'error', message: 'race_id는 필수입니다.' });
+  }
+  if (current_km == null || isNaN(Number(current_km)) || Number(current_km) < 0) {
+    return res.status(400).json({ status: 'error', message: 'current_km은 0 이상의 숫자여야 합니다.' });
+  }
+  if (weekly_km == null || isNaN(Number(weekly_km)) || Number(weekly_km) <= 0) {
+    return res.status(400).json({ status: 'error', message: 'weekly_km은 0보다 큰 숫자여야 합니다.' });
+  }
+
+  try {
+    let shoe, race;
+
+    try {
+      shoe = await getShoeByNo(goods_no);
+    } catch (err) {
+      console.error('[DDay] Shoes 조회 실패:', err.message);
+      return res.status(503).json({ status: 'error', message: '신발 데이터를 불러오는 중 오류가 발생했습니다.' });
+    }
+    if (!shoe) {
+      return res.status(404).json({ status: 'error', message: '해당 goods_no의 신발을 찾을 수 없습니다.' });
+    }
+
+    try {
+      const races = await getRaces();
+      race = races.find((r) => r.race_id === race_id);
+    } catch (err) {
+      console.error('[DDay] Races 조회 실패:', err.message);
+      return res.status(503).json({ status: 'error', message: '대회 데이터를 불러오는 중 오류가 발생했습니다.' });
+    }
+    if (!race) {
+      return res.status(404).json({ status: 'error', message: '해당 race_id의 대회를 찾을 수 없습니다.' });
+    }
+
+    const result = calcDdaySimulator(shoe, race, Number(current_km), Number(weekly_km));
+    return res.status(200).json({ status: 'success', ...result });
+  } catch (err) {
+    console.error('[DDay] 처리 중 예외:', err.message);
+    return res.status(400).json({ status: 'error', message: err.message });
   }
 });
 

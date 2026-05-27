@@ -131,6 +131,7 @@ async function getRaces() {
     city: r.get('city'),
     course_type: r.get('course_type'),
     typical_month: Number(r.get('typical_month')) || null,
+    race_date: r.get('race_date') || null,
     avg_temp_celsius: Number(r.get('avg_temp_celsius')) || null,
     surface_type: r.get('surface_type'),
     elevation_gain_m: Number(r.get('elevation_gain_m')) || 0,

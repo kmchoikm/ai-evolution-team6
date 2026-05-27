@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunFit - D-Day 러닝화 컨디션 시뮬레이터</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <a href="home.html" class="header-back">← 홈</a>
+    <h1>🎯 D-Day 시뮬레이터</h1>
+    <p class="tagline">대회 당일 내 러닝화 컨디션은?</p>
+  </header>
+
+  <main class="container">
+
+    <div class="intro">
+      <p>출전할 대회와 현재 신발 상태를 입력하면<br>대회 당일 신발 수명을 예측해 드립니다</p>
+    </div>
+
+    <form id="dday-form">
+
+      <!-- Step 1: 대회 선택 -->
+      <div class="question">
+        <h3>🏅 Step 1. 출전 대회 선택 <span class="required">*</span></h3>
+        <div id="race-loading" class="loading-inline">대회 목록 불러오는 중...</div>
+        <select id="race-select" class="select-input" style="display:none;" onchange="handleRaceSelect()">
+          <option value="">대회를 선택해 주세요</option>
+        </select>
+        <div id="race-info-card" class="race-info-card" style="display:none;"></div>
+      </div>
+
+      <!-- Step 2: 신발 선택 -->
+      <div class="question">
+        <h3>👟 Step 2. 사용 중인 신발 선택 <span class="required">*</span></h3>
+        <div class="autocomplete-wrap">
+          <input
+            type="text"
+            id="shoe-search-input"
+            class="search-input"
+            placeholder="브랜드 또는 모델명 입력 (예: 나이키, 페가수스)"
+            autocomplete="off"
+            oninput="handleShoeSearch()"
+          />
+          <div id="autocomplete-dropdown" class="autocomplete-dropdown" style="display:none;"></div>
+        </div>
+        <input type="hidden" id="selected-goods-no" />
+        <p id="selected-shoe-label" class="selected-label" style="display:none;"></p>
+      </div>
+
+      <!-- Step 3: 현재 누적 거리 -->
+      <div class="question">
+        <h3>📊 Step 3. 현재 누적 주행 거리 <span class="required">*</span></h3>
+        <div class="input-row">
+          <input type="number" id="current-km" class="number-input" placeholder="예: 250" min="0" max="5000" />
+          <span class="input-unit">km 누적</span>
+        </div>
+        <p class="question-hint">신발 구매 후 지금까지 달린 총 거리를 입력해 주세요</p>
+      </div>
+
+      <!-- Step 4: 주간 훈련 거리 -->
+      <div class="question">
+        <h3>📅 Step 4. 주간 훈련 거리 <span class="required">*</span></h3>
+        <div class="input-row">
+          <input type="number" id="weekly-km" class="number-input" placeholder="예: 40" min="1" max="300" />
+          <span class="input-unit">km / 주</span>
+        </div>
+        <p class="question-hint">대회까지 유지할 예정인 주간 평균 훈련 거리를 입력해 주세요</p>
+      </div>
+
+      <!-- 에러 영역 -->
+      <div id="errors" class="errors" style="display:none;"></div>
+
+      <button type="submit" id="simulate-btn" class="btn-submit">시뮬레이션 시작 →</button>
+    </form>
+
+    <!-- 결과 영역 -->
+    <div id="result-container"></div>
+
+  </main>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>대회 당일 컨디션 예측 중...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
+  </footer>
+
+  <script src="dday.js"></script>
+</body>
+</html>

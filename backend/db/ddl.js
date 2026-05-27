@@ -53,10 +53,10 @@ const SCHEMA = {
     'winner_nationality', 'course_type', 'result_time', 'goods_no', 'source_url',
   ],
 
-  // §7.5 Sheet 5: Races (대회 코스 정보) — v2.0
+  // §7.5 Sheet 5: Races (대회 코스 정보) — v2.0, race_date v2.6 추가
   Races: [
     'race_id', 'race_name', 'country', 'city', 'course_type',
-    'typical_month', 'avg_temp_celsius', 'surface_type', 'elevation_gain_m',
+    'typical_month', 'race_date', 'avg_temp_celsius', 'surface_type', 'elevation_gain_m',
     'difficulty', 'course_summary', 'shoe_priority_hint',
     'is_world_major', 'is_active',
   ],

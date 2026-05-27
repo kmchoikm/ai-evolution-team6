@@ -9,6 +9,11 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.6 | 2026-05-27 | 추가 | §7.5 Races: `race_date`(YYYY-MM-DD) 컬럼 추가 — D-Day 역산 계산을 위한 정확한 대회 일자 | Juno |
+| v2.6 | 2026-05-27 | 추가 | §1.9 D-Day 러닝화 컨디션 시뮬레이터 신규 시나리오 추가 | Juno |
+| v2.6 | 2026-05-27 | 추가 | §6.6 `POST /api/shoes/dday-simulator` 신규 API 추가 | Juno |
+| v2.6 | 2026-05-27 | 추가 | `dday.html` / `dday.js` 신규 FE 페이지 추가 | Juno |
+|------|------|------|------|--------|
 | v2.5 | 2026-05-18 | 추가 | §1.2·§5.1: Q4 발 모양(족형 5종+이미지), Q5 발 움직임(내전·외전·중립+뒷꿈치 이미지), Q10 선호 색상 추가 → 전체 질문 7→10개 변경 | Juno |
 | v2.5 | 2026-05-18 | 수정 | §6.1: Request Body에 foot_shape·pronation·preferred_colors 필드 추가 | Juno |
 | v2.5 | 2026-05-18 | 추가 | §7.1 Shoes: shoe_image_url·foot_shape_compatibility·pronation_support 컬럼 추가 | Juno |
@@ -238,6 +243,33 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 4. 누적 거리 입력 방식 선택 → Option A: 주간 평균 거리 / Option B: 총 누적 거리 직접 입력
 5. "계산하기" 클릭 → 사용률(%) + 수명 판정 결과 표시
 6. 교체 필수 판정 시 "지금 바로 추천받기 →" 버튼으로 §1.2 AI 러닝화 추천 플로우 연결
+
+---
+
+#### 1.9 D-Day 러닝화 컨디션 시뮬레이터 — v2.6 신규
+
+**목적:** 목표 대회 당일 최상의 장비 컨디션을 확보하도록 신발 교체 시점을 역산해 안내한다.
+
+1. **목표 설정:** 홈 "D-Day 시뮬레이터" 배너 클릭 → `dday.html` 이동. Races DB에서 `race_date`가 등록된 대회만 드롭다운으로 표시. 선택 즉시 대회 정보 카드(날짜·코스·기온·난이도) 표시.
+
+2. **현재 상태 입력:** Shoes DB 자동완성으로 신발 선택 → 현재 누적 거리(km) 직접 입력 → 주간 훈련 거리(km/주) 입력.
+
+3. **결과 시각화:**
+   - 판정(안전 / 교체 필요 / 즉시 교체) 헤더 표시
+   - 수명 진행바: 현재 위치(회색) + 대회 당일 예상(그라디언트) + 80% 임계값 마커(빨간선)
+   - 핵심 수치: 현재 누적 / 대회 당일 예상 / 권장 수명 / 사용률
+   - 수명 소진 타임라인(막대 차트): 주 단위 수명 소진 추이
+
+4. **액션 유도:** 대회 당일 예상 누적 거리가 수명 80% 초과 시 "교체 권장 기준일(대회 3주 전)" 강조 표시. "지금 새 러닝화 추천받기 →" 버튼으로 §1.2 AI 추천 플로우 연결.
+
+**핵심 계산 로직:**
+- 잔여 주차 W = (race_date − today) ÷ 7
+- 대회 당일 예상 누적 = current_km + W × weekly_km
+- 80% 임계값 = lifespan_avg × 0.8
+- 교체 권장 기준일 = race_date − 21일 (break-in 3주 버퍼)
+- 판정: 예상 누적 ≤ 임계값 → `ok` / 초과 → `replace_needed`
+
+**DB 의존성:** `Races.race_date` 컬럼(v2.6 추가), `Shoes.lifespan_km_min/max/has_carbon_plate`
 
 ---
 
@@ -1259,6 +1291,72 @@ GET /api/shoes?brand=아식스&keyword=카야노
 
 ---
 
+#### 6.12 [POST] `/api/shoes/dday-simulator` — v2.6 신규
+
+**설명**
+목표 대회까지의 잔여 주차와 주간 훈련 거리를 기반으로 대회 당일 신발 수명 예상치를 계산한다. LLM 없이 순수 계산 로직으로 처리하며, 교체 권장 기준일(대회 3주 전)을 역산하여 반환한다.
+
+**연관 시나리오**
+§1.9 D-Day 러닝화 컨디션 시뮬레이터
+
+**Request Body**
+
+| 필드명 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `goods_no` | string | ✅ | 신발 고유번호 |
+| `race_id` | string | ✅ | 대회 고유 ID (예: `jtbc_half`) |
+| `current_km` | number | ✅ | 현재까지 누적 주행 거리 (km, ≥ 0) |
+| `weekly_km` | number | ✅ | 주간 훈련 거리 (km, > 0) |
+
+**Request**
+```json
+{
+  "goods_no": "4521387",
+  "race_id": "jtbc_half",
+  "current_km": 250,
+  "weekly_km": 40
+}
+```
+
+*정상 (200 OK)*
+```json
+{
+  "status": "success",
+  "race_name": "JTBC 서울 마라톤",
+  "race_date": "2026-11-08",
+  "days_until_race": 165,
+  "weeks_until_race": 23.6,
+  "shoe_name": "페가수스 41",
+  "brand": "나이키",
+  "current_km": 250,
+  "weekly_km": 40,
+  "projected_km_on_race_day": 1194,
+  "projected_usage_pct": 170,
+  "lifespan_km_min": 600,
+  "lifespan_km_max": 800,
+  "lifespan_avg": 700,
+  "threshold_80pct_km": 560,
+  "threshold_reached_date": "2026-07-22",
+  "replace_deadline_date": "2026-10-18",
+  "verdict": "replace_needed",
+  "message": "대회 3주 전인 10월 18일까지 새 신발로 교체하고 길들이기를 시작해야 합니다. ...",
+  "timeline": [
+    { "week": 0, "date": "2026-05-27", "km": 250, "usage_pct": 36 },
+    { "week": 4, "date": "2026-06-24", "km": 410, "usage_pct": 59 }
+  ]
+}
+```
+
+> `verdict` 허용값: `ok` / `replace_needed` / `replace_now`
+> `timeline` 배열은 최대 24포인트 (주 단위 샘플링)
+
+*오류 (4xx/5xx)*
+```json
+{ "status": "error", "message": "오류 메시지" }
+```
+
+---
+
 ### 7. 데이터 구조 (Google Sheets 기반 DB & ERD)
 
 Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간주하여 평면화(Denormalization)된 구조를 가져갑니다.
@@ -1381,6 +1479,7 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `city` | String | | | 도시명 |
 | `course_type` | String | | `half` / `full` | 코스 구분 |
 | `typical_month` | Number | | 1~12 정수 | 통상 개최월 |
+| `race_date` | String | | YYYY-MM-DD | **v2.6** 정확한 대회 일자. D-Day 시뮬레이터(§1.9)에서 역산 계산에 사용. 매년 확정 후 운영팀이 수동 업데이트 |
 | `avg_temp_celsius` | Number | | 정수 | 대회 시즌 평균 기온 (℃) |
 | `surface_type` | String | | `asphalt` / `mixed` / `trail` | 노면 유형 |
 | `elevation_gain_m` | Number | | 정수 | 누적 고도 상승 (m) |
