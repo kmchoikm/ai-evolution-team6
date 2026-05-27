@@ -15,7 +15,15 @@ jest.mock('../../../services/claudeService');
 
 const { recommend } = require('../../../services/recommendService');
 const { getAiRecommendations } = require('../../../services/claudeService');
-const { mockAllShoes, mockUserProfileLong, mockUserProfileShortWide } = require('../../helpers/fixtures');
+const {
+  mockAllShoes,
+  mockUserProfileLong,
+  mockUserProfileShortWide,
+  mockUserProfileFlat,
+  mockUserProfileHighArch,
+  mockShoeStability,
+  mockShoeNeutralArch,
+} = require('../../helpers/fixtures');
 
 // ============================================================
 // filterCandidates — 예산 필터
@@ -139,5 +147,117 @@ describe('recommend — 후보 없음', () => {
     expect(result).toEqual([]);
     // Claude는 호출되지 않아야 함
     expect(getAiRecommendations).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// v2.1 족형(foot_arch) — calcScore 스코어링
+// ============================================================
+
+describe('recommend — 족형 calcScore 스코어링 (폴백 경로)', () => {
+  /**
+   * 폴백(Claude 실패) 경로에서 match_score가 실제 calcScore 결과이므로
+   * 이 경로를 통해 족형 보너스/패널티를 검증한다.
+   *
+   * 기대 점수 (mockUserProfileFlat 기준):
+   *   stability 신발: +40(발볼) +0(쿠션) +20(거리) +10(예산) +15(arch) = 85
+   *   neutral   신발: +40(발볼) +0(쿠션) +20(거리) +10(예산) -10(arch) = 60
+   */
+  it('평발(flat) + stability 신발이 neutral 신발보다 match_score가 최소 15점 높다', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const result = await recommend(
+      mockUserProfileFlat,
+      [mockShoeStability, mockShoeNeutralArch]
+    );
+
+    const stabResult = result.find((r) => r.goods_no === 'SHOE_STAB');
+    const neutResult = result.find((r) => r.goods_no === 'SHOE_NEUT');
+
+    expect(stabResult).toBeDefined();
+    expect(neutResult).toBeDefined();
+    expect(stabResult.match_score - neutResult.match_score).toBeGreaterThanOrEqual(15);
+  });
+
+  /**
+   * 오목발(high) 기준:
+   *   neutral  신발: +40 +0 +20 +10 +15(arch) = 85
+   *   stability신발: +40 +0 +20 +10  +0(arch) = 70
+   */
+  it('오목발(high) + neutral 신발이 stability 신발보다 높은 match_score를 받는다', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const result = await recommend(
+      mockUserProfileHighArch,
+      [mockShoeStability, mockShoeNeutralArch]
+    );
+
+    const neutResult = result.find((r) => r.goods_no === 'SHOE_NEUT');
+    const stabResult = result.find((r) => r.goods_no === 'SHOE_STAB');
+
+    expect(neutResult.match_score).toBeGreaterThan(stabResult.match_score);
+  });
+
+  it('족형 미입력(null) 시 arch 보너스/패널티가 없어 족형 입력보다 낮은 점수를 받는다', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const profileNoArch = { ...mockUserProfileFlat, foot_arch: null };
+    const profileWithArch = { ...mockUserProfileFlat, foot_arch: 'flat' };
+
+    const resultNoArch = await recommend(profileNoArch, [mockShoeStability]);
+    const resultWithArch = await recommend(profileWithArch, [mockShoeStability]);
+
+    // foot_arch=null 은 보너스 없음(70점), foot_arch=flat은 +15(85점)
+    expect(resultNoArch[0].match_score).toBeLessThan(resultWithArch[0].match_score);
+  });
+});
+
+// ============================================================
+// v2.1 족형(foot_arch) — fallbackReason 메시지
+// ============================================================
+
+describe('recommend — fallbackReason 족형 메시지', () => {
+  it('평발(flat) + stability 신발 → 폴백 reason에 평발/과내전 문구 포함', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const result = await recommend(mockUserProfileFlat, [mockShoeStability]);
+
+    expect(result[0].is_fallback).toBe(true);
+    expect(result[0].reason).toMatch(/평발|과내전/);
+  });
+
+  it('오목발(high) + neutral 신발 → 폴백 reason에 오목발 문구 포함', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const result = await recommend(mockUserProfileHighArch, [mockShoeNeutralArch]);
+
+    expect(result[0].is_fallback).toBe(true);
+    expect(result[0].reason).toMatch(/오목발/);
+  });
+});
+
+// ============================================================
+// v2.1 족형(foot_arch) — filterCandidates 처리
+// ============================================================
+
+describe('recommend — foot_arch 포함 프로파일 처리', () => {
+  it('foot_arch 포함 user_profile로 오류 없이 추천 결과를 반환한다', async () => {
+    getAiRecommendations.mockResolvedValue([
+      { rank: 1, goods_no: 'SHOE_STAB', reason: '평발에 적합한 안정화' },
+    ]);
+
+    await expect(
+      recommend(mockUserProfileFlat, [mockShoeStability])
+    ).resolves.not.toThrow();
+  });
+
+  it('알 수 없는 foot_arch 값이 들어와도 오류 없이 처리된다 (방어 처리)', async () => {
+    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
+
+    const profileUnknownArch = { ...mockUserProfileFlat, foot_arch: 'invalid_value' };
+
+    await expect(
+      recommend(profileUnknownArch, [mockShoeStability])
+    ).resolves.not.toThrow();
   });
 });

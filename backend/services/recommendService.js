@@ -2,7 +2,7 @@
  * 추천 오케스트레이션 모듈
  * 1단계: 예산·발볼 기반 1차 필터링
  * 2단계: Claude API 맞춤 추천 이유 생성
- * 폴백: Claude 실패 시 점수 기반 상위 3개 즉시 반환
+ * 폴백: Claude 실패 시 점수 기반 상위 5개 즉시 반환
  */
 
 const { getAiRecommendations } = require('./claudeService');

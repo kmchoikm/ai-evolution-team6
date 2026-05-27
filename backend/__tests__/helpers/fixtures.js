@@ -227,6 +227,57 @@ const mockSizeGuideNikeWildcard = {
 };
 
 // ============================================================
+// 족형(arch) 테스트 전용 신발
+// ============================================================
+
+/**
+ * calcScore 족형 점수 검증용 픽스처
+ *
+ * 기준 사용자 (mockUserProfileFlat / mockUserProfileHighArch):
+ *   running_distance: 'short'  → DISTANCE_MAP → '단거리'
+ *   foot_width: 'narrow'       → WIDTH_MAP    → '좁음'
+ *   preferred_cushion: 5
+ *   budget: null               → BUDGET_MAX[null] → Infinity
+ *
+ * 예상 점수 (mockUserProfileFlat 기준):
+ *   stability 신발: 발볼(+40) + 쿠션(diff=4→0) + 거리(+20) + 예산(+10) + 족형(+15) = 85
+ *   neutral   신발: 발볼(+40) + 쿠션(0)        + 거리(+20) + 예산(+10) + 족형(-10) = 60
+ *   → 차이 25점 ≥ 15점 기준 충족
+ */
+const mockShoeStability = {
+  goods_no: 'SHOE_STAB',
+  goods_name: '아식스 족형테스트-스태빌리티',
+  brand: 'ASICS',
+  price: 100000,
+  url: 'https://example.com/shoe_stab',
+  thumbnail: 'https://example.com/shoe_stab.jpg',
+  width: '좁음',
+  cushion: 1,
+  weight: 3,
+  distance: '단거리',
+  breathability: 3,
+  fit: 3,
+  summary: '안정화 족형 테스트 픽스처',
+  review_count_used: 10,
+  confidence: 'medium',
+  main_color: 'White',
+  accent_color: null,
+  lifespan_km_min: 500,
+  lifespan_km_max: 700,
+  has_carbon_plate: false,
+  arch_support: 'stability',
+};
+
+/** mockShoeStability와 arch_support만 다름 (neutral) */
+const mockShoeNeutralArch = {
+  ...mockShoeStability,
+  goods_no: 'SHOE_NEUT',
+  goods_name: '뉴발란스 족형테스트-뉴트럴',
+  brand: 'New Balance',
+  arch_support: 'neutral',
+};
+
+// ============================================================
 // 사용자 프로파일 (UserProfile)
 // ============================================================
 
@@ -250,6 +301,27 @@ const mockUserProfileShortWide = {
   free_text: '',
 };
 
+/**
+ * 족형 테스트 전용 프로파일 — 평발
+ * mockShoeStability / mockShoeNeutralArch 와 조합하여 점수 차이 검증
+ */
+const mockUserProfileFlat = {
+  running_distance: 'short',
+  frequency: 'casual',
+  foot_width: 'narrow',
+  preferred_cushion: 5,
+  priorities: [],
+  budget: null,
+  free_text: '',
+  foot_arch: 'flat',
+};
+
+/** 족형 테스트 전용 프로파일 — 오목발 */
+const mockUserProfileHighArch = {
+  ...mockUserProfileFlat,
+  foot_arch: 'high',
+};
+
 // ============================================================
 // exports
 // ============================================================
@@ -261,6 +333,9 @@ module.exports = {
   mockShoeWide,
   mockShoeLowPrice,
   mockAllShoes: [mockShoeNormal, mockShoeCarbonPlate, mockShoeWide, mockShoeLowPrice],
+  // 족형 테스트 전용 신발
+  mockShoeStability,
+  mockShoeNeutralArch,
   // 대회
   mockRaceFull,
   mockRaceHalf,
@@ -281,4 +356,6 @@ module.exports = {
   // 사용자 프로파일
   mockUserProfileLong,
   mockUserProfileShortWide,
+  mockUserProfileFlat,
+  mockUserProfileHighArch,
 };

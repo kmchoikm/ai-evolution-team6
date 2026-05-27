@@ -18,7 +18,11 @@ const {
   getSocksRecommendation,
   getOutfitRecommendation,
 } = require('../../../services/claudeService');
-const { mockAllShoes, mockUserProfileLong } = require('../../helpers/fixtures');
+const {
+  mockAllShoes,
+  mockUserProfileLong,
+  mockShoeNormal,
+} = require('../../helpers/fixtures');
 
 // Claude API 응답을 흉내내는 mock 팩토리
 function mockClaudeResponse(text) {
@@ -149,5 +153,81 @@ describe('getOutfitRecommendation — 정상 응답', () => {
 
     expect(result).toHaveLength(3);
     expect(result.map((r) => r.item)).toEqual(['상의', '하의', '모자']);
+  });
+});
+
+// ============================================================
+// v2.1 buildUserSummary — 족형 프롬프트 포함 여부
+// ============================================================
+
+/**
+ * buildUserSummary는 export되지 않으므로 getAiRecommendations 호출 시
+ * Anthropic mock의 create 인자로 전달된 프롬프트를 캡처하여 검증한다.
+ */
+describe('getAiRecommendations — 족형 프롬프트 포함', () => {
+  /** 단일 후보 신발 (mockShoeNormal) 기반 최소 테스트 셋업 헬퍼 */
+  function setupMockAndGetPrompt(responseJson) {
+    const mockCreate = jest.fn().mockResolvedValue(mockClaudeResponse(responseJson));
+    Anthropic.mockImplementation(() => ({
+      messages: { create: mockCreate },
+    }));
+    return mockCreate;
+  }
+
+  it('foot_arch: flat → 프롬프트에 "평발" 포함', async () => {
+    const mockCreate = setupMockAndGetPrompt(
+      JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
+    );
+
+    await getAiRecommendations(
+      { ...mockUserProfileLong, foot_arch: 'flat' },
+      [mockShoeNormal]
+    );
+
+    const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(sentPrompt).toMatch(/평발/);
+  });
+
+  it('foot_arch: high → 프롬프트에 "오목발" 포함', async () => {
+    const mockCreate = setupMockAndGetPrompt(
+      JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
+    );
+
+    await getAiRecommendations(
+      { ...mockUserProfileLong, foot_arch: 'high' },
+      [mockShoeNormal]
+    );
+
+    const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(sentPrompt).toMatch(/오목발/);
+  });
+
+  it('foot_arch: neutral → 프롬프트에 "정상 아치" 포함', async () => {
+    const mockCreate = setupMockAndGetPrompt(
+      JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
+    );
+
+    await getAiRecommendations(
+      { ...mockUserProfileLong, foot_arch: 'neutral' },
+      [mockShoeNormal]
+    );
+
+    const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(sentPrompt).toMatch(/정상 아치/);
+  });
+
+  it('foot_arch 미입력 → 프롬프트에 족형(아치 유형) 항목 없음', async () => {
+    const mockCreate = setupMockAndGetPrompt(
+      JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
+    );
+
+    // foot_arch 없는 기본 프로파일
+    const profileNoArch = { ...mockUserProfileLong };
+    delete profileNoArch.foot_arch;
+
+    await getAiRecommendations(profileNoArch, [mockShoeNormal]);
+
+    const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(sentPrompt).not.toMatch(/족형\(아치 유형\)/);
   });
 });
