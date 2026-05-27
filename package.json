@@ -6,7 +6,9 @@
     "setup": "cd backend && npm install",
     "start:be": "cd backend && node server.js",
     "start:fe": "npx serve frontend/web-prototype -p 5500 --no-clipboard",
-    "dev": "npx concurrently -n BE,FE -c bgBlue,bgGreen \"npm run start:be\" \"npm run start:fe\""
+    "dev": "npx concurrently -n BE,FE -c bgBlue,bgGreen \"npm run start:be\" \"npm run start:fe\"",
+    "test": "cd backend && npm test",
+    "test:coverage": "cd backend && npm run test:coverage"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
