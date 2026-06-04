@@ -69,6 +69,12 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.8 | 2026-06-04 | 삭제 | §6.1 Response·§7.1 Shoes: `arch_support` 컬럼 제거 — 스코어링 로직·대응 사용자 입력 모두 없어진 고아 컬럼 정리 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §1.2·§5.1: Q3-2 족형을 발 아치 3종 → **발 모양 5종** (이집트·로마·그리스·게르만·켈트형)으로 전면 교체 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §5.2: 족형 스코어링 로직 — arch_support 매핑 제거, foot_shape 기반 발볼 선호도·toe_fit 매칭 보너스로 교체 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §6.1: `foot_arch` → `foot_shape` 필드명 변경; 허용 값 `neutral/flat/high` → `egyptian/roman/greek/germanic/celtic` | kmchoikm |
+| v2.7 | 2026-06-04 | 추가 | §7.1 Shoes: `toe_fit` 컬럼 추가 (발 모양별 호환성; 기본값 `all`) | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §7.2 Logs: `foot_arch` → `foot_shape` 컬럼명 변경 (DB에는 신규 컬럼 추가) | kmchoikm |
 | v2.6 | 2026-05-27 | 수정 | §3: Claude 모델 `20240620` → `20241022`; Axios 제거 → `@anthropic-ai/sdk` 반영 | kmchoikm |
 | v2.6 | 2026-05-27 | 수정 | §5.2: 폴백 로직 설명 현행화 — 하드코딩 베스트셀러 → calcScore 기반 상위 5개 동적 반환 | kmchoikm |
 | v2.6 | 2026-05-27 | 추가 | §6.1 Response: `main_color`, `accent_color`, `arch_support`, `has_carbon_plate`, `lifespan_km_min/max` 6개 필드 추가 | kmchoikm |
@@ -218,7 +224,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
    | Q1 | 주로 달리는 거리 | 라디오 (4개 옵션) | ✅ |
    | Q2 | 러닝 빈도 | 라디오 (3개 옵션) | - (기본: 주 3~4회) |
    | Q3 | 발볼 너비 | 라디오 (3개 옵션) | ✅ |
-   | Q3-2 | 족형 (발 아치 유형) | 라디오 (3개 옵션) | - (선택 — 미선택 시 무시) |
+   | Q3-2 | 족형 (발 모양 유형) | 라디오 (5개 옵션) | - (선택 — 미선택 시 무시) |
    | Q4 | 선호 쿠션감 | 슬라이더 (1~5단계) | - (기본: 3) |
    | Q5 | 중요 요소 | 체크박스 (최대 3개) | - |
    | Q6 | 예산 범위 | 라디오 (5개 옵션) | - |
@@ -377,7 +383,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | Q1. 달리는 거리 | `distance` | radio | short(5km↓) / medium(5~10km) / long(10~21km) / marathon(21km↑) | ✅ | 없음 |
 | Q2. 러닝 빈도 | `frequency` | radio | casual(주1~2회) / regular(주3~4회) / intensive(주5회↑) | - | regular |
 | Q3. 발볼 너비 | `width` | radio | wide(넓음) / normal(보통) / narrow(좁음) | ✅ | 없음 |
-| Q3-2. 족형 (발 아치 유형) | `foot_arch` | radio | neutral(정상 아치) / flat(평발) / high(오목발) | - | 없음 (선택) |
+| Q3-2. 족형 (발 모양 유형) | `foot_shape` | radio | egyptian(이집트형) / roman(로마형) / greek(그리스형) / germanic(게르만형) / celtic(켈트형) | - | 없음 (선택) |
 | Q4. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
 | Q5. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
 | Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
@@ -440,11 +446,11 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
   "running_distance": "medium",
   "frequency": "regular",
   "foot_width": "wide",
-  "foot_arch": "flat",
+  "foot_shape": "egyptian",
   "preferred_cushion": 3,
   "priorities": ["protection", "comfort"],
   "budget": "high",
-  "free_text": "평발이에요"
+  "free_text": "이집트형 발이에요"
 }
 ```
 
@@ -655,7 +661,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `running_distance` | string | `short` / `medium` / `long` / `marathon` | ✅ | 주로 달리는 거리 |
 | `frequency` | string | `casual` / `regular` / `intensive` | - | 러닝 빈도 (기본값: `regular`) |
 | `foot_width` | string | `wide` / `normal` / `narrow` | ✅ | 발볼 너비 |
-| `foot_arch` | string | `neutral` / `flat` / `high` | - | 족형(발 아치 유형). 미입력 시 무시 (하위 호환) |
+| `foot_shape` | string | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | - | 족형(발 모양 유형). 미입력 시 무시. 이집트·로마·게르만형은 넓은 발볼 선호 반영 |
 | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
 | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
 | `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
@@ -668,11 +674,11 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
     "running_distance": "medium",
     "frequency": "regular",
     "foot_width": "wide",
-    "foot_arch": "flat",
+    "foot_shape": "egyptian",
     "preferred_cushion": 3,
     "priorities": ["protection", "comfort"],
     "budget": "high",
-    "free_text": "평발이에요"
+    "free_text": "이집트형 발이에요"
   }
 }
 ```
@@ -702,7 +708,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `is_fallback` | boolean | Claude API 장애로 폴백 처리된 경우 `true` |
 | `main_color` | string | 신발 주조색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
 | `accent_color` | string | 신발 포인트색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
-| `arch_support` | string | 족형 지원 타입 (`neutral` / `stability` / `motion_control` / `all`) |
+| `toe_fit` | string | 발 모양별 호환성 (`all` 또는 쉼표 구분 족형 목록 — `egyptian,roman` 등) |
 | `has_carbon_plate` | boolean | 카본 플레이트 유무 (§5.9 수명 계산에서 활용) |
 | `lifespan_km_min` | number | 최소 권장 수명 (km) |
 | `lifespan_km_max` | number | 최대 권장 수명 (km) |
@@ -1356,7 +1362,7 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `lifespan_km_min` | Number | | **v2.0** | 정수 | 최소 권장 수명 (km, §5.9) |
 | `lifespan_km_max` | Number | | **v2.0** | 정수 | 최대 권장 수명 (km, §5.9) |
 | `has_carbon_plate` | Boolean | | **v2.0** | `true` / `false` | 카본 플레이트 유무. 카본화 수명(300~500km)은 일반 쿠션화(500~800km)와 별도 계산 (§5.9) |
-| `arch_support` | String | | **v2.4** | `neutral` / `stability` / `motion_control` / `all` | 족형 지원 타입. 기본값: `all` (§5.1 Q3-2, §6.1 추천 스코어링 반영) |
+| `toe_fit` | String | | **v2.7** | `all` 또는 쉼표 구분 족형 (`egyptian,roman` 등) | 발 모양 호환성. 기본값: `all` (§5.1 Q3-2 족형 스코어링 반영) |
 
 ---
 
@@ -1373,7 +1379,7 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `priorities` | String | | v1.0 | 콤마 구분 문자열 | 중요 요소 |
 | `budget` | String | | v1.0 | `low` / `mid` / `high` / `premium` | 예산 범위 |
 | `free_text` | String | | v1.0 | 최대 200자 | 자유 서술 내용 |
-| `foot_arch` | String | | **v2.4** | `neutral` / `flat` / `high` | 사용자 족형 입력값. 미입력 시 빈 문자열 저장 |
+| `foot_shape` | String | | **v2.7** | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | 사용자 족형(발 모양) 입력값. 미입력 시 빈 문자열 저장 |
 | `recommended_goods_no` | String | FK→Shoes | v1.0 | 콤마 구분 문자열 | 추천된 goods_no 목록 |
 
 ---

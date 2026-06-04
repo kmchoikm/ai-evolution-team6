@@ -174,60 +174,60 @@ describe('getAiRecommendations — 족형 프롬프트 포함', () => {
     return mockCreate;
   }
 
-  it('foot_arch: flat → 프롬프트에 "평발" 포함', async () => {
+  it('foot_shape: egyptian → 프롬프트에 "이집트형" 포함', async () => {
     const mockCreate = setupMockAndGetPrompt(
       JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
     );
 
     await getAiRecommendations(
-      { ...mockUserProfileLong, foot_arch: 'flat' },
+      { ...mockUserProfileLong, foot_shape: 'egyptian' },
       [mockShoeNormal]
     );
 
     const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
-    expect(sentPrompt).toMatch(/평발/);
+    expect(sentPrompt).toMatch(/이집트형/);
   });
 
-  it('foot_arch: high → 프롬프트에 "오목발" 포함', async () => {
+  it('foot_shape: greek → 프롬프트에 "그리스형" 포함', async () => {
     const mockCreate = setupMockAndGetPrompt(
       JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
     );
 
     await getAiRecommendations(
-      { ...mockUserProfileLong, foot_arch: 'high' },
+      { ...mockUserProfileLong, foot_shape: 'greek' },
       [mockShoeNormal]
     );
 
     const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
-    expect(sentPrompt).toMatch(/오목발/);
+    expect(sentPrompt).toMatch(/그리스형/);
   });
 
-  it('foot_arch: neutral → 프롬프트에 "정상 아치" 포함', async () => {
+  it('foot_shape: germanic → 프롬프트에 "게르만형" 포함', async () => {
     const mockCreate = setupMockAndGetPrompt(
       JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
     );
 
     await getAiRecommendations(
-      { ...mockUserProfileLong, foot_arch: 'neutral' },
+      { ...mockUserProfileLong, foot_shape: 'germanic' },
       [mockShoeNormal]
     );
 
     const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
-    expect(sentPrompt).toMatch(/정상 아치/);
+    expect(sentPrompt).toMatch(/게르만형/);
   });
 
-  it('foot_arch 미입력 → 프롬프트에 족형(아치 유형) 항목 없음', async () => {
+  it('foot_shape 미입력 → 프롬프트에 족형(발 모양 유형) 항목 없음', async () => {
     const mockCreate = setupMockAndGetPrompt(
       JSON.stringify([{ rank: 1, goods_no: 'SHOE001', reason: '테스트' }])
     );
 
-    // foot_arch 없는 기본 프로파일
-    const profileNoArch = { ...mockUserProfileLong };
-    delete profileNoArch.foot_arch;
+    // foot_shape 없는 기본 프로파일
+    const profileNoShape = { ...mockUserProfileLong };
+    delete profileNoShape.foot_shape;
 
-    await getAiRecommendations(profileNoArch, [mockShoeNormal]);
+    await getAiRecommendations(profileNoShape, [mockShoeNormal]);
 
     const sentPrompt = mockCreate.mock.calls[0][0].messages[0].content;
-    expect(sentPrompt).not.toMatch(/족형\(아치 유형\)/);
+    expect(sentPrompt).not.toMatch(/족형\(발 모양 유형\)/);
   });
 });

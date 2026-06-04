@@ -227,26 +227,31 @@ const mockSizeGuideNikeWildcard = {
 };
 
 // ============================================================
-// 족형(arch) 테스트 전용 신발
+// 족형(foot_shape) 테스트 전용 신발
 // ============================================================
 
 /**
- * calcScore 족형 점수 검증용 픽스처
+ * calcScore 족형(foot_shape) 점수 검증용 픽스처
  *
- * 기준 사용자 (mockUserProfileFlat / mockUserProfileHighArch):
+ * 기준 사용자 (mockUserProfileFlat, foot_shape:'egyptian', foot_width:'narrow'):
  *   running_distance: 'short'  → DISTANCE_MAP → '단거리'
  *   foot_width: 'narrow'       → WIDTH_MAP    → '좁음'
  *   preferred_cushion: 5
  *   budget: null               → BUDGET_MAX[null] → Infinity
+ *   foot_shape: 'egyptian'
+ *
+ * 두 신발은 width='좁음'으로 동일하여 발볼 점수를 격리 — toe_fit 차이만 검증
  *
  * 예상 점수 (mockUserProfileFlat 기준):
- *   stability 신발: 발볼(+40) + 쿠션(diff=4→0) + 거리(+20) + 예산(+10) + 족형(+15) = 85
- *   neutral   신발: 발볼(+40) + 쿠션(0)        + 거리(+20) + 예산(+10) + 족형(-10) = 60
- *   → 차이 25점 ≥ 15점 기준 충족
+ *   SHOE_STAB (toe_fit=egyptian, width=좁음):
+ *     발볼(+40) + 쿠션(0) + 거리(+20) + 예산(+10) + toe_fit보너스(+10) + 발볼패널티(-10) = 70
+ *   SHOE_NEUT (toe_fit=all, width=좁음):
+ *     발볼(+40) + 쿠션(0) + 거리(+20) + 예산(+10) + toe_fit보너스(0) + 발볼패널티(-10) = 60
+ *   → 이집트형 특화 신발이 10점 높음
  */
 const mockShoeStability = {
   goods_no: 'SHOE_STAB',
-  goods_name: '아식스 족형테스트-스태빌리티',
+  goods_name: '아식스 족형테스트-이집트형맞춤',
   brand: 'ASICS',
   price: 100000,
   url: 'https://example.com/shoe_stab',
@@ -257,7 +262,7 @@ const mockShoeStability = {
   distance: '단거리',
   breathability: 3,
   fit: 3,
-  summary: '안정화 족형 테스트 픽스처',
+  summary: '이집트형 족형 테스트 픽스처 (좁은 발볼, toe_fit=egyptian)',
   review_count_used: 10,
   confidence: 'medium',
   main_color: 'White',
@@ -265,16 +270,17 @@ const mockShoeStability = {
   lifespan_km_min: 500,
   lifespan_km_max: 700,
   has_carbon_plate: false,
-  arch_support: 'stability',
+  toe_fit: 'egyptian',
 };
 
-/** mockShoeStability와 arch_support만 다름 (neutral) */
+/** mockShoeStability와 toe_fit만 다름 (all) — 같은 발볼(좁음)로 점수 격리 */
 const mockShoeNeutralArch = {
   ...mockShoeStability,
   goods_no: 'SHOE_NEUT',
-  goods_name: '뉴발란스 족형테스트-뉴트럴',
+  goods_name: '뉴발란스 족형테스트-범용',
   brand: 'New Balance',
-  arch_support: 'neutral',
+  toe_fit: 'all',
+  summary: '범용 족형 테스트 픽스처 (좁은 발볼, toe_fit=all)',
 };
 
 // ============================================================
@@ -302,8 +308,9 @@ const mockUserProfileShortWide = {
 };
 
 /**
- * 족형 테스트 전용 프로파일 — 평발
- * mockShoeStability / mockShoeNeutralArch 와 조합하여 점수 차이 검증
+ * 족형 테스트 전용 프로파일 — 이집트형
+ * mockShoeStability(넓음, toe_fit=egyptian) / mockShoeNeutralArch(좁음, toe_fit=all)와
+ * 조합하여 점수 차이 검증
  */
 const mockUserProfileFlat = {
   running_distance: 'short',
@@ -313,13 +320,13 @@ const mockUserProfileFlat = {
   priorities: [],
   budget: null,
   free_text: '',
-  foot_arch: 'flat',
+  foot_shape: 'egyptian',
 };
 
-/** 족형 테스트 전용 프로파일 — 오목발 */
+/** 족형 테스트 전용 프로파일 — 그리스형 */
 const mockUserProfileHighArch = {
   ...mockUserProfileFlat,
-  foot_arch: 'high',
+  foot_shape: 'greek',
 };
 
 // ============================================================

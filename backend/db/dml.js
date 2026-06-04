@@ -39,8 +39,8 @@ const SCHEMA = {
     'breathability', 'fit', 'summary', 'review_count_used', 'confidence',
     'main_color', 'accent_color',
     'lifespan_km_min', 'lifespan_km_max', 'has_carbon_plate',
-    // v2.1 족형 지원 컬럼
-    'arch_support',
+    // v2.7 발 모양 호환성
+    'toe_fit',
   ],
   Celebs: [
     'celeb_id', 'celeb_name', 'celeb_type', 'celeb_image_url', 'goods_no', 'source_url',
@@ -75,7 +75,7 @@ const SAMPLE_SHOES = [
     review_count_used: 20, confidence: 'high',
     main_color: '화이트', accent_color: '실버',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'all',
+    toe_fit: 'all',
   },
   {
     goods_no: '3990544', goods_name: 'W480SK5', brand: '뉴발란스',
@@ -85,7 +85,7 @@ const SAMPLE_SHOES = [
     review_count_used: 20, confidence: 'high',
     main_color: '그레이', accent_color: '네이비',
     lifespan_km_min: 500, lifespan_km_max: 700, has_carbon_plate: false,
-    arch_support: 'neutral',
+    toe_fit: 'greek,celtic',
   },
   {
     goods_no: '4521387', goods_name: '페가수스 41', brand: '나이키',
@@ -95,7 +95,7 @@ const SAMPLE_SHOES = [
     review_count_used: 20, confidence: 'high',
     main_color: '블랙', accent_color: '화이트',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'all',
+    toe_fit: 'all',
   },
   {
     goods_no: '5123456', goods_name: '마파테 스피드 2', brand: '호카',
@@ -105,7 +105,7 @@ const SAMPLE_SHOES = [
     review_count_used: 18, confidence: 'high',
     main_color: '블루', accent_color: '오렌지',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'neutral',
+    toe_fit: 'egyptian,roman,germanic',
   },
   {
     goods_no: '4789123', goods_name: '엔돌핀 스피드 4', brand: '사코니',
@@ -115,7 +115,7 @@ const SAMPLE_SHOES = [
     review_count_used: 15, confidence: 'high',
     main_color: '화이트', accent_color: '그린',
     lifespan_km_min: 300, lifespan_km_max: 500, has_carbon_plate: true,
-    arch_support: 'neutral',
+    toe_fit: 'greek,celtic',
   },
   {
     goods_no: '4456789', goods_name: '노바블라스트 4', brand: '아식스',
@@ -125,17 +125,17 @@ const SAMPLE_SHOES = [
     review_count_used: 20, confidence: 'high',
     main_color: '블루', accent_color: '옐로우',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'all',
+    arch_support: 'all', toe_fit: 'egyptian,roman,germanic',
   },
   {
     goods_no: '4112233', goods_name: '젤 카야노 31', brand: '아식스',
     price: 189000, url: 'https://www.musinsa.com/products/4112233', thumbnail: '',
     width: '보통', cushion: 4, weight: 4, distance: '장거리',
-    breathability: 3, fit: 5, summary: '안정성 최고, 평발 러너에게 추천',
+    breathability: 3, fit: 5, summary: '안정성 최고, 이집트형·평발 러너에게 추천',
     review_count_used: 20, confidence: 'high',
     main_color: '네이비', accent_color: '실버',
     lifespan_km_min: 700, lifespan_km_max: 900, has_carbon_plate: false,
-    arch_support: 'stability',
+    toe_fit: 'egyptian',
   },
   {
     goods_no: '5234567', goods_name: '클리프턴 9', brand: '호카',
@@ -145,7 +145,7 @@ const SAMPLE_SHOES = [
     review_count_used: 20, confidence: 'high',
     main_color: '화이트', accent_color: '스카이블루',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'neutral',
+    toe_fit: 'roman,germanic',
   },
   {
     goods_no: '4998877', goods_name: '라이드 17', brand: '사코니',
@@ -155,7 +155,7 @@ const SAMPLE_SHOES = [
     review_count_used: 12, confidence: 'high',
     main_color: '그레이', accent_color: '블루',
     lifespan_km_min: 500, lifespan_km_max: 700, has_carbon_plate: false,
-    arch_support: 'all',
+    arch_support: 'all', toe_fit: 'greek,celtic',
   },
   {
     goods_no: '4665544', goods_name: '글라이드라이드 3', brand: '아식스',
@@ -165,7 +165,7 @@ const SAMPLE_SHOES = [
     review_count_used: 8, confidence: 'medium',
     main_color: '블랙', accent_color: '레드',
     lifespan_km_min: 600, lifespan_km_max: 800, has_carbon_plate: false,
-    arch_support: 'stability',
+    toe_fit: 'all',
   },
 ];
 

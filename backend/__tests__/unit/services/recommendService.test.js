@@ -151,7 +151,7 @@ describe('recommend — 후보 없음', () => {
 });
 
 // ============================================================
-// v2.1 족형(foot_arch) — calcScore 스코어링
+// v2.7 족형(foot_shape) — calcScore 스코어링
 // ============================================================
 
 describe('recommend — 족형 calcScore 스코어링 (폴백 경로)', () => {
@@ -159,11 +159,17 @@ describe('recommend — 족형 calcScore 스코어링 (폴백 경로)', () => {
    * 폴백(Claude 실패) 경로에서 match_score가 실제 calcScore 결과이므로
    * 이 경로를 통해 족형 보너스/패널티를 검증한다.
    *
-   * 기대 점수 (mockUserProfileFlat 기준):
-   *   stability 신발: +40(발볼) +0(쿠션) +20(거리) +10(예산) +15(arch) = 85
-   *   neutral   신발: +40(발볼) +0(쿠션) +20(거리) +10(예산) -10(arch) = 60
+   * mockUserProfileFlat = { foot_shape: 'egyptian', foot_width: 'narrow', ... }
+   * mockShoeStability   = { width: '좁음', toe_fit: 'egyptian' }  ← egyptian 특화
+   * mockShoeNeutralArch = { width: '좁음', toe_fit: 'all' }       ← 범용
+   * 두 신발 모두 width='좁음' → 발볼 점수 동일, toe_fit 차이만 검증
+   *
+   * 예상 점수 (mockUserProfileFlat 기준):
+   *   SHOE_STAB: +40(발볼) +0(쿠션) +20(거리) +10(예산) +10(toe_fit) -10(발볼패널티) = 70
+   *   SHOE_NEUT: +40(발볼) +0(쿠션) +20(거리) +10(예산) +0(toe_fit)  -10(발볼패널티) = 60
+   *   → 이집트형 특화 신발이 10점 높음
    */
-  it('평발(flat) + stability 신발이 neutral 신발보다 match_score가 최소 15점 높다', async () => {
+  it('이집트형(egyptian) 특화 신발이 범용 신발보다 match_score가 높다', async () => {
     getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
 
     const result = await recommend(
@@ -176,74 +182,67 @@ describe('recommend — 족형 calcScore 스코어링 (폴백 경로)', () => {
 
     expect(stabResult).toBeDefined();
     expect(neutResult).toBeDefined();
-    expect(stabResult.match_score - neutResult.match_score).toBeGreaterThanOrEqual(15);
+    expect(stabResult.match_score).toBeGreaterThan(neutResult.match_score);
   });
 
   /**
-   * 오목발(high) 기준:
-   *   neutral  신발: +40 +0 +20 +10 +15(arch) = 85
-   *   stability신발: +40 +0 +20 +10  +0(arch) = 70
+   * 그리스형(greek): SHAPE_WIDTH_PREF['greek'] = 'normal'
+   * 넓은 발볼 선호가 없으므로 좁은 신발(toe_fit=all)이 감점 없이 높은 발볼 점수
+   * 이집트형 특화 신발보다 범용 신발이 더 높거나 비슷해야 함
    */
-  it('오목발(high) + neutral 신발이 stability 신발보다 높은 match_score를 받는다', async () => {
+  it('그리스형(greek) 사용자에게 이집트형 특화 신발 감점이 없다 (범용 신발이 더 높음)', async () => {
     getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
 
     const result = await recommend(
-      mockUserProfileHighArch,
+      mockUserProfileHighArch,  // foot_shape: 'greek'
       [mockShoeStability, mockShoeNeutralArch]
     );
 
-    const neutResult = result.find((r) => r.goods_no === 'SHOE_NEUT');
     const stabResult = result.find((r) => r.goods_no === 'SHOE_STAB');
+    const neutResult = result.find((r) => r.goods_no === 'SHOE_NEUT');
 
-    expect(neutResult.match_score).toBeGreaterThan(stabResult.match_score);
+    // greek은 발볼 wide 선호 없음 → 좁은 발볼 신발(SHOE_NEUT)이 발볼 점수 +40
+    // 이집트형 특화 신발(SHOE_STAB)은 toe_fit 미매칭 + 발볼 보너스 없음 → SHOE_NEUT가 유리
+    expect(neutResult.match_score).toBeGreaterThanOrEqual(stabResult.match_score);
   });
 
-  it('족형 미입력(null) 시 arch 보너스/패널티가 없어 족형 입력보다 낮은 점수를 받는다', async () => {
+  it('족형 미입력(null) 시 족형 보너스/패널티가 없어 족형 입력보다 낮은 점수를 받는다', async () => {
     getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
 
-    const profileNoArch = { ...mockUserProfileFlat, foot_arch: null };
-    const profileWithArch = { ...mockUserProfileFlat, foot_arch: 'flat' };
+    const profileNoShape = { ...mockUserProfileFlat, foot_shape: null };
+    const profileWithShape = { ...mockUserProfileFlat, foot_shape: 'egyptian' };
 
-    const resultNoArch = await recommend(profileNoArch, [mockShoeStability]);
-    const resultWithArch = await recommend(profileWithArch, [mockShoeStability]);
+    const resultNoShape = await recommend(profileNoShape, [mockShoeStability]);
+    const resultWithShape = await recommend(profileWithShape, [mockShoeStability]);
 
-    // foot_arch=null 은 보너스 없음(70점), foot_arch=flat은 +15(85점)
-    expect(resultNoArch[0].match_score).toBeLessThan(resultWithArch[0].match_score);
+    // foot_shape=null 은 족형 보너스 없음, foot_shape=egyptian은 toe_fit+발볼 보너스 있음
+    expect(resultNoShape[0].match_score).toBeLessThan(resultWithShape[0].match_score);
   });
 });
 
 // ============================================================
-// v2.1 족형(foot_arch) — fallbackReason 메시지
+// v2.7 족형(foot_shape) — fallbackReason 메시지
 // ============================================================
 
 describe('recommend — fallbackReason 족형 메시지', () => {
-  it('평발(flat) + stability 신발 → 폴백 reason에 평발/과내전 문구 포함', async () => {
+  it('이집트형(egyptian) + toe_fit=egyptian 신발 → 폴백 reason에 이집트형 관련 문구 포함', async () => {
     getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
 
     const result = await recommend(mockUserProfileFlat, [mockShoeStability]);
 
     expect(result[0].is_fallback).toBe(true);
-    expect(result[0].reason).toMatch(/평발|과내전/);
-  });
-
-  it('오목발(high) + neutral 신발 → 폴백 reason에 오목발 문구 포함', async () => {
-    getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
-
-    const result = await recommend(mockUserProfileHighArch, [mockShoeNeutralArch]);
-
-    expect(result[0].is_fallback).toBe(true);
-    expect(result[0].reason).toMatch(/오목발/);
+    expect(result[0].reason).toMatch(/이집트형|toe box/);
   });
 });
 
 // ============================================================
-// v2.1 족형(foot_arch) — filterCandidates 처리
+// v2.7 족형(foot_shape) — filterCandidates 처리
 // ============================================================
 
-describe('recommend — foot_arch 포함 프로파일 처리', () => {
-  it('foot_arch 포함 user_profile로 오류 없이 추천 결과를 반환한다', async () => {
+describe('recommend — foot_shape 포함 프로파일 처리', () => {
+  it('foot_shape 포함 user_profile로 오류 없이 추천 결과를 반환한다', async () => {
     getAiRecommendations.mockResolvedValue([
-      { rank: 1, goods_no: 'SHOE_STAB', reason: '평발에 적합한 안정화' },
+      { rank: 1, goods_no: 'SHOE_STAB', reason: '이집트형에 적합한 신발' },
     ]);
 
     await expect(
@@ -251,13 +250,13 @@ describe('recommend — foot_arch 포함 프로파일 처리', () => {
     ).resolves.not.toThrow();
   });
 
-  it('알 수 없는 foot_arch 값이 들어와도 오류 없이 처리된다 (방어 처리)', async () => {
+  it('알 수 없는 foot_shape 값이 들어와도 오류 없이 처리된다 (방어 처리)', async () => {
     getAiRecommendations.mockRejectedValue(new Error('forced_fallback'));
 
-    const profileUnknownArch = { ...mockUserProfileFlat, foot_arch: 'invalid_value' };
+    const profileUnknownShape = { ...mockUserProfileFlat, foot_shape: 'invalid_value' };
 
     await expect(
-      recommend(profileUnknownArch, [mockShoeStability])
+      recommend(profileUnknownShape, [mockShoeStability])
     ).resolves.not.toThrow();
   });
 });

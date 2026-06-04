@@ -262,27 +262,27 @@ describe('POST /api/recommend/socks', () => {
 });
 
 // ============================================================
-// POST /api/recommend — v2.1 족형(foot_arch) 하위 호환성
+// POST /api/recommend — v2.7 족형(foot_shape) 처리
 // ============================================================
 
-describe('POST /api/recommend — 족형(foot_arch) 처리', () => {
-  it('foot_arch: flat 포함 시 200 성공 및 추천 반환', async () => {
+describe('POST /api/recommend — 족형(foot_shape) 처리', () => {
+  it('foot_shape: egyptian 포함 시 200 성공 및 추천 반환', async () => {
     sheetsService.getAllShoes.mockResolvedValue(mockAllShoes);
     sheetsService.saveLog.mockResolvedValue(undefined);
     claudeService.getAiRecommendations.mockResolvedValue([
-      { rank: 1, goods_no: 'SHOE001', reason: '평발에 적합한 안정화 구조' },
+      { rank: 1, goods_no: 'SHOE001', reason: '이집트형에 적합한 넓은 toe box 구조' },
     ]);
 
     const res = await request(app)
       .post('/api/recommend')
-      .send({ user_profile: { ...mockUserProfileLong, foot_arch: 'flat' } });
+      .send({ user_profile: { ...mockUserProfileLong, foot_shape: 'egyptian' } });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(res.body.recommendations).toBeInstanceOf(Array);
   });
 
-  it('foot_arch: null 포함 시 200 성공 (하위 호환 — 족형 미제공)', async () => {
+  it('foot_shape: null 포함 시 200 성공 (족형 미제공)', async () => {
     sheetsService.getAllShoes.mockResolvedValue(mockAllShoes);
     sheetsService.saveLog.mockResolvedValue(undefined);
     claudeService.getAiRecommendations.mockResolvedValue([
@@ -291,13 +291,13 @@ describe('POST /api/recommend — 족형(foot_arch) 처리', () => {
 
     const res = await request(app)
       .post('/api/recommend')
-      .send({ user_profile: { ...mockUserProfileLong, foot_arch: null } });
+      .send({ user_profile: { ...mockUserProfileLong, foot_shape: null } });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
 
-  it('foot_arch 필드 자체가 없어도 200 성공 (하위 호환 — 이전 클라이언트)', async () => {
+  it('foot_shape 필드 자체가 없어도 200 성공 (하위 호환 — 이전 클라이언트)', async () => {
     sheetsService.getAllShoes.mockResolvedValue(mockAllShoes);
     sheetsService.saveLog.mockResolvedValue(undefined);
     claudeService.getAiRecommendations.mockResolvedValue([
@@ -306,13 +306,13 @@ describe('POST /api/recommend — 족형(foot_arch) 처리', () => {
 
     const res = await request(app)
       .post('/api/recommend')
-      .send({ user_profile: mockUserProfileLong }); // foot_arch 필드 없음
+      .send({ user_profile: mockUserProfileLong }); // foot_shape 필드 없음
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
 
-  it('foot_arch: 알 수 없는 값이어도 200 성공 (방어 처리)', async () => {
+  it('foot_shape: 알 수 없는 값이어도 200 성공 (방어 처리)', async () => {
     sheetsService.getAllShoes.mockResolvedValue(mockAllShoes);
     sheetsService.saveLog.mockResolvedValue(undefined);
     claudeService.getAiRecommendations.mockResolvedValue([
@@ -321,7 +321,7 @@ describe('POST /api/recommend — 족형(foot_arch) 처리', () => {
 
     const res = await request(app)
       .post('/api/recommend')
-      .send({ user_profile: { ...mockUserProfileLong, foot_arch: 'invalid_value' } });
+      .send({ user_profile: { ...mockUserProfileLong, foot_shape: 'invalid_value' } });
 
     expect(res.status).toBe(200);
   });

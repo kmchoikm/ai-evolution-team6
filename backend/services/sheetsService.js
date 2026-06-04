@@ -61,8 +61,8 @@ async function getAllShoes() {
     lifespan_km_min: Number(r.get('lifespan_km_min')) || 0,
     lifespan_km_max: Number(r.get('lifespan_km_max')) || 0,
     has_carbon_plate: String(r.get('has_carbon_plate')).toLowerCase() === 'true',
-    // v2.1 족형 지원 컬럼 (neutral / stability / motion_control / all)
-    arch_support: r.get('arch_support') || 'all',
+    // v2.7 발 모양 호환성 (all 또는 쉼표 구분 족형 목록)
+    toe_fit: r.get('toe_fit') || 'all',
   }));
 }
 
@@ -104,8 +104,8 @@ async function saveLog(userProfile, recommendedGoodsNos) {
       priorities: (userProfile.priorities || []).join(','),
       budget: userProfile.budget || '',
       free_text: userProfile.free_text || '',
-      // v2.1 족형 로깅
-      foot_arch: userProfile.foot_arch || '',
+      // v2.7 발 모양 족형 로깅
+      foot_shape: userProfile.foot_shape || '',
       recommended_goods_no: recommendedGoodsNos.join(','),
     });
   } catch (err) {
