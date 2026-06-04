@@ -32,6 +32,8 @@ const SCHEMA = {
     // v2.0 추가 컬럼
     'main_color', 'accent_color',
     'lifespan_km_min', 'lifespan_km_max', 'has_carbon_plate',
+    // v2.7 발 모양 호환성 컬럼
+    'toe_fit',
   ],
 
   // §7.2 Sheet 2: Logs (사용자 이용 이력) — 앱이 자동 생성, 시드 대상 아님
@@ -39,6 +41,8 @@ const SCHEMA = {
     'log_id', 'timestamp',
     'running_distance', 'frequency', 'foot_width', 'preferred_cushion',
     'priorities', 'budget', 'free_text',
+    // v2.7 발 모양 유형 (발가락 형태 기반 5종)
+    'foot_shape',
     'recommended_goods_no',
   ],
 

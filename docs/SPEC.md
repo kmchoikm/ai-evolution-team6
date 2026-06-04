@@ -69,6 +69,24 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.8 | 2026-06-04 | 삭제 | §6.1 Response·§7.1 Shoes: `arch_support` 컬럼 제거 — 스코어링 로직·대응 사용자 입력 모두 없어진 고아 컬럼 정리 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §1.2·§5.1: Q3-2 족형을 발 아치 3종 → **발 모양 5종** (이집트·로마·그리스·게르만·켈트형)으로 전면 교체 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §5.2: 족형 스코어링 로직 — arch_support 매핑 제거, foot_shape 기반 발볼 선호도·toe_fit 매칭 보너스로 교체 | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §6.1: `foot_arch` → `foot_shape` 필드명 변경; 허용 값 `neutral/flat/high` → `egyptian/roman/greek/germanic/celtic` | kmchoikm |
+| v2.7 | 2026-06-04 | 추가 | §7.1 Shoes: `toe_fit` 컬럼 추가 (발 모양별 호환성; 기본값 `all`) | kmchoikm |
+| v2.7 | 2026-06-04 | 수정 | §7.2 Logs: `foot_arch` → `foot_shape` 컬럼명 변경 (DB에는 신규 컬럼 추가) | kmchoikm |
+| v2.6 | 2026-05-27 | 수정 | §3: Claude 모델 `20240620` → `20241022`; Axios 제거 → `@anthropic-ai/sdk` 반영 | kmchoikm |
+| v2.6 | 2026-05-27 | 수정 | §5.2: 폴백 로직 설명 현행화 — 하드코딩 베스트셀러 → calcScore 기반 상위 5개 동적 반환 | kmchoikm |
+| v2.6 | 2026-05-27 | 추가 | §6.1 Response: `main_color`, `accent_color`, `arch_support`, `has_carbon_plate`, `lifespan_km_min/max` 6개 필드 추가 | kmchoikm |
+| v2.6 | 2026-05-27 | 수정 | §8.9: Fallback 시퀀스 — 실제 없는 Sheets 재조회 단계 제거, candidates 메모리 내 처리로 수정 | kmchoikm |
+| v2.6 | 2026-05-27 | 수정 | §1.1: Primary CTA 목적지 `index.html` → `diagnosis.html`; 프론트엔드 파일 구조 표 추가 | kmchoikm |
+| v2.5 | 2026-05-27 | 추가 | §1.2·§5.1: Q3-2 족형(발 아치 유형) 질문 항목 추가 (neutral/flat/high, 선택) | kmchoikm |
+| v2.5 | 2026-05-27 | 추가 | §6.1: user_profile에 `foot_arch` 필드 추가 (neutral/flat/high, 선택) | kmchoikm |
+| v2.5 | 2026-05-27 | 추가 | §7.1 Shoes: `arch_support` 컬럼 추가 (neutral/stability/motion_control/all) | kmchoikm |
+| v2.5 | 2026-05-27 | 추가 | §7.2 Logs: `foot_arch` 컬럼 추가 | kmchoikm |
+| v2.4 | 2026-05-14 | 수정 | §3 FE 기술 스택 변경: React+Vite+Tailwind → Vanilla HTML/CSS/JS+Custom CSS+sessionStorage; §4 아키텍처 표 동기화; §1.4·§5.4 "컴포넌트 재사용" → "렌더링 함수 재사용" | kmchoikm |
+| v2.3 | 2026-05-14 | 수정 | §5.3 홈 화면 허브 구조 — §1.0 블록 다이어그램·§1.1 시나리오와 1:1 정합성 맞춰 재작성 | kmchoikm |
+| v2.3 | 2026-05-14 | 수정 | §7 ERD 동기화 정책 추가 — §7이 단일 진실 소스, ddl.js·dml.js 동기화 규칙 명시 | kmchoikm |
 | v2.2 | 2026-05-14 | 구조 개선 | §1 전면 재구성 — 홈 허브 중심 목차화 + §1.0 전체 시나리오 블록 다이어그램 추가 | kmchoikm |
 | v2.2 | 2026-05-14 | 구조 개선 | §8 전면 재구성 — §1 시나리오와 1:1 대응 콜 플로우, 시퀀스 다이어그램 시각화 | kmchoikm |
 | v2.2 | 2026-05-14 | 수정 | §5: Feature 번호 워딩 제거, §5.X 번호 체계로 통일 | kmchoikm |
@@ -80,9 +98,6 @@
 | v2.2 | 2026-05-14 | 수정 | 추천 결과 최대 5개로 통일 (§1.2, §5.2, §8.1, §6.1) | kmchoikm |
 | v2.2 | 2026-05-14 | 수정 | Claude API Timeout 5초로 통일 (§5.2, §8.9) | kmchoikm |
 | v2.2 | 2026-05-14 | 수정 | §1.2 유효성 검증에 Q5·Q7 검증 항목 추가 | kmchoikm |
-| v2.3 | 2026-05-14 | 수정 | §5.3 홈 화면 허브 구조 — §1.0 블록 다이어그램·§1.1 시나리오와 1:1 정합성 맞춰 재작성 | kmchoikm |
-| v2.3 | 2026-05-14 | 수정 | §7 ERD 동기화 정책 추가 — §7이 단일 진실 소스, ddl.js·dml.js 동기화 규칙 명시 | kmchoikm |
-| v2.4 | 2026-05-14 | 수정 | §3 FE 기술 스택 변경: React+Vite+Tailwind → Vanilla HTML/CSS/JS+Custom CSS+sessionStorage; §4 아키텍처 표 동기화; §1.4·§5.4 "컴포넌트 재사용" → "렌더링 함수 재사용" | kmchoikm |
 | v2.1 | 2026-05-13 | 구조 개선 | §3 기술 스택을 §5 앞으로 이동 (§3↔§5 번호 교환). §3.X → §5.X 전체 참조 갱신 | kmchoikm |
 | v2.1 | 2026-05-13 | 구조 개선 | §6 API 명세 전면 재작성 — 표준 포맷(설명·시나리오·필드·요청·응답·예시) 적용 | kmchoikm |
 | v2.1 | 2026-05-13 | 삭제 | `docs/SEED_DATA.md` 제거 — `backend/db/dml.js`를 단일 시드 소스로 확정 | kmchoikm |
@@ -178,10 +193,23 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 
 | 카드/버튼 | 목적지 | 참조 시나리오 |
 |---|---|---|
-| "내 러닝화 추천받기" (Primary CTA) | Q1~Q7 설문 폼 (`index.html`) | §1.2 |
-| "교체 계산기" 카드 | 러닝화 교체 시기 계산기 | §1.5 |
-| "대회 코스" 카드 | 대회 코스 기반 추천 | §1.3 |
-| "셀럽/우승자" 카드 | 셀럽·우승자 착용 신발 탐색 | §1.4 |
+| "내 러닝화 추천받기" (Primary CTA) | Q1~Q7+Q3-2 진단 폼 (`diagnosis.html`) | §1.2 |
+| "교체 계산기" 카드 | 러닝화 교체 시기 계산기 (`lifespan.html`) | §1.5 |
+| "대회 코스" 카드 | 대회 코스 기반 추천 (`race.html`) | §1.3 |
+| "셀럽/우승자" 카드 | 셀럽·우승자 착용 신발 탐색 (`celebs.html`) | §1.4 |
+
+> **프론트엔드 파일 구조 (v2.6 기준)**
+>
+> | 파일 | 역할 |
+> |------|------|
+> | `index.html` | 허브 홈 화면 (루트 `/` 진입점) |
+> | `diagnosis.html` | AI 러닝화 추천 진단 폼 (Q1~Q7 + Q3-2 족형) |
+> | `result.html` | 추천 결과 카드 (양말·코디·사이즈 연결) |
+> | `lifespan.html` | 러닝화 교체 시기 계산기 |
+> | `race.html` | 대회 코스 기반 러닝화 추천 |
+> | `celebs.html` | 셀럽·우승자 착용 신발 탐색 |
+> | `size.html` | 사이즈 핏 가이드 |
+> | `home.html` | _(legacy)_ `index.html`로 즉시 redirect — 직접 접근하지 않음 |
 
 ---
 
@@ -196,6 +224,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
    | Q1 | 주로 달리는 거리 | 라디오 (4개 옵션) | ✅ |
    | Q2 | 러닝 빈도 | 라디오 (3개 옵션) | - (기본: 주 3~4회) |
    | Q3 | 발볼 너비 | 라디오 (3개 옵션) | ✅ |
+   | Q3-2 | 족형 (발 모양 유형) | 라디오 (5개 옵션) | - (선택 — 미선택 시 무시) |
    | Q4 | 선호 쿠션감 | 슬라이더 (1~5단계) | - (기본: 3) |
    | Q5 | 중요 요소 | 체크박스 (최대 3개) | - |
    | Q6 | 예산 범위 | 라디오 (5개 옵션) | - |
@@ -306,10 +335,10 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
   * **State Management:** sessionStorage (페이지 간 상태 전달)
 * **Backend (WAS):**
   * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
-  * **API Client:** Axios (외부 API 통신용)
+  * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — 타임아웃·AbortController 내장)
 * **Database & LLM:**
   * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
-  * **LLM:** Anthropic Claude API (모델: `claude-3-5-sonnet-20240620` - 추론 및 근거 생성에 탁월)
+  * **LLM:** Anthropic Claude API (모델: `claude-3-5-sonnet-20241022` — 추론 및 근거 생성에 탁월)
 
 ---
 
@@ -354,6 +383,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | Q1. 달리는 거리 | `distance` | radio | short(5km↓) / medium(5~10km) / long(10~21km) / marathon(21km↑) | ✅ | 없음 |
 | Q2. 러닝 빈도 | `frequency` | radio | casual(주1~2회) / regular(주3~4회) / intensive(주5회↑) | - | regular |
 | Q3. 발볼 너비 | `width` | radio | wide(넓음) / normal(보통) / narrow(좁음) | ✅ | 없음 |
+| Q3-2. 족형 (발 모양 유형) | `foot_shape` | radio | egyptian(이집트형) / roman(로마형) / greek(그리스형) / germanic(게르만형) / celtic(켈트형) | - | 없음 (선택) |
 | Q4. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
 | Q5. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
 | Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
@@ -416,10 +446,11 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
   "running_distance": "medium",
   "frequency": "regular",
   "foot_width": "wide",
+  "foot_shape": "egyptian",
   "preferred_cushion": 3,
   "priorities": ["protection", "comfort"],
   "budget": "high",
-  "free_text": "평발이에요"
+  "free_text": "이집트형 발이에요"
 }
 ```
 
@@ -429,7 +460,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 * **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 내전 여부)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
 * **Claude API 호출 (2차):** 필터링된 후보군 N개와 사용자 프로파일을 Claude API 프롬프트에 주입하여 최종 **5개**를 선정하고, **"자연어로 된 맞춤형 추천 사유"**를 생성한다.
-* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **5초** 이상 지연될 경우 통신을 끊고, DB에 하드코딩된 '안정성 위주의 베스트셀러(예: 브룩스 아드레날린, 아식스 카야노 등)'를 폴백 데이터로 즉시 반환한다.
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **5초** 이상 지연될 경우 AbortController로 통신을 끊고, 이미 1차 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다.
 
 ---
 
@@ -630,6 +661,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `running_distance` | string | `short` / `medium` / `long` / `marathon` | ✅ | 주로 달리는 거리 |
 | `frequency` | string | `casual` / `regular` / `intensive` | - | 러닝 빈도 (기본값: `regular`) |
 | `foot_width` | string | `wide` / `normal` / `narrow` | ✅ | 발볼 너비 |
+| `foot_shape` | string | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | - | 족형(발 모양 유형). 미입력 시 무시. 이집트·로마·게르만형은 넓은 발볼 선호 반영 |
 | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
 | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
 | `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
@@ -642,10 +674,11 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
     "running_distance": "medium",
     "frequency": "regular",
     "foot_width": "wide",
+    "foot_shape": "egyptian",
     "preferred_cushion": 3,
     "priorities": ["protection", "comfort"],
     "budget": "high",
-    "free_text": "평발이에요"
+    "free_text": "이집트형 발이에요"
   }
 }
 ```
@@ -673,6 +706,12 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `confidence` | string | 데이터 신뢰도 (`high` / `medium` / `low`) |
 | `reason` | string | Claude AI가 생성한 맞춤형 추천 사유 |
 | `is_fallback` | boolean | Claude API 장애로 폴백 처리된 경우 `true` |
+| `main_color` | string | 신발 주조색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
+| `accent_color` | string | 신발 포인트색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
+| `toe_fit` | string | 발 모양별 호환성 (`all` 또는 쉼표 구분 족형 목록 — `egyptian,roman` 등) |
+| `has_carbon_plate` | boolean | 카본 플레이트 유무 (§5.9 수명 계산에서 활용) |
+| `lifespan_km_min` | number | 최소 권장 수명 (km) |
+| `lifespan_km_max` | number | 최대 권장 수명 (km) |
 
 *정상 (200 OK)*
 ```json
@@ -1323,6 +1362,7 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `lifespan_km_min` | Number | | **v2.0** | 정수 | 최소 권장 수명 (km, §5.9) |
 | `lifespan_km_max` | Number | | **v2.0** | 정수 | 최대 권장 수명 (km, §5.9) |
 | `has_carbon_plate` | Boolean | | **v2.0** | `true` / `false` | 카본 플레이트 유무. 카본화 수명(300~500km)은 일반 쿠션화(500~800km)와 별도 계산 (§5.9) |
+| `toe_fit` | String | | **v2.7** | `all` 또는 쉼표 구분 족형 (`egyptian,roman` 등) | 발 모양 호환성. 기본값: `all` (§5.1 Q3-2 족형 스코어링 반영) |
 
 ---
 
@@ -1339,6 +1379,7 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 | `priorities` | String | | v1.0 | 콤마 구분 문자열 | 중요 요소 |
 | `budget` | String | | v1.0 | `low` / `mid` / `high` / `premium` | 예산 범위 |
 | `free_text` | String | | v1.0 | 최대 200자 | 자유 서술 내용 |
+| `foot_shape` | String | | **v2.7** | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | 사용자 족형(발 모양) 입력값. 미입력 시 빈 문자열 저장 |
 | `recommended_goods_no` | String | FK→Shoes | v1.0 | 콤마 구분 문자열 | 추천된 goods_no 목록 |
 
 ---
@@ -1677,16 +1718,18 @@ FE                    BE                    Sheets               Claude
 │                     │──② Claude 호출──────────────────────────►│
 │                     │                     │                     │
 │                     │  ③ 5초 경과 Timeout │                     │
-│                     │  → Fallback 가동     │                     │
+│                     │  → AbortController  │                     │
+│                     │    .abort()          │                     │
 │                     │                     │                     │
-│                     │──④ getRows()───────►│                     │
-│                     │  [Shoes: Fallback    │                     │
-│                     │   베스트셀러 목록]    │                     │
-│                     │◄──⑤ fallback rows───│                     │
+│                     │  ④ 메모리 내        │                     │
+│                     │  candidates에서      │                     │
+│                     │  calcScore 상위 5개  │                     │
+│                     │  선택 (DB 재조회 없음│                     │
+│                     │  — is_fallback:true) │                     │
 │                     │                     │                     │
-│◄──⑥ 추천 결과──────│                     │                     │
+│◄──⑤ 추천 결과──────│                     │                     │
 │  {is_fallback: true} │                     │                     │
-│  안정성 위주 고정 추천│                     │                     │
+│  점수 기반 동적 추천 │                     │                     │
 ```
 
-> Timeout 기준: **5초**. Fallback 데이터: 하드코딩된 안정성 위주 베스트셀러 목록 (브룩스 아드레날린, 아식스 카야노 등). FE는 `is_fallback: true` 수신 시 "AI 추천을 불러오지 못했습니다. 인기 신발을 대신 보여드립니다." 배너를 표시한다.
+> Timeout 기준: **5초** (AbortController로 즉시 중단). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 추천을 불러오지 못했습니다. 점수 기반 추천을 보여드립니다." 배너를 표시한다.

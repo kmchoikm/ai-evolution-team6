@@ -37,6 +37,12 @@ Thumbs.db
 .temp/
 *.tmp
 
+# Test coverage
+coverage/
+
+# OMC (oh-my-claudecode) 로컬 상태
+.omc/state/
+
 # Claude Code 로컬 전용 파일
 .claude/settings.local.json
 .claude/skills/*

@@ -33,6 +33,14 @@ const PRIORITY_KO = {
   breathability: '통기성',
   design: '디자인',
 };
+// v2.7 족형(발 모양) 한국어 매핑
+const SHAPE_KO = {
+  egyptian: '이집트형 (엄지발가락 최장, 발가락이 순차적으로 짧아짐 — 내전 경향, 넓은 발볼·안정화 구조 권장)',
+  roman:    '로마형 (앞 3발가락 길이 유사 — 넓은 앞발부, 발볼 여유 필요)',
+  greek:    '그리스형 (두 번째 발가락 최장 — 발가락 높이 공간 중요, 크기 여유 권장)',
+  germanic: '게르만형 (모든 발가락 길이 비슷, 직사각형 앞발부 — 넓고 각진 toe box 필요)',
+  celtic:   '켈트형 (이집트·그리스 혼합 형태 — 일반 발볼 적합)',
+};
 
 // ============================================================
 // 공통 유틸
@@ -79,7 +87,9 @@ function buildUserSummary(profile) {
   const priorities = (profile.priorities || []).map((p) => PRIORITY_KO[p] || p).join(', ') || '없음';
   const cushion = profile.preferred_cushion ?? 3;
 
+  const shape = profile.foot_shape ? (SHAPE_KO[profile.foot_shape] || profile.foot_shape) : null;
   let summary = `- 달리는 거리: ${dist}\n- 발볼 너비: ${width}\n- 선호 쿠션감: ${cushion}/5\n- 예산: ${budget}\n- 중요 요소: ${priorities}`;
+  if (shape) summary += `\n- 족형(발 모양 유형): ${shape}`;
   if (profile.free_text) summary += `\n- 추가 메모: ${profile.free_text}`;
   return summary;
 }
@@ -97,7 +107,7 @@ async function getAiRecommendations(userProfile, candidates) {
         `[${i + 1}] goods_no: ${s.goods_no} | ${s.brand} ${s.goods_name} | ` +
         `가격: ${s.price.toLocaleString()}원 | 발볼: ${s.width} | 쿠션: ${s.cushion}/5 | ` +
         `무게: ${s.weight}/5 | 거리: ${s.distance} | 통기성: ${s.breathability}/5 | ` +
-        `착화감: ${s.fit}/5 | 한줄요약: ${s.summary}`
+        `착화감: ${s.fit}/5 | 발모양호환: ${s.toe_fit || 'all'} | 한줄요약: ${s.summary}`
     )
     .join('\n');
 

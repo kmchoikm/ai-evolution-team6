@@ -2,7 +2,7 @@
  * 추천 오케스트레이션 모듈
  * 1단계: 예산·발볼 기반 1차 필터링
  * 2단계: Claude API 맞춤 추천 이유 생성
- * 폴백: Claude 실패 시 점수 기반 상위 3개 즉시 반환
+ * 폴백: Claude 실패 시 점수 기반 상위 5개 즉시 반환
  */
 
 const { getAiRecommendations } = require('./claudeService');
@@ -24,6 +24,23 @@ const DISTANCE_MAP = {
 };
 
 const WIDTH_MAP = { wide: '넓음', normal: '보통', narrow: '좁음' };
+
+/**
+ * 족형(foot_shape) → 발볼 선호도 매핑
+ *
+ * 이집트형: 엄지 최장, 내전 경향 — 넓은 발볼 선호
+ * 로마형:   앞 3발가락 동일 길이 — 넓은 앞발부 필요
+ * 그리스형: 두 번째 발가락 최장 — 발볼 기준은 보통, 발가락 길이 공간 중요
+ * 게르만형: 모든 발가락 비슷, 직사각형 — 넓은 발볼 필요
+ * 켈트형:   혼합형 — 보통 발볼
+ */
+const SHAPE_WIDTH_PREF = {
+  egyptian:  'wide',    // 발볼 넓음 선호
+  roman:     'wide',    // 발볼 넓음 선호
+  greek:     'normal',  // 발볼은 보통, 발가락 길이 공간 중요
+  germanic:  'wide',    // 발볼 넓음 선호
+  celtic:    'normal',  // 발볼 보통
+};
 
 // ============================================================
 // 점수 계산 (폴백 및 정렬용)
@@ -52,6 +69,21 @@ function calcScore(user, shoe) {
   const cap = BUDGET_MAX[user.budget] ?? Infinity;
   if (shoe.price <= cap) score += 10;
 
+  // 족형(발 모양) 매칭 보너스/패널티 (최대 10점)
+  if (user.foot_shape) {
+    const prefWidth = SHAPE_WIDTH_PREF[user.foot_shape];
+    const toeFitList = (shoe.toe_fit || 'all').split(',').map((s) => s.trim());
+
+    if (toeFitList.includes(user.foot_shape)) {
+      // toe_fit 직접 매칭: 이 신발이 해당 족형에 특화 → 보너스, 발볼 패널티 면제
+      score += 10;
+    } else {
+      // toe_fit 비매칭: 발볼 선호도로만 평가
+      if (prefWidth === 'wide' && shoe.width === '넓음') score += 5;
+      if (prefWidth === 'wide' && shoe.width === '좁음') score -= 10;
+    }
+  }
+
   // 우선순위 보너스
   for (const p of user.priorities || []) {
     if (p === 'speed' && shoe.weight <= 2) score += 5;
@@ -74,6 +106,21 @@ function fallbackReason(user, shoe) {
   if (shoe.distance === DISTANCE_MAP[user.running_distance]) parts.push(`${shoe.distance} 러닝에 최적화`);
   if ((user.priorities || []).includes('protection') && shoe.cushion >= 4)
     parts.push('쿠션이 무릎·발목 충격을 완충하여 부상 위험 감소');
+  // 족형(발 모양) 안내 추가
+  if (user.foot_shape) {
+    const toeFit = shoe.toe_fit || 'all';
+    const toeFitList = toeFit.split(',').map((s) => s.trim());
+    const SHAPE_KO_SHORT = {
+      egyptian: '이집트형', roman: '로마형', greek: '그리스형',
+      germanic: '게르만형', celtic: '켈트형',
+    };
+    const shapeLabel = SHAPE_KO_SHORT[user.foot_shape] || user.foot_shape;
+    if (toeFitList.includes(user.foot_shape)) {
+      parts.push(`${shapeLabel} 발 모양에 최적화된 toe box 구조`);
+    } else if (SHAPE_WIDTH_PREF[user.foot_shape] === 'wide' && shoe.width === '넓음') {
+      parts.push(`${shapeLabel}에 맞는 넓은 발볼 공간 확보`);
+    }
+  }
   return parts.length ? parts.join(' · ') : '종합 스펙 기준 상위 매칭';
 }
 
