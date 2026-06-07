@@ -168,6 +168,19 @@ body {
 }
 .option-btn.selected small { color: rgba(255, 255, 255, 0.65); }
 
+/* 족형 선택 이미지 */
+.foot-type-img {
+  display: block;
+  width: 44px;
+  height: 50px;
+  margin: 0 auto 5px;
+  object-fit: contain;
+}
+.option-btn.selected .foot-type-img {
+  /* 선택 상태(검정 배경)에서 아이콘을 흰색으로 반전 */
+  filter: brightness(0) invert(1);
+}
+
 /* ============================================================
    반응형 (≤600px / ≤480px / ≤375px)
    ============================================================ */
@@ -188,10 +201,12 @@ body {
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
   .option-btn { padding: 10px 6px; min-height: 52px; font-size: 13px; }
   .option-btn small { font-size: 10px; }
+  .foot-type-img { width: 36px; height: 41px; margin-bottom: 4px; }
   .rec-card { flex-direction: column; gap: 8px; }
   .rec-rank { font-size: 22px; min-width: auto; }
-  .rec-header { flex-direction: column; gap: 4px; }
-  .rec-score { align-self: flex-start; }
+  .rec-header { gap: 8px; }
+  .rec-thumbnail { width: 64px; }
+  .rec-thumb-img, .rec-thumb-fallback { width: 64px; height: 64px; font-size: 26px; }
   .rec-footer { flex-direction: column; gap: 8px; align-items: stretch; }
   .btn-musinsa { display: block; text-align: center; padding: 10px; }
   .modal-content { padding: 16px; border-radius: 12px; }
@@ -423,13 +438,19 @@ textarea:focus {
   min-width: 48px;
   letter-spacing: -1px;
 }
-.rec-body { flex: 1; }
+.rec-body { flex: 1; min-width: 0; }
 .rec-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 8px;
+}
+.rec-header-text { flex: 1; min-width: 0; }
+.rec-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
 }
 .rec-header h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
 .rec-name { font-weight: 500; color: var(--text-mid); }
@@ -441,9 +462,37 @@ textarea:focus {
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+  flex-shrink: 0;
 }
+
+/* 썸네일 */
+.rec-thumbnail {
+  flex-shrink: 0;
+  width: 84px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.rec-thumb-img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #F2F2F2;
+}
+.rec-thumb-fallback {
+  width: 84px;
+  height: 84px;
+  background: #F2F2F2;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
 .rec-summary { color: var(--text-light); font-size: 13px; margin-bottom: 10px; }
-.rec-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.rec-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .feature-tag {
   background: #F2F2F2;
   color: var(--text-mid);
@@ -451,6 +500,19 @@ textarea:focus {
   border-radius: 12px;
   font-size: 12px;
 }
+
+/* 인스타그램 해시태그 */
+.rec-ig-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.feature-tag--ig {
+  background: #FDF0F8;
+  color: #C13584;
+  text-decoration: none;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  transition: background 0.12s, color 0.12s;
+}
+.feature-tag--ig:hover { background: #F4D0EC; color: #8B1A6B; }
 .badge {
   padding: 3px 10px;
   border-radius: 12px;
@@ -621,6 +683,13 @@ textarea:focus {
   text-align: left;
 }
 .header-back:hover { color: white; }
+
+.header-logo {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.header-logo:hover { opacity: 0.8; }
 
 /* ============================================================
    홈 허브
@@ -839,33 +908,67 @@ textarea:focus {
    대회 목록 카드
    ============================================================ */
 
-.race-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
+/* 단일 컬럼 리스트 (PC·모바일 공통) */
+.race-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
 }
+
+/* 가로형 한 줄 카드 */
 .race-card {
   background: var(--card);
   border: 1.5px solid var(--border);
   border-radius: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.12s;
+  transition: border-color 0.12s, background 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }
 .race-card:hover { border-color: var(--primary); }
-.race-card.selected { border-color: var(--primary); background: #FAFAFA; }
+.race-card.selected {
+  border-color: var(--primary);
+  background: #FAFAFA;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
 
-.race-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.race-flag { font-size: 20px; }
-.race-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; }
+.race-flag { font-size: 22px; flex-shrink: 0; }
+
+.race-card-content { flex: 1; min-width: 0; }
+.race-card-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+
+.race-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
 .badge-world    { background: #E8EFFF; color: #2244CC; }
 .badge-domestic { background: #F2F2F2; color: #555555; }
 
-.race-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; display: block; letter-spacing: -0.2px; }
-.race-meta { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
-.race-hint { font-size: 11px; color: var(--accent); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.race-name { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+.race-meta { font-size: 12px; color: var(--text-light); margin-bottom: 2px; }
+.race-hint { font-size: 11px; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.race-chevron {
+  font-size: 20px;
+  color: var(--text-light);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  line-height: 1;
+}
+.race-card.selected .race-chevron { transform: rotate(90deg); color: var(--primary); }
+
+/* 인라인 상세 패널 (아코디언) */
+.race-detail-panel {
+  border: 1.5px solid var(--primary);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: #FAFAFA;
+  padding: 20px 16px 16px;
+  margin-bottom: 6px;
+}
 
 .race-info-card {
   background: var(--card);
@@ -1101,7 +1204,7 @@ textarea:focus {
   .hub-card { padding: 14px 4px; }
   .hub-card-icon { font-size: 24px; }
   .hub-card-label { font-size: 12px; }
-  .race-grid { gap: 8px; }
+  .race-list { gap: 4px; }
   .celeb-grid { gap: 8px; }
   .winner-card { flex-direction: column; gap: 8px; }
   .winner-shoe { align-items: flex-start; }
@@ -1115,7 +1218,7 @@ textarea:focus {
   .hub-feature-list strong { font-size: 13px; }
   .hub-feature-list p { font-size: 12px; }
   .tab-btn { font-size: 13px; padding: 9px 0; }
-  .race-grid { grid-template-columns: 1fr; }
+  .race-card { padding: 12px 14px; gap: 10px; }
   .celeb-grid { grid-template-columns: repeat(2, 1fr); }
   .celeb-avatar { width: 48px; height: 48px; }
   .celeb-avatar-placeholder { font-size: 24px; }

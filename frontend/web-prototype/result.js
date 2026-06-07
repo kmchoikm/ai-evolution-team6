@@ -148,6 +148,40 @@ function renderResults(recs) {
   document.getElementById('size-link-section').style.display = 'block';
 }
 
+function buildInstagramTags(shoe) {
+  const tags = [];
+
+  // 브랜드명
+  if (shoe.brand) tags.push(shoe.brand.replace(/\s+/g, ''));
+
+  // 모델명 핵심 시리즈 (첫 단어)
+  if (shoe.goods_name) {
+    const firstWord = shoe.goods_name.split(/[\s\-\/\(]/)[0];
+    if (firstWord && firstWord.length >= 2) tags.push(firstWord);
+  }
+
+  // 항상 포함
+  tags.push('러닝화');
+  tags.push('러닝화추천');
+
+  // 거리 기반 해시태그
+  const distMap = {
+    '단거리': '스피드러닝',
+    '중거리': '중거리러닝',
+    '장거리': '장거리러닝',
+    '전거리': '데일리러닝',
+    '마라톤': '마라톤',
+  };
+  if (shoe.distance && distMap[shoe.distance]) tags.push(distMap[shoe.distance]);
+
+  // 특성 기반
+  if (shoe.has_carbon_plate) tags.push('카본플레이트');
+  if (shoe.cushion >= 4) tags.push('쿠션화');
+  if (shoe.weight <= 2) tags.push('경량화');
+
+  return [...new Set(tags)].slice(0, 6);
+}
+
 function renderRecommendationCard(shoe, rank) {
   const price = Number(shoe.price || 0).toLocaleString();
   const confidenceBadge = shoe.confidence === 'high'
@@ -156,13 +190,30 @@ function renderRecommendationCard(shoe, rank) {
     ? '<span class="badge badge-medium">신뢰도 보통</span>'
     : '<span class="badge badge-low">신뢰도 낮음</span>';
 
+  const igTagsHtml = buildInstagramTags(shoe)
+    .map((tag) => {
+      const url = `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`;
+      return `<a href="${url}" target="_blank" rel="noopener" class="feature-tag feature-tag--ig">#${tag}</a>`;
+    }).join('');
+
+  const thumbHtml = shoe.thumbnail
+    ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+       <div class="rec-thumb-fallback" style="display:none">👟</div>`
+    : `<div class="rec-thumb-fallback">👟</div>`;
+
   return `
     <article class="rec-card rank-${rank}">
       <div class="rec-rank">#${rank}</div>
       <div class="rec-body">
         <div class="rec-header">
-          <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
-          <div class="rec-score">매칭 ${shoe.match_score}%</div>
+          <div class="rec-header-text">
+            <div class="rec-title-row">
+              <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
+              <div class="rec-score">매칭 ${shoe.match_score}%</div>
+            </div>
+          </div>
+          <div class="rec-thumbnail">${thumbHtml}</div>
         </div>
         <p class="rec-summary">${shoe.summary || ''}</p>
         <div class="rec-tags">
@@ -172,6 +223,7 @@ function renderRecommendationCard(shoe, rank) {
           ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
           ${confidenceBadge}
         </div>
+        <div class="rec-ig-tags">${igTagsHtml}</div>
         <p class="rec-reason">💬 ${shoe.reason || ''}</p>
         <div class="rec-footer">
           <span class="rec-price">₩${price}</span>

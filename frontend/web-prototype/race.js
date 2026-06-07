@@ -18,16 +18,6 @@ let currentTab = 'domestic';
 // ============================================================
 
 async function init() {
-  // 라디오/체크박스 선택 스타일 처리
-  document.querySelectorAll('.option-btn input').forEach((input) => {
-    input.addEventListener('change', () => {
-      const name = input.name;
-      document.querySelectorAll(`.option-btn input[name="${name}"]`)
-        .forEach((el) => el.closest('.option-btn').classList.remove('selected'));
-      input.closest('.option-btn').classList.add('selected');
-    });
-  });
-
   await fetchRaces();
 }
 
@@ -85,18 +75,21 @@ function renderRaceList(tab) {
   }
 
   container.innerHTML = `
-    <div class="race-grid">
+    <div class="race-list">
       ${filtered.map((race) => `
-        <button class="race-card" onclick="selectRace('${race.race_id}')">
-          <div class="race-card-top">
-            <span class="race-flag">${countryFlag(race.country)}</span>
-            <span class="race-badge ${race.is_world_major ? 'badge-world' : 'badge-domestic'}">
-              ${race.is_world_major ? '세계 메이저' : '국내'}
-            </span>
+        <button class="race-card" onclick="selectRace('${race.race_id}', this)">
+          <span class="race-flag">${countryFlag(race.country)}</span>
+          <div class="race-card-content">
+            <div class="race-card-row">
+              <span class="race-name">${race.race_name}</span>
+              <span class="race-badge ${race.is_world_major ? 'badge-world' : 'badge-domestic'}">
+                ${race.is_world_major ? '세계 메이저' : '국내'}
+              </span>
+            </div>
+            <p class="race-meta">${race.city} · ${race.typical_month}월 · ${difficultyLabel(race.difficulty)}</p>
+            <p class="race-hint">${race.shoe_priority_hint || ''}</p>
           </div>
-          <h3 class="race-name">${race.race_name}</h3>
-          <p class="race-meta">${race.city} · ${race.typical_month}월 · ${difficultyLabel(race.difficulty)}</p>
-          <p class="race-hint">${race.shoe_priority_hint || ''}</p>
+          <span class="race-chevron">›</span>
         </button>
       `).join('')}
     </div>`;
@@ -116,32 +109,102 @@ function difficultyLabel(d) {
 // 대회 선택
 // ============================================================
 
-function selectRace(raceId) {
+function selectRace(raceId, cardEl) {
+  // 기존 인라인 패널 제거
+  document.querySelectorAll('.race-detail-panel').forEach((el) => el.remove());
+
+  // 같은 카드 재클릭 → 토글 닫기
+  if (selectedRace && selectedRace.race_id === raceId) {
+    selectedRace = null;
+    document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
+    document.getElementById('race-results-container').innerHTML = '';
+    document.getElementById('race-actions').style.display = 'none';
+    return;
+  }
+
   selectedRace = allRaces.find((r) => r.race_id === raceId);
   if (!selectedRace) return;
 
   // 카드 선택 표시
   document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  cardEl.classList.add('selected');
 
-  // 코스 정보 카드 표시
-  const infoCard = document.getElementById('race-info-card');
-  infoCard.innerHTML = `
-    <h3>${selectedRace.race_name}</h3>
-    <div class="race-info-grid">
-      <div class="race-info-item"><span class="info-label">🌡 기온</span><span>${selectedRace.avg_temp_celsius}°C</span></div>
-      <div class="race-info-item"><span class="info-label">🛣 노면</span><span>${surfaceLabel(selectedRace.surface_type)}</span></div>
-      <div class="race-info-item"><span class="info-label">⛰ 고도</span><span>${selectedRace.elevation_gain_m}m</span></div>
-      <div class="race-info-item"><span class="info-label">🎯 난이도</span><span>${difficultyLabel(selectedRace.difficulty)}</span></div>
-    </div>
-    <p class="race-course-summary">${selectedRace.course_summary}</p>
-    <p class="race-hint-text">권장 키워드: <strong>${selectedRace.shoe_priority_hint}</strong></p>
-  `;
+  // 인라인 패널 생성 후 카드 바로 다음에 삽입
+  const panel = document.createElement('div');
+  panel.className = 'race-detail-panel';
+  panel.innerHTML = buildDetailPanelHTML(selectedRace);
+  cardEl.insertAdjacentElement('afterend', panel);
 
-  document.getElementById('race-detail').style.display = 'block';
-  document.getElementById('race-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 패널 내 라디오 change 이벤트 바인딩
+  panel.querySelectorAll('.option-btn input').forEach((input) => {
+    input.addEventListener('change', () => {
+      const name = input.name;
+      panel.querySelectorAll(`.option-btn input[name="${name}"]`)
+        .forEach((el) => el.closest('.option-btn').classList.remove('selected'));
+      input.closest('.option-btn').classList.add('selected');
+    });
+  });
+
+  // 기존 결과 초기화
   document.getElementById('race-results-container').innerHTML = '';
   document.getElementById('race-actions').style.display = 'none';
+}
+
+function buildDetailPanelHTML(race) {
+  return `
+    <div class="race-info-card">
+      <h3>${race.race_name}</h3>
+      <div class="race-info-grid">
+        <div class="race-info-item"><span class="info-label">🌡 기온</span><span>${race.avg_temp_celsius}°C</span></div>
+        <div class="race-info-item"><span class="info-label">🛣 노면</span><span>${surfaceLabel(race.surface_type)}</span></div>
+        <div class="race-info-item"><span class="info-label">⛰ 고도</span><span>${race.elevation_gain_m}m</span></div>
+        <div class="race-info-item"><span class="info-label">🎯 난이도</span><span>${difficultyLabel(race.difficulty)}</span></div>
+      </div>
+      <p class="race-course-summary">${race.course_summary}</p>
+      <p class="race-hint-text">권장 키워드: <strong>${race.shoe_priority_hint}</strong></p>
+    </div>
+
+    <div class="question" style="margin-top:16px;">
+      <h3>코스 유형 선택 <span class="required">*</span></h3>
+      <div class="option-grid grid-2">
+        <label class="option-btn">
+          <input type="radio" name="course_type" value="half" />
+          <span>🏃 하프 마라톤<br><small>21.0975km</small></span>
+        </label>
+        <label class="option-btn">
+          <input type="radio" name="course_type" value="full" />
+          <span>🏅 풀 마라톤<br><small>42.195km</small></span>
+        </label>
+      </div>
+    </div>
+
+    <details class="personal-toggle">
+      <summary>내 발 조건도 함께 반영하기 (선택)</summary>
+      <div class="personal-form">
+        <div class="question">
+          <h3>발볼 너비</h3>
+          <div class="option-grid grid-3">
+            <label class="option-btn"><input type="radio" name="foot_width" value="wide" /><span>넓음</span></label>
+            <label class="option-btn"><input type="radio" name="foot_width" value="normal" /><span>보통</span></label>
+            <label class="option-btn"><input type="radio" name="foot_width" value="narrow" /><span>좁음</span></label>
+          </div>
+        </div>
+        <div class="question">
+          <h3>예산 범위</h3>
+          <div class="option-grid grid-4">
+            <label class="option-btn"><input type="radio" name="race_budget" value="low" /><span>~7만원</span></label>
+            <label class="option-btn"><input type="radio" name="race_budget" value="mid" /><span>7~12만원</span></label>
+            <label class="option-btn"><input type="radio" name="race_budget" value="high" /><span>12~20만원</span></label>
+            <label class="option-btn"><input type="radio" name="race_budget" value="premium" /><span>20만원+</span></label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <button id="recommend-race-btn" class="btn-submit" onclick="fetchRaceRecommendations()">
+      이 코스에 맞는 신발 추천받기 →
+    </button>
+  `;
 }
 
 function surfaceLabel(s) {
@@ -209,31 +272,74 @@ async function fetchRaceRecommendations() {
   document.getElementById('race-results-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function buildInstagramTags(shoe) {
+  const tags = [];
+  if (shoe.brand) tags.push(shoe.brand.replace(/\s+/g, ''));
+  if (shoe.goods_name) {
+    const firstWord = shoe.goods_name.split(/[\s\-\/\(]/)[0];
+    if (firstWord && firstWord.length >= 2) tags.push(firstWord);
+  }
+  tags.push('러닝화');
+  tags.push('러닝화추천');
+  const distMap = { '단거리': '스피드러닝', '중거리': '중거리러닝', '장거리': '장거리러닝', '전거리': '데일리러닝', '마라톤': '마라톤' };
+  if (shoe.distance && distMap[shoe.distance]) tags.push(distMap[shoe.distance]);
+  if (shoe.has_carbon_plate) tags.push('카본플레이트');
+  if (shoe.cushion >= 4) tags.push('쿠션화');
+  if (shoe.weight <= 2) tags.push('경량화');
+  return [...new Set(tags)].slice(0, 6);
+}
+
 function renderRaceResults(recs) {
   const container = document.getElementById('race-results-container');
   container.innerHTML =
     `<h2 class="section-title">코스 최적 러닝화 TOP ${recs.length}</h2>` +
-    recs.map((shoe, i) => `
-      <article class="rec-card rank-${i + 1}">
-        <div class="rec-rank">#${i + 1}</div>
-        <div class="rec-body">
-          <div class="rec-header">
-            <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
-            <div class="rec-score">매칭 ${shoe.match_score}%</div>
+    recs.map((shoe, i) => {
+      const rank = i + 1;
+      const price = Number(shoe.price || 0).toLocaleString();
+
+      const igTagsHtml = buildInstagramTags(shoe)
+        .map((tag) => {
+          const url = `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`;
+          return `<a href="${url}" target="_blank" rel="noopener" class="feature-tag feature-tag--ig">#${tag}</a>`;
+        }).join('');
+
+      const thumbHtml = shoe.thumbnail
+        ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+           <div class="rec-thumb-fallback" style="display:none">👟</div>`
+        : `<div class="rec-thumb-fallback">👟</div>`;
+
+      const fallbackBadge = shoe.is_fallback ? '<span class="badge badge-medium">빠른 추천</span>' : '';
+
+      return `
+        <article class="rec-card rank-${rank}">
+          <div class="rec-rank">#${rank}</div>
+          <div class="rec-body">
+            <div class="rec-header">
+              <div class="rec-header-text">
+                <div class="rec-title-row">
+                  <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
+                  <div class="rec-score">매칭 ${shoe.match_score}%</div>
+                </div>
+              </div>
+              <div class="rec-thumbnail">${thumbHtml}</div>
+            </div>
+            <div class="rec-tags">
+              ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
+              ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
+              ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
+              ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
+              ${fallbackBadge}
+            </div>
+            <div class="rec-ig-tags">${igTagsHtml}</div>
+            <p class="rec-reason">💬 ${shoe.reason || ''}</p>
+            <div class="rec-footer">
+              <span class="rec-price">₩${price}</span>
+              ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
+            </div>
           </div>
-          <div class="rec-tags">
-            ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
-            ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
-            ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
-            ${shoe.is_fallback ? '<span class="badge badge-medium">빠른 추천</span>' : ''}
-          </div>
-          <p class="rec-reason">💬 ${shoe.reason || ''}</p>
-          <div class="rec-footer">
-            <span class="rec-price">₩${Number(shoe.price || 0).toLocaleString()}</span>
-            ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
-          </div>
-        </div>
-      </article>`).join('');
+        </article>`;
+    }).join('');
 }
 
 // ============================================================
@@ -242,10 +348,10 @@ function renderRaceResults(recs) {
 
 function resetRaceSelection() {
   selectedRace = null;
-  document.getElementById('race-detail').style.display = 'none';
+  document.querySelectorAll('.race-detail-panel').forEach((el) => el.remove());
+  document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
   document.getElementById('race-results-container').innerHTML = '';
   document.getElementById('race-actions').style.display = 'none';
-  document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
 }
 
 // ============================================================

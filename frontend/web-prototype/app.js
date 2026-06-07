@@ -64,6 +64,27 @@ document.querySelectorAll('.option-btn input:checked').forEach((input) => {
   input.closest('.option-btn').classList.add('selected');
 });
 
+// 필수 아닌 라디오 그룹: 이미 선택된 항목 재클릭 시 비선택
+// mousedown을 input이 아닌 label(.option-btn)에 붙여야 함:
+// 라벨 클릭 시 mousedown은 라벨에 발생하고 input에는 전달되지 않기 때문
+const OPTIONAL_RADIO_GROUPS = ['frequency', 'foot_shape', 'budget'];
+OPTIONAL_RADIO_GROUPS.forEach((name) => {
+  document.querySelectorAll(`input[type="radio"][name="${name}"]`).forEach((input) => {
+    const label = input.closest('.option-btn');
+    label.addEventListener('mousedown', function () {
+      // 라벨 mousedown 시점에서 연결된 input의 checked 상태 스냅샷
+      input._wasChecked = input.checked;
+    });
+    input.addEventListener('click', function () {
+      if (this._wasChecked) {
+        // 이미 선택된 상태에서 재클릭 → 비선택
+        this.checked = false;
+        label.classList.remove('selected');
+      }
+    });
+  });
+});
+
 // ============================================================
 // 2. 폼 데이터 수집
 // ============================================================
