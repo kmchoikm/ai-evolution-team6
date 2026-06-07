@@ -24,54 +24,7 @@
     <!-- 대회 목록 -->
     <div id="race-list-container"></div>
 
-    <!-- 대회 선택 후: 코스 정보 + 하프/풀 선택 -->
-    <div id="race-detail" style="display:none;">
-      <div id="race-info-card" class="race-info-card"></div>
-
-      <div class="question" style="margin-top:16px;">
-        <h3>코스 유형 선택 <span class="required">*</span></h3>
-        <div class="option-grid grid-2">
-          <label class="option-btn">
-            <input type="radio" name="course_type" value="half" />
-            <span>🏃 하프 마라톤<br><small>21.0975km</small></span>
-          </label>
-          <label class="option-btn">
-            <input type="radio" name="course_type" value="full" />
-            <span>🏅 풀 마라톤<br><small>42.195km</small></span>
-          </label>
-        </div>
-      </div>
-
-      <!-- 개인 조건 선택적 반영 -->
-      <details class="personal-toggle">
-        <summary>내 발 조건도 함께 반영하기 (선택)</summary>
-        <div class="personal-form">
-          <div class="question">
-            <h3>발볼 너비</h3>
-            <div class="option-grid grid-3">
-              <label class="option-btn"><input type="radio" name="foot_width" value="wide" /><span>넓음</span></label>
-              <label class="option-btn"><input type="radio" name="foot_width" value="normal" checked /><span>보통</span></label>
-              <label class="option-btn"><input type="radio" name="foot_width" value="narrow" /><span>좁음</span></label>
-            </div>
-          </div>
-          <div class="question">
-            <h3>예산 범위</h3>
-            <div class="option-grid grid-4">
-              <label class="option-btn"><input type="radio" name="race_budget" value="low" /><span>~7만원</span></label>
-              <label class="option-btn"><input type="radio" name="race_budget" value="mid" /><span>7~12만원</span></label>
-              <label class="option-btn"><input type="radio" name="race_budget" value="high" /><span>12~20만원</span></label>
-              <label class="option-btn"><input type="radio" name="race_budget" value="premium" /><span>20만원+</span></label>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <button id="recommend-race-btn" class="btn-submit" onclick="fetchRaceRecommendations()">
-        이 코스에 맞는 신발 추천받기 →
-      </button>
-    </div>
-
-    <!-- 추천 결과 -->
+    <!-- 추천 결과 (대회 선택 후 인라인 패널은 JS로 동적 삽입) -->
     <div id="race-results-container"></div>
 
     <!-- 액션 -->
