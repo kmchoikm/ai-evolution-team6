@@ -46,12 +46,9 @@ const SHAPE_KO = {
 // 공통 유틸
 // ============================================================
 
-/** AbortController 기반 타임아웃이 걸린 Claude API 호출 */
+/** SDK 네이티브 타임아웃 기반 Claude API 호출 */
 async function callClaude(prompt, maxTokens = 1024) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   try {
     const message = await client.messages.create(
       {
@@ -59,32 +56,52 @@ async function callClaude(prompt, maxTokens = 1024) {
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       },
-      { signal: controller.signal }
+      { timeout: TIMEOUT_MS }
     );
-    clearTimeout(timer);
     return message.content[0].text.trim();
   } catch (err) {
-    clearTimeout(timer);
-    if (err.name === 'AbortError') throw new Error('CLAUDE_TIMEOUT');
+    // SDK가 타임아웃·중단 시 던지는 에러 타입을 모두 포괄
+    if (
+      err instanceof Anthropic.APIConnectionTimeoutError ||
+      err instanceof Anthropic.APIUserAbortError ||
+      err.name === 'AbortError'
+    ) {
+      throw new Error('CLAUDE_TIMEOUT');
+    }
     throw err;
   }
 }
 
-/** Claude 응답에서 JSON 파싱 — 코드블록·설명 텍스트 방어 */
+/** Claude 응답에서 JSON 파싱 — 코드블록·설명 텍스트·trailing text 방어 */
 function parseJson(raw) {
   let cleaned = raw.trim();
 
-  // 1순위: 코드블록 안의 JSON 추출 (앞에 설명 텍스트가 있어도 동작)
+  // 1순위: 코드블록 내부 추출
   const blockMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
-  if (blockMatch) {
-    cleaned = blockMatch[1].trim();
-  } else {
-    // 2순위: 코드블록 없이 배열/객체만 남김 (앞뒤 비-JSON 텍스트 제거)
-    const arrayMatch = cleaned.match(/(\[[\s\S]*\])/);
-    if (arrayMatch) cleaned = arrayMatch[1];
+  if (blockMatch) cleaned = blockMatch[1].trim();
+
+  // 2순위: 직접 파싱 시도
+  try { return JSON.parse(cleaned); } catch {}
+
+  // 3순위: 균형 괄호 탐색으로 첫 번째 완전한 JSON 배열 추출
+  // (greedy 정규식은 trailing text의 ] 까지 포함해 오파싱할 수 있으므로 직접 탐색)
+  const start = cleaned.indexOf('[');
+  if (start !== -1) {
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = start; i < cleaned.length; i++) {
+      const c = cleaned[i];
+      if (escape)             { escape = false; continue; }
+      if (c === '\\' && inString) { escape = true; continue; }
+      if (c === '"')          { inString = !inString; continue; }
+      if (inString)           { continue; }
+      if (c === '[')          { depth++; }
+      if (c === ']')          { depth--; if (depth === 0) return JSON.parse(cleaned.slice(start, i + 1)); }
+    }
   }
 
-  return JSON.parse(cleaned);
+  throw new SyntaxError('Claude 응답에서 JSON 배열을 찾을 수 없습니다');
 }
 
 // ============================================================
