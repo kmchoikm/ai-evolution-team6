@@ -105,7 +105,7 @@ function collectFormData() {
       document.querySelectorAll('input[name="priorities"]:checked')
     ).map((el) => el.value),
     budget:
-      document.querySelector('input[name="budget"]:checked')?.value || null,
+      document.querySelector('input[name="budget"]:checked')?.value || 'any',
     free_text: document.getElementById('free-text').value.trim(),
   };
 }

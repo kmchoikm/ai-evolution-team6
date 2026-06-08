@@ -13,6 +13,7 @@ const BUDGET_MAX = {
   mid: 120_000,
   high: 200_000,
   premium: Infinity,
+  any: Infinity,
 };
 
 // 거리 코드 → 한국어 매핑 (필터 비교용)

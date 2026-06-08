@@ -69,6 +69,8 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.9 | 2026-06-09 | 수정 | §5.1·§6.1: budget 허용값에 `any`(상관없음) 추가 — FE `value=""` → `value="any"`, BE `BUDGET_MAX.any = Infinity` | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §6.1 응답 예시: "주요 필드만 표시, 전체 필드는 표 참조" 노트 추가 | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §7.3: Celebs 룩북·SNS 컬럼 9개 추가 (`instagram_url`, `youtube_url`, `outfit_*` 7개) | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §7.4: RaceWinners 룩북 컬럼 6개 추가 (`outfit_*`) | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §6.4: 응답에 `shoe` 중첩 객체·`outfit_*` 필드 반영 | kmchoikm |
@@ -402,7 +404,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | Q3-2. 족형 (발 모양 유형) | `foot_shape` | radio | egyptian(이집트형) / roman(로마형) / greek(그리스형) / germanic(게르만형) / celtic(켈트형) | - | 없음 (선택) |
 | Q4. 선호 쿠션감 | `cushion-slider` | range(1~5) | 1(매우 딱딱) ~ 5(매우 물렁) | - | 3(중간) |
 | Q5. 중요 요소 | `priorities` | checkbox | speed / protection / comfort / breathability / design | - | 없음 |
-| Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / 상관없음 | - | 상관없음 |
+| Q6. 예산 범위 | `budget` | radio | low(~7만) / mid(7~12만) / high(12~20만) / premium(20만↑) / **any**(상관없음) | - | any |
 | Q7. 자유 서술 | `free-text` | textarea | 최대 200자 자유 입력 | - | 없음 |
 
 **UI 인터랙션 규칙**
@@ -685,7 +687,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `foot_shape` | string | `egyptian` / `roman` / `greek` / `germanic` / `celtic` | - | 족형(발 모양 유형). 미입력 시 무시. 이집트·로마·게르만형은 넓은 발볼 선호 반영 |
 | `preferred_cushion` | number | 1~5 정수 | - | 선호 쿠션감 (기본값: `3`) |
 | `priorities` | string[] | `speed` / `protection` / `comfort` / `breathability` / `design` (최대 3개) | - | 중요 요소 |
-| `budget` | string | `low` / `mid` / `high` / `premium` | - | 예산 범위 |
+| `budget` | string | `low` / `mid` / `high` / `premium` / `any` | - | 예산 범위. `any` = 상관없음(예산 제한 없음, 기본값) |
 | `free_text` | string | 최대 200자 | - | 자유 서술 |
 
 **Request**
@@ -737,6 +739,9 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `price_estimate` | string \| null | DB 없을 때 Claude가 생성한 가격대 설명 (예: "약 15~18만원"). `is_db_recommendation: true`이면 `null` |
 
 *정상 — DB 기반 (200 OK)*
+
+> **주요 필드만 표시** — 전체 필드 목록은 위 표 참조. 실제 응답에는 `main_color`, `accent_color`, `toe_fit`, `has_carbon_plate`, `lifespan_km_min/max` 등 Shoes 시트의 모든 컬럼이 포함된다.
+
 ```json
 {
   "status": "success",

@@ -24,6 +24,7 @@ const BUDGET_MAX = {
   mid: 120_000,
   high: 200_000,
   premium: Infinity,
+  any: Infinity,
 };
 
 /**
