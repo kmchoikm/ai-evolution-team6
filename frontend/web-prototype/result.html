@@ -41,8 +41,8 @@
     </div>
   </div>
 
-  <!-- 로딩 오버레이 -->
-  <div id="loading-overlay" class="loading-overlay" style="display:none;">
+  <!-- 로딩 오버레이 — display:none 제거: 첫 HTML 페인트부터 표시해 빈 화면 깜박임 방지 -->
+  <div id="loading-overlay" class="loading-overlay">
     <div class="loading-content">
       <div class="spinner"></div>
       <p id="loading-message">AI가 최적의 러닝화를 찾고 있어요...</p>
