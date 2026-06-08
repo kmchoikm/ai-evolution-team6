@@ -69,6 +69,7 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.9 | 2026-06-08 | 수정 | §3·§5.2: AbortController → SDK 네이티브 timeout 방식으로 변경 (`APIConnectionTimeoutError` 감지) | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §5.2·§8.9: Claude API 타임아웃 15초 → **30초** 상향 (Case B 실측 최대 14초 소요 대응) | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §5.2: `parseJson` 방어 로직 추가 — 코드블록·설명 텍스트 앞에 있어도 JSON 배열 정상 추출 | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §5.2·§6.10: `/api/recommend/outfit` `max_tokens` 1024 → **2048** (응답 중간 잘림 방지) | kmchoikm |
@@ -343,7 +344,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
   * **State Management:** sessionStorage (페이지 간 상태 전달)
 * **Backend (WAS):**
   * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
-  * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — 타임아웃·AbortController 내장)
+  * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — SDK 네이티브 타임아웃 30초, `APIConnectionTimeoutError` 감지)
 * **Database & LLM:**
   * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
   * **LLM:** Anthropic Claude API (모델: `claude-sonnet-4-6` — 추론 및 근거 생성에 탁월)
@@ -471,7 +472,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 * **DB 0건 시 Claude 호출 (기획 의도):** DB 조회 결과가 없을 때도 Claude API를 반드시 호출한다. 두 가지 케이스로 분기한다.
   * **Case A — DB 자체가 비어있음 (`allShoes.length === 0`):** Claude 자체 지식 기반 추천 함수(`getAiRecommendationsFromKnowledge`)를 호출한다. 응답에 `goods_no: null`, `price_estimate`(가격대 설명) 포함, `is_db_recommendation: false`로 반환한다.
   * **Case B — 1차 필터 후 후보 0건 (`candidates.length === 0`, DB에 데이터 있음):** 필터를 완화하여 전체 `allShoes`를 `calcScore` 정렬 후 상위 10개를 Claude에 전달, 최적 추천을 생성한다. 응답은 정상 경로와 동일 형식, `is_db_recommendation: true`로 반환한다.
-* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **30초** 이상 지연될 경우 AbortController로 통신을 끊고, 이미 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다. (30초 근거: Case B — 필터 완화 후보 10개 처리 시 실측 최대 14초 소요, 여유 확보)
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **30초** 이상 지연될 경우 SDK 네이티브 timeout(`APIConnectionTimeoutError`)으로 감지해 중단하고, 이미 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다. (30초 근거: Case B — 필터 완화 후보 10개 처리 시 실측 최대 14초 소요, 여유 확보)
 * **Claude 응답 파싱 방어 (`parseJson`):** Claude가 JSON 앞에 설명 텍스트나 코드블록을 추가해도 정상 파싱되도록 방어 로직을 적용한다. ① 코드블록(` ``` `) 내부 JSON 추출 우선 시도 → ② 코드블록 없는 경우 응답에서 `[...]` 배열 직접 추출. JSON 파싱 실패는 폴백 경로와 동일하게 처리된다.
 * **코디 추천 응답 토큰 (`/api/recommend/outfit`):** 상의·하의·모자 3개 항목, 각 2~3가지 color_name·hex_code·reason 조합으로 응답량이 크므로 `max_tokens: 2048`로 설정한다. (1024 설정 시 응답 중간 잘림(truncation) 발생 → JSON 파싱 오류)
 
