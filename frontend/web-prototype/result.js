@@ -284,7 +284,7 @@ function renderRecommendationCard(shoe, rank) {
       data-main-color="${(shoe.main_color || '').replace(/"/g, '&quot;')}"
       data-accent-color="${(shoe.accent_color || '').replace(/"/g, '&quot;')}"
       onclick="toggleSocksInCard(this)"
-      title="양말 색상 추천">🧦</button>` : '';
+      title="양말 색상 추천">양말 색상 추천</button>` : '';
 
   const inlineSocksHtml = hasSockFeature ? `
     <div id="inline-socks-${shoe.goods_no}" class="inline-socks-section" style="display:none;">
