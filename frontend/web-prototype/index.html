@@ -75,5 +75,45 @@
   <footer class="footer">
     <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
   </footer>
+
+  <script>
+    (function () {
+      const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000'
+        : 'https://ai-evolution-team6-production.up.railway.app';
+
+      function prefetchCelebs() {
+        // 이미 prefetch된 경우 중복 실행 방지
+        if (sessionStorage.getItem('celebs_prefetch_ts')) return;
+        Promise.all([
+          fetch(`${API_BASE}/api/celebs`).then((r) => r.json()),
+          fetch(`${API_BASE}/api/race-winners`).then((r) => r.json()),
+        ]).then(([celebsData, winnersData]) => {
+          sessionStorage.setItem('celebs_cache', JSON.stringify(celebsData));
+          sessionStorage.setItem('winners_cache', JSON.stringify(winnersData));
+          sessionStorage.setItem('celebs_prefetch_ts', String(Date.now()));
+        }).catch(function () {}); // 실패 시 celebs.js에서 정상 재시도
+      }
+
+      const celebsCard = document.querySelector('a[href="celebs.html"]');
+      if (celebsCard) {
+        celebsCard.addEventListener('mouseenter', prefetchCelebs, { once: true });
+        celebsCard.addEventListener('touchstart', prefetchCelebs, { passive: true, once: true });
+      }
+
+      function prefetchRace() {
+        if (sessionStorage.getItem('races_cache')) return;
+        fetch(`${API_BASE}/api/races`).then((r) => r.json()).then((data) => {
+          sessionStorage.setItem('races_cache', JSON.stringify(data));
+        }).catch(function () {});
+      }
+
+      const raceCard = document.querySelector('a[href="race.html"]');
+      if (raceCard) {
+        raceCard.addEventListener('mouseenter', prefetchRace, { once: true });
+        raceCard.addEventListener('touchstart', prefetchRace, { passive: true, once: true });
+      }
+    })();
+  </script>
 </body>
 </html>

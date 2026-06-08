@@ -13,6 +13,17 @@ let allRaces = [];
 let selectedRace = null;
 let currentTab = 'domestic';
 
+function getCachedData(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setCacheData(key, data) {
+  try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
 // ============================================================
 // 초기화
 // ============================================================
@@ -26,12 +37,19 @@ async function init() {
 // ============================================================
 
 async function fetchRaces() {
+  const cached = getCachedData('races_cache');
+  if (cached) {
+    allRaces = cached.races || [];
+    renderRaceList(currentTab);
+    return;
+  }
   showLoading(true, '대회 정보를 불러오는 중...');
   try {
     const res = await fetch(`${API_BASE}/api/races`);
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
     allRaces = data.races || [];
+    setCacheData('races_cache', data); // 세션 내 재방문 시 즉시 렌더링
     renderRaceList(currentTab);
   } catch (err) {
     document.getElementById('race-list-container').innerHTML = `
