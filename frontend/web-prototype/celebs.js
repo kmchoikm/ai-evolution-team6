@@ -13,6 +13,19 @@ const API_BASE = (window.location.protocol === 'file:' ||
 let allCelebs = [];
 let allWinners = [];
 
+function getCachedData(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCacheData(key, data) {
+  try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
 // ============================================================
 // 초기화
 // ============================================================
@@ -38,12 +51,19 @@ function switchTab(tab) {
 // ============================================================
 
 async function fetchCelebs() {
+  const cached = getCachedData('celebs_cache');
+  if (cached) {
+    allCelebs = cached.celebs || [];
+    renderCelebList(allCelebs);
+    return;
+  }
   showLoading(true, '셀럽 정보를 불러오는 중...');
   try {
     const res = await fetch(`${API_BASE}/api/celebs`);
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
     allCelebs = data.celebs || [];
+    setCacheData('celebs_cache', data); // 세션 내 재방문 시 즉시 렌더링
     renderCelebList(allCelebs);
   } catch (err) {
     document.getElementById('celebs-list-container').innerHTML = renderErrorState(err.message, 'fetchCelebs()');
@@ -69,19 +89,44 @@ function renderCelebList(celebs) {
     container.innerHTML = '<p class="empty-msg">해당 유형의 셀럽 데이터가 없습니다.</p>'; return;
   }
   container.innerHTML = `
-    <div class="celeb-grid">
+    <div class="celeb-list">
       ${celebs.map((c) => `
-        <button class="celeb-card" onclick="fetchCelebLookbook('${c.celeb_id}', this)">
-          <div class="celeb-avatar">
-            ${c.celeb_image_url
-              ? `<img src="${c.celeb_image_url}" alt="${c.celeb_name}" onerror="this.parentElement.innerHTML='👤'" />`
-              : '<span class="celeb-avatar-placeholder">👤</span>'}
-          </div>
-          <p class="celeb-name">${c.celeb_name}</p>
-          <p class="celeb-type">${CELEB_TYPE_KO[c.celeb_type] || c.celeb_type}</p>
-        </button>
+        <div class="celeb-item">
+          <button class="celeb-card" data-id="${c.celeb_id}" onclick="fetchCelebLookbook('${c.celeb_id}', this)">
+            <div class="celeb-avatar">
+              ${c.celeb_image_url
+                ? `<img src="${c.celeb_image_url}" alt="${c.celeb_name}" onerror="this.parentElement.innerHTML='<span class=celeb-avatar-placeholder>👤</span>'" />`
+                : '<span class="celeb-avatar-placeholder">👤</span>'}
+            </div>
+            <div class="celeb-card-info">
+              <p class="celeb-name">${c.celeb_name}</p>
+              <p class="celeb-type">${CELEB_TYPE_KO[c.celeb_type] || c.celeb_type}</p>
+            </div>
+            <span class="celeb-chevron">›</span>
+          </button>
+          <div class="celeb-expand" id="celeb-expand-${c.celeb_id}"></div>
+        </div>
       `).join('')}
     </div>`;
+  attachCelebPrefetchListeners();
+}
+
+function attachCelebPrefetchListeners() {
+  document.querySelectorAll('.celeb-card[data-id]').forEach((card) => {
+    const celebId = card.dataset.id;
+    const prefetch = () => prefetchCelebLookbook(celebId);
+    card.addEventListener('mouseenter', prefetch, { once: true });
+    card.addEventListener('touchstart', prefetch, { passive: true, once: true });
+  });
+}
+
+function prefetchCelebLookbook(celebId) {
+  const key = `celeb_lookbook_${celebId}`;
+  if (sessionStorage.getItem(key)) return;
+  fetch(`${API_BASE}/api/celebs/${celebId}`)
+    .then((r) => r.json())
+    .then((data) => { setCacheData(key, data); })
+    .catch(() => {});
 }
 
 // ============================================================
@@ -89,27 +134,45 @@ function renderCelebList(celebs) {
 // ============================================================
 
 async function fetchCelebLookbook(celebId, btnEl) {
-  document.querySelectorAll('.celeb-card').forEach((el) => el.classList.remove('selected'));
+  const panel = document.getElementById(`celeb-expand-${celebId}`);
+  const isOpen = panel.classList.contains('open');
+
+  closeLookbook();
+
+  if (isOpen) return; // 같은 카드 재클릭 시 닫기
+
   if (btnEl) btnEl.classList.add('selected');
+  panel.classList.add('open');
+  btnEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  const panel = document.getElementById('celeb-lookbook-panel');
+  const cached = getCachedData(`celeb_lookbook_${celebId}`);
+  if (cached) {
+    renderLookbook(cached.celeb, cached.outfit || {}, cached.shoes || [], {
+      showSNS: true, showCTA: true, panelId: `celeb-expand-${celebId}`,
+    });
+    return;
+  }
+
   panel.innerHTML = '<div class="socks-loading">룩북 정보를 불러오는 중...</div>';
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
   try {
     const res = await fetch(`${API_BASE}/api/celebs/${celebId}`);
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
-    renderLookbook(data.celeb, data.outfit || {}, data.shoes || [], { showSNS: true, showCTA: true });
+    setCacheData(`celeb_lookbook_${celebId}`, data);
+    renderLookbook(data.celeb, data.outfit || {}, data.shoes || [], {
+      showSNS: true, showCTA: true, panelId: `celeb-expand-${celebId}`,
+    });
   } catch (err) {
-    panel.innerHTML = renderErrorState(err.message, `fetchCelebLookbook('${celebId}', document.querySelector('.celeb-card.selected'))`);
+    panel.innerHTML = renderErrorState(err.message, `fetchCelebLookbook('${celebId}', document.querySelector('[data-id="${celebId}"]'))`);
   }
 }
 
 function closeLookbook() {
-  const panel = document.getElementById('celeb-lookbook-panel');
-  if (panel) panel.innerHTML = '';
-  document.querySelectorAll('.celeb-card').forEach((el) => el.classList.remove('selected'));
+  document.querySelectorAll('.celeb-expand.open').forEach((el) => {
+    el.classList.remove('open');
+    el.innerHTML = '';
+  });
+  document.querySelectorAll('.celeb-card.selected').forEach((el) => el.classList.remove('selected'));
 }
 
 /**
@@ -177,7 +240,7 @@ function renderLookbook(celeb, outfit, shoes, options) {
   panel.innerHTML = `
     <div class="lookbook-panel lookbook-panel--enter">
       <div class="lookbook-header">
-        <button class="lookbook-close-btn" onclick="${panelId === 'celeb-lookbook-panel' ? 'closeLookbook()' : 'closeWinnerLookbook()'}" aria-label="닫기">← 닫기</button>
+        <button class="lookbook-close-btn" onclick="${panelId.startsWith('winner') ? 'closeWinnerLookbook()' : 'closeLookbook()'}" aria-label="닫기">← 닫기</button>
       </div>
       <div class="lookbook-celeb-header">
         <div class="celeb-avatar" style="width:44px;height:44px;flex-shrink:0;">
@@ -228,12 +291,19 @@ function renderLookbook(celeb, outfit, shoes, options) {
 // ============================================================
 
 async function fetchWinners() {
-  showLoading(true, '우승자 정보를 불러오는 중...');
+  const cached = getCachedData('winners_cache');
+  if (cached) {
+    allWinners = cached.winners || [];
+    renderWinnerList(allWinners);
+    return;
+  }
+  showLoading(true, '정보를 불러오는 중...');
   try {
     const res = await fetch(`${API_BASE}/api/race-winners`);
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
     allWinners = data.winners || [];
+    setCacheData('winners_cache', data); // 세션 내 재방문 시 즉시 렌더링
     renderWinnerList(allWinners);
   } catch (err) {
     document.getElementById('winners-list-container').innerHTML = renderErrorState(err.message, 'fetchWinners()');
