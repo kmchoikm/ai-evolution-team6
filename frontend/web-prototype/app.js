@@ -126,7 +126,7 @@ function validateForm(profile) {
 
 function showErrors(errors) {
   const el = document.getElementById('errors');
-  el.innerHTML = '<strong>입력 검인 필요</strong><ul>' +
+  el.innerHTML = '<strong>입력 확인 필요</strong><ul>' +
     errors.map((e) => `<li>${e}</li>`).join('') + '</ul>';
   el.style.display = 'block';
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
