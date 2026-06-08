@@ -26,13 +26,14 @@
       <!-- 셀럽 유형 필터 -->
       <div class="filter-bar">
         <button class="filter-btn active" data-type="" onclick="filterCelebs('')">전체</button>
+        <button class="filter-btn" data-type="celeb" onclick="filterCelebs('celeb')">셀럽</button>
         <button class="filter-btn" data-type="athlete" onclick="filterCelebs('athlete')">운동선수</button>
         <button class="filter-btn" data-type="influencer" onclick="filterCelebs('influencer')">인플루언서</button>
         <button class="filter-btn" data-type="youtuber" onclick="filterCelebs('youtuber')">유튜버</button>
       </div>
       <div id="celebs-list-container"></div>
-      <!-- 셀럽 착용 신발 결과 -->
-      <div id="celeb-shoes-container"></div>
+      <!-- 셀럽 룩북 패널 (v2.9) -->
+      <div id="celeb-lookbook-panel"></div>
     </div>
 
     <!-- 우승자 탭 -->
@@ -58,6 +59,6 @@
     <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
   </footer>
 
-  <script src="celebs.js"></script>
+  <script src="celebs.js?v=2.9.5"></script>
 </body>
 </html>

@@ -5,16 +5,16 @@
 
 const express = require('express');
 const router = express.Router();
-const { getRaceWinners } = require('../services/sheetsService');
+const { getRaceWinners, getAllShoes } = require('../services/sheetsService');
 
 // GET /api/race-winners
 router.get('/', async (req, res) => {
   const { race_name, race_year, course_type } = req.query;
 
   try {
-    let winners;
+    let winners, allShoes;
     try {
-      winners = await getRaceWinners();
+      [winners, allShoes] = await Promise.all([getRaceWinners(), getAllShoes()]);
     } catch (err) {
       console.error('[RaceWinners] Sheets 조회 실패:', err.message);
       return res.status(503).json({
@@ -44,7 +44,18 @@ router.get('/', async (req, res) => {
       });
     }
 
-    return res.status(200).json({ status: 'success', winners: result });
+    // goods_no로 Shoes 시트와 논리 조인 — 신발명·가격·링크 포함
+    const resultWithShoe = result.map((w) => {
+      const shoe = allShoes.find((s) => s.goods_no === w.goods_no) || null;
+      return {
+        ...w,
+        shoe: shoe
+          ? { goods_no: shoe.goods_no, goods_name: shoe.goods_name, brand: shoe.brand, price: shoe.price, url: shoe.url, thumbnail: shoe.thumbnail }
+          : null,
+      };
+    });
+
+    return res.status(200).json({ status: 'success', winners: resultWithShoe });
   } catch (err) {
     console.error('[RaceWinners] 처리 중 예외:', err);
     return res.status(500).json({
