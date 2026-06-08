@@ -69,6 +69,13 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.9 | 2026-06-09 | 수정 | §7.3: Celebs 룩북·SNS 컬럼 9개 추가 (`instagram_url`, `youtube_url`, `outfit_*` 7개) | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §7.4: RaceWinners 룩북 컬럼 6개 추가 (`outfit_*`) | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §6.4: 응답에 `shoe` 중첩 객체·`outfit_*` 필드 반영 | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §6.7: 응답에 `outfit` 객체·`celeb.instagram_url/youtube_url` 반영 | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §8.9: AbortController → SDK `APIConnectionTimeoutError` 감지 방식으로 다이어그램·각주 현행화 | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §6.3: 응답 예시에 `is_db_recommendation` 필드 추가 | kmchoikm |
+| v2.9 | 2026-06-09 | 수정 | §5.10·§8.8: fit_note Claude 선택 호출 → LLM 미사용(DB 값 반환)으로 현행화 | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §3·§5.2: AbortController → SDK 네이티브 timeout 방식으로 변경 (`APIConnectionTimeoutError` 감지) | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §5.2·§8.9: Claude API 타임아웃 15초 → **30초** 상향 (Case B 실측 최대 14초 소요 대응) | kmchoikm |
 | v2.9 | 2026-06-08 | 수정 | §5.2: `parseJson` 방어 로직 추가 — 코드블록·설명 텍스트 앞에 있어도 JSON 배열 정상 추출 | kmchoikm |
@@ -646,7 +653,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 **DB 변경:** 신규 `SizeGuide` 시트 추가 → §7.6, 초기 데이터 → `backend/db/dml.js` 참조
 
-> LLM 선택적 사용 — 기본 변환은 `size_adjust_mm` 계산 로직으로 처리하고, `fit_note` 코멘트 생성 시에만 Claude API 선택적 활용 가능
+> LLM 미사용 — `size_adjust_mm` 계산 로직과 `SizeGuide` 시트의 `fit_note` DB 값을 그대로 반환한다. Claude API 호출 없음.
 
 **UI 흐름**
 
@@ -899,7 +906,8 @@ GET /api/races?country=KR&course_type=full
       "brand": "아식스",
       "match_score": 82,
       "reason": "완만한 오르막 반복 코스에서 안정성과 쿠션이 중요합니다.",
-      "is_fallback": false
+      "is_fallback": false,
+      "is_db_recommendation": true
     }
   ]
 }
@@ -956,11 +964,27 @@ GET /api/race-winners?race_name=베를린&race_year=2023
       "course_type": "full",
       "result_time": "2:02:42",
       "goods_no": "4200001",
-      "source_url": "https://..."
+      "source_url": "https://...",
+      "outfit_thumbnail": "https://...",
+      "outfit_top": "나이키 드라이핏 반팔",
+      "outfit_bottom": "나이키 5인치 쇼츠",
+      "outfit_socks": "",
+      "outfit_hat": "",
+      "outfit_etc": "",
+      "shoe": {
+        "goods_no": "4200001",
+        "goods_name": "나이키 알파플라이 3",
+        "brand": "나이키",
+        "price": 299000,
+        "url": "https://www.musinsa.com/products/4200001",
+        "thumbnail": "https://..."
+      }
     }
   ]
 }
 ```
+
+> `shoe` 필드: `goods_no`로 Shoes 시트와 논리 조인한 신발 상세 정보. 매칭되는 신발이 없으면 `null`. `outfit_*` 필드는 해당 데이터가 없을 경우 빈 문자열.
 
 *조건 없음 (200 OK)*
 ```json
@@ -1082,7 +1106,7 @@ GET /api/celebs?celeb_type=athlete
 #### 6.7 [GET] `/api/celebs/:celeb_id` — v2.0
 
 **설명**
-특정 셀럽이 착용한 신발 목록을 반환한다. `goods_no` 기준으로 `Shoes` 시트와 논리적 조인하여 신발 상세 정보를 함께 제공한다.
+특정 셀럽의 착용 신발 목록과 룩북(코디 정보)을 반환한다. `goods_no` 기준으로 `Shoes` 시트와 논리적 조인하여 신발 상세 정보를 함께 제공하며, `celeb` 객체에 SNS 링크, `outfit` 객체에 코디 구성 항목을 포함한다.
 
 **연관 시나리오**
 §1.4 셀럽 착용 신발 탐색
@@ -1106,7 +1130,18 @@ GET /api/celebs/celeb_001
     "celeb_id": "celeb_001",
     "celeb_name": "홍길동",
     "celeb_type": "athlete",
-    "celeb_image_url": "https://..."
+    "celeb_image_url": "https://...",
+    "instagram_url": "https://www.instagram.com/...",
+    "youtube_url": ""
+  },
+  "outfit": {
+    "thumbnail": "https://...",
+    "top": "나이키 드라이핏 반팔",
+    "bottom": "아디다스 조거 팬츠",
+    "socks": "화이트 러닝 삭스",
+    "hat": "",
+    "sunglasses": "",
+    "etc": ""
   },
   "shoes": [
     {
@@ -1122,11 +1157,15 @@ GET /api/celebs/celeb_001
 }
 ```
 
+> `instagram_url` / `youtube_url`: 데이터 없으면 빈 문자열. `outfit.*` 필드: 데이터 없으면 빈 문자열.
+
 *조건 없음 (200 OK)*
 ```json
 {
   "status": "no_match",
   "message": "해당 셀럽의 착용 신발 데이터가 없습니다.",
+  "celeb": { "...": "..." },
+  "outfit": { "...": "..." },
   "shoes": []
 }
 ```
@@ -1421,34 +1460,49 @@ Google Sheets를 DB로 사용하므로, 각 탭(Sheet)을 하나의 Table로 간
 
 ---
 
-#### 7.3 Sheet 3: `Celebs` (셀럽 착용 신발) — v2.0 신규
+#### 7.3 Sheet 3: `Celebs` (셀럽 착용 신발) — v2.0 신규 / v2.9 룩북·SNS 컬럼 추가
 
-| Column Name | Type | Key | 허용값 | Description |
-|---|---|---|---|---|
-| `celeb_id` | String | PK | | 고유 식별자 (예: `celeb_001`) |
-| `celeb_name` | String | | | 셀럽 이름 |
-| `celeb_type` | String | | `actor` / `athlete` / `influencer` / `youtuber` | 셀럽 유형 |
-| `celeb_image_url` | String | | URL | 셀럽 이미지 URL |
-| `goods_no` | String | FK→Shoes | | 착용 신발 고유번호 |
-| `source_url` | String | | URL | 근거 기사·인스타 링크 |
+| Column Name | Type | Key | 버전 | 허용값 | Description |
+|---|---|---|---|---|---|
+| `celeb_id` | String | PK | v2.0 | | 고유 식별자 (예: `celeb_001`) |
+| `celeb_name` | String | | v2.0 | | 셀럽 이름 |
+| `celeb_type` | String | | v2.0 | `actor` / `athlete` / `influencer` / `youtuber` | 셀럽 유형 |
+| `celeb_image_url` | String | | v2.0 | URL | 셀럽 프로필 이미지 URL |
+| `goods_no` | String | FK→Shoes | v2.0 | | 착용 신발 고유번호 |
+| `source_url` | String | | v2.0 | URL | 근거 기사·인스타 링크 |
+| `instagram_url` | String | | **v2.9** | URL | 셀럽 인스타그램 프로필 URL (없으면 빈 문자열) |
+| `youtube_url` | String | | **v2.9** | URL | 셀럽 유튜브 채널 URL (없으면 빈 문자열) |
+| `outfit_thumbnail` | String | | **v2.9** | URL | 착용 코디 대표 이미지 URL |
+| `outfit_top` | String | | **v2.9** | | 상의 착용 정보 (브랜드·색상 등 자유 텍스트) |
+| `outfit_bottom` | String | | **v2.9** | | 하의 착용 정보 |
+| `outfit_socks` | String | | **v2.9** | | 양말 착용 정보 |
+| `outfit_hat` | String | | **v2.9** | | 모자 착용 정보 |
+| `outfit_sunglasses` | String | | **v2.9** | | 선글라스 착용 정보 |
+| `outfit_etc` | String | | **v2.9** | | 기타 착용 정보 (시계, 밴드 등) |
 
-> M:N 처리: 셀럽 1명이 여러 신발을 착용하는 경우 각 신발마다 행을 분리하여 관리한다.
+> M:N 처리: 셀럽 1명이 여러 신발을 착용하는 경우 각 신발마다 행을 분리하여 관리한다. `outfit_*` 컬럼은 `outfit_thumbnail`이 있는 첫 번째 행을 룩북 기준 행으로 사용한다.
 
 ---
 
-#### 7.4 Sheet 4: `RaceWinners` (대회 우승자 착용 신발) — v2.0 신규
+#### 7.4 Sheet 4: `RaceWinners` (대회 우승자 착용 신발) — v2.0 신규 / v2.9 룩북 컬럼 추가
 
-| Column Name | Type | Key | 허용값 | Description |
-|---|---|---|---|---|
-| `winner_id` | String | PK | | 고유 식별자 (예: `winner_001`) |
-| `race_name` | String | | | 대회명 |
-| `race_year` | Number | | 정수 | 개최 연도 |
-| `winner_name` | String | | | 우승자 이름 |
-| `winner_nationality` | String | | | 국적 |
-| `course_type` | String | | `half` / `full` | 코스 구분 |
-| `result_time` | String | | `H:MM:SS` | 기록 |
-| `goods_no` | String | FK→Shoes | | 착용 신발 고유번호 |
-| `source_url` | String | | URL | 근거 기사 링크 |
+| Column Name | Type | Key | 버전 | 허용값 | Description |
+|---|---|---|---|---|---|
+| `winner_id` | String | PK | v2.0 | | 고유 식별자 (예: `winner_001`) |
+| `race_name` | String | | v2.0 | | 대회명 |
+| `race_year` | Number | | v2.0 | 정수 | 개최 연도 |
+| `winner_name` | String | | v2.0 | | 우승자 이름 |
+| `winner_nationality` | String | | v2.0 | | 국적 |
+| `course_type` | String | | v2.0 | `half` / `full` | 코스 구분 |
+| `result_time` | String | | v2.0 | `H:MM:SS` | 기록 |
+| `goods_no` | String | FK→Shoes | v2.0 | | 착용 신발 고유번호 |
+| `source_url` | String | | v2.0 | URL | 근거 기사 링크 |
+| `outfit_thumbnail` | String | | **v2.9** | URL | 착용 코디 대표 이미지 URL |
+| `outfit_top` | String | | **v2.9** | | 상의 착용 정보 |
+| `outfit_bottom` | String | | **v2.9** | | 하의 착용 정보 |
+| `outfit_socks` | String | | **v2.9** | | 양말 착용 정보 |
+| `outfit_hat` | String | | **v2.9** | | 모자 착용 정보 |
+| `outfit_etc` | String | | **v2.9** | | 기타 착용 정보 |
 
 ---
 
@@ -1770,7 +1824,7 @@ FE                    BE                    Sheets               Claude
 │   width_note}       │                     │                     │
 ```
 
-> ⑩~⑪ Claude 호출은 선택적(fit_note 생성 시에만). 기본 사이즈 변환은 계산 로직만으로 처리.
+> ⑩~⑪ Claude 호출 없음 — `fit_note`는 `SizeGuide` DB 값을 그대로 반환. 사이즈 변환은 계산 로직만으로 처리.
 
 ---
 
@@ -1784,8 +1838,8 @@ FE                    BE                    Sheets               Claude
 │                     │──② Claude 호출──────────────────────────►│
 │                     │                     │                     │
 │                     │  ③ 30초 경과 Timeout│                     │
-│                     │  → AbortController  │                     │
-│                     │    .abort()          │                     │
+│                     │  → SDK APIConnection│                     │
+│                     │    TimeoutError 감지 │                     │
 │                     │                     │                     │
 │                     │  ④ 메모리 내        │                     │
 │                     │  candidates에서      │                     │
@@ -1798,6 +1852,6 @@ FE                    BE                    Sheets               Claude
 │  점수 기반 동적 추천 │                     │                     │
 ```
 
-> **Timeout 기준: 30초** (AbortController로 즉시 중단). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다." 토스트를 표시한다.
+> **Timeout 기준: 30초** (SDK 네이티브 `{ timeout: 30000 }` → `APIConnectionTimeoutError` 감지). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다." 토스트를 표시한다.
 >
 > **DB 0건 시나리오 (별도 Fallback):** `allShoes.length === 0`(Case A) 또는 `candidates.length === 0`(Case B)이면 Claude API를 지식 기반 또는 필터 완화 모드로 호출한다. 이 경로에서 Claude마저 실패하면 빈 배열을 반환하고 FE는 "현재 추천 가능한 데이터가 없습니다." 메시지를 표시한다.
