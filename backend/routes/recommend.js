@@ -32,14 +32,19 @@ router.post('/', async (req, res) => {
 
   try {
     let allShoes;
-    try {
-      allShoes = await getAllShoes();
-    } catch (err) {
-      console.error('[Recommend] Sheets 조회 실패:', err.message);
-      return res.status(503).json({
-        status: 'error',
-        message: '상품 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-      });
+    // 개발 환경 전용: _test_shoes 파라미터로 DB 오버라이드 (Case A/B E2E 테스트용)
+    if (process.env.NODE_ENV !== 'production' && Array.isArray(req.body?._test_shoes)) {
+      allShoes = req.body._test_shoes;
+    } else {
+      try {
+        allShoes = await getAllShoes();
+      } catch (err) {
+        console.error('[Recommend] Sheets 조회 실패:', err.message);
+        return res.status(503).json({
+          status: 'error',
+          message: '상품 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+        });
+      }
     }
 
     const recommendations = await recommend(userProfile, allShoes);
@@ -82,14 +87,25 @@ router.post('/race', async (req, res) => {
 
   try {
     let races, allShoes;
-    try {
-      [races, allShoes] = await Promise.all([getRaces(), getAllShoes()]);
-    } catch (err) {
-      console.error('[RaceRecommend] Sheets 조회 실패:', err.message);
-      return res.status(503).json({
-        status: 'error',
-        message: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
-      });
+    // 개발 환경 전용: _test_shoes 파라미터로 Shoes DB 오버라이드 (Case A/B E2E 테스트용)
+    if (process.env.NODE_ENV !== 'production' && Array.isArray(req.body?._test_shoes)) {
+      allShoes = req.body._test_shoes;
+      try {
+        races = await getRaces();
+      } catch (err) {
+        console.error('[RaceRecommend] Sheets 조회 실패:', err.message);
+        return res.status(503).json({ status: 'error', message: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+      }
+    } else {
+      try {
+        [races, allShoes] = await Promise.all([getRaces(), getAllShoes()]);
+      } catch (err) {
+        console.error('[RaceRecommend] Sheets 조회 실패:', err.message);
+        return res.status(503).json({
+          status: 'error',
+          message: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+        });
+      }
     }
 
     const race = races.find((r) => r.race_id === race_id && r.is_active !== false);

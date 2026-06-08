@@ -232,10 +232,26 @@ function renderLookbook(celeb, outfit, shoes, options) {
       }).join('');
 
   // AI 진단 CTA
-  const ctaHtml = !showCTA ? '' : `
-    <div class="lookbook-cta-wrap">
-      <a href="diagnosis.html" class="lookbook-cta-btn">🔍 내 발에도 맞는지 진단해보기 →</a>
-    </div>`;
+  const refShoe = shoes.find((s) => s.goods_no) || null;
+  let ctaHtml = '';
+  if (showCTA) {
+    if (refShoe) {
+      const shoeLabel = [refShoe.brand || '', refShoe.goods_name || ''].filter(Boolean).join(' ');
+      ctaHtml = `
+        <div class="lookbook-cta-wrap">
+          <button class="lookbook-cta-btn"
+            data-goods-no="${refShoe.goods_no}"
+            data-celeb-name="${(celeb.celeb_name || '').replace(/"/g, '&quot;')}"
+            data-shoe-name="${shoeLabel.replace(/"/g, '&quot;')}"
+            onclick="goToDiagnosisWithRef(this)">🔍 내 발에도 맞는지 진단해보기 →</button>
+        </div>`;
+    } else {
+      ctaHtml = `
+        <div class="lookbook-cta-wrap">
+          <a href="diagnosis.html" class="lookbook-cta-btn">🔍 내 발에도 맞는지 진단해보기 →</a>
+        </div>`;
+    }
+  }
 
   panel.innerHTML = `
     <div class="lookbook-panel lookbook-panel--enter">
@@ -449,6 +465,21 @@ function showLoading(on, message) {
     const msg = document.getElementById('loading-message');
     if (msg) msg.textContent = message;
   }
+}
+
+/**
+ * 셀럽 참조 진단: goods_no·셀럽명·신발명을 sessionStorage에 저장 후 diagnosis.html 이동
+ * result.html에서 해당 신발 카드를 하이라이트하는 데 활용됨
+ */
+function goToDiagnosisWithRef(btn) {
+  try {
+    sessionStorage.setItem('celeb_ref', JSON.stringify({
+      goods_no: btn.dataset.goodsNo,
+      celeb_name: btn.dataset.celebName,
+      shoe_name: btn.dataset.shoeName,
+    }));
+  } catch {}
+  location.href = 'diagnosis.html';
 }
 
 init();

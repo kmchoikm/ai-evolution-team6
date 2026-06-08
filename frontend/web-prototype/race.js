@@ -135,8 +135,6 @@ function selectRace(raceId, cardEl) {
   if (selectedRace && selectedRace.race_id === raceId) {
     selectedRace = null;
     document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
-    document.getElementById('race-results-container').innerHTML = '';
-    document.getElementById('race-actions').style.display = 'none';
     return;
   }
 
@@ -163,9 +161,6 @@ function selectRace(raceId, cardEl) {
     });
   });
 
-  // 기존 결과 초기화
-  document.getElementById('race-results-container').innerHTML = '';
-  document.getElementById('race-actions').style.display = 'none';
 }
 
 function buildDetailPanelHTML(race) {
@@ -222,6 +217,13 @@ function buildDetailPanelHTML(race) {
     <button id="recommend-race-btn" class="btn-submit" onclick="fetchRaceRecommendations()">
       이 코스에 맞는 신발 추천받기 →
     </button>
+
+    <div id="inline-race-results"></div>
+
+    <div id="inline-race-actions" class="actions" style="display:none;">
+      <button onclick="resetRaceSelection()" class="btn-secondary">다른 대회 선택</button>
+      <button onclick="location.href='diagnosis.html'" class="btn-secondary">내 맞춤 추천받기</button>
+    </div>
   `;
 }
 
@@ -249,6 +251,9 @@ async function fetchRaceRecommendations() {
   const budget = document.querySelector('input[name="race_budget"]:checked')?.value;
   const userProfile = footWidth ? { foot_width: footWidth, budget: budget || null } : null;
 
+  const resultsEl = document.getElementById('inline-race-results');
+  const actionsEl = document.getElementById('inline-race-actions');
+
   let data;
   try {
     const res = await fetch(`${API_BASE}/api/recommend/race`, {
@@ -264,7 +269,7 @@ async function fetchRaceRecommendations() {
     if (!res.ok) throw new Error(data.message || `서버 오류 (HTTP ${res.status})`);
   } catch (err) {
     showLoading(false);
-    document.getElementById('race-results-container').innerHTML = `
+    if (resultsEl) resultsEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
         <h2>추천을 불러올 수 없습니다</h2>
@@ -279,15 +284,15 @@ async function fetchRaceRecommendations() {
   btn.disabled = false; btn.textContent = '이 코스에 맞는 신발 추천받기 →';
 
   if (data.status === 'no_match') {
-    document.getElementById('race-results-container').innerHTML = `
+    if (resultsEl) resultsEl.innerHTML = `
       <div class="empty-state"><div class="empty-icon">🔍</div>
         <h2>맞는 신발이 없습니다</h2><p>${data.message}</p></div>`;
     return;
   }
 
   renderRaceResults(data.recommendations);
-  document.getElementById('race-actions').style.display = 'flex';
-  document.getElementById('race-results-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (actionsEl) actionsEl.style.display = 'flex';
+  if (resultsEl) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function buildInstagramTags(shoe) {
@@ -308,7 +313,7 @@ function buildInstagramTags(shoe) {
 }
 
 function renderRaceResults(recs) {
-  const container = document.getElementById('race-results-container');
+  const container = document.getElementById('inline-race-results');
   container.innerHTML =
     `<h2 class="section-title">코스 최적 러닝화 TOP ${recs.length}</h2>` +
     recs.map((shoe, i) => {
@@ -368,8 +373,6 @@ function resetRaceSelection() {
   selectedRace = null;
   document.querySelectorAll('.race-detail-panel').forEach((el) => el.remove());
   document.querySelectorAll('.race-card').forEach((el) => el.classList.remove('selected'));
-  document.getElementById('race-results-container').innerHTML = '';
-  document.getElementById('race-actions').style.display = 'none';
 }
 
 // ============================================================

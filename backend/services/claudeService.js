@@ -5,13 +5,13 @@
  * - 양말 색상 추천
  * - 러닝 코디 추천
  *
- * 타임아웃: 5초 (PREMORTEM D1 대응)
+ * 타임아웃: 30초 (PREMORTEM D1 대응 — Sonnet 4.6 후보 10개 처리 여유)
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
 
-const TIMEOUT_MS = 5_000;
-const MODEL = 'claude-3-5-sonnet-20241022';
+const TIMEOUT_MS = 30_000;
+const MODEL = 'claude-sonnet-4-6';
 
 const DISTANCE_KO = {
   short: '5km 이하 단거리',
@@ -70,9 +70,20 @@ async function callClaude(prompt, maxTokens = 1024) {
   }
 }
 
-/** Claude 응답에서 JSON 파싱 (코드블록 래퍼 방어) */
+/** Claude 응답에서 JSON 파싱 — 코드블록·설명 텍스트 방어 */
 function parseJson(raw) {
-  const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/i, '').trim();
+  let cleaned = raw.trim();
+
+  // 1순위: 코드블록 안의 JSON 추출 (앞에 설명 텍스트가 있어도 동작)
+  const blockMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
+  if (blockMatch) {
+    cleaned = blockMatch[1].trim();
+  } else {
+    // 2순위: 코드블록 없이 배열/객체만 남김 (앞뒤 비-JSON 텍스트 제거)
+    const arrayMatch = cleaned.match(/(\[[\s\S]*\])/);
+    if (arrayMatch) cleaned = arrayMatch[1];
+  }
+
   return JSON.parse(cleaned);
 }
 
@@ -247,7 +258,73 @@ ${accentSection}
 - 상의·하의: 각 2~3가지, 모자: 1~2가지 suggestions
 - 색상 이론과 스타일링 관점으로 설명, hex_code 정확히 작성`;
 
-  const raw = await callClaude(prompt, 1024);
+  const raw = await callClaude(prompt, 2048);
+  return parseJson(raw);
+}
+
+// ============================================================
+// DB 데이터 없을 때 Claude 자체 지식 기반 추천
+// ============================================================
+
+/**
+ * Shoes DB가 비어있을 때 Claude 자체 지식으로 러닝화 추천
+ * goods_no 없이 brand·goods_name·price_estimate·reason 반환
+ * @param {object} userProfile
+ * @returns {Promise<{rank: number, brand: string, goods_name: string, price_estimate: string, reason: string}[]>}
+ */
+async function getAiRecommendationsFromKnowledge(userProfile) {
+  const prompt = `당신은 러닝화 전문 추천 AI입니다. 현재 추천 DB에 데이터가 없어 AI 지식 기반으로 추천합니다.
+아래 사용자 프로파일에 가장 적합한 시판 러닝화 최대 3개를 추천하고 맞춤형 이유를 작성하세요.
+
+## 사용자 프로파일
+${buildUserSummary(userProfile)}
+
+## 출력 규칙
+- 반드시 JSON 배열만 출력하세요 (코드블록, 설명 텍스트 없이)
+- 배열 요소 수: 최대 3개
+- 각 요소 형식: {"rank": 1, "brand": "브랜드명", "goods_name": "모델명", "price_estimate": "약 X~Y만원", "reason": "..."}
+- reason: 사용자 프로파일(발볼, 쿠션, 거리, 우선순위)을 근거로 2~3문장, 한국어
+- 부상 방지 관점 필수 포함
+- 실제 시판 중인 모델만 추천할 것`;
+
+  const raw = await callClaude(prompt);
+  return parseJson(raw);
+}
+
+/**
+ * Shoes DB가 비어있을 때 Claude 자체 지식으로 대회 코스 기반 러닝화 추천
+ * @param {object} race - Races 시트의 대회 정보
+ * @param {object|null} userProfile
+ * @returns {Promise<{rank: number, brand: string, goods_name: string, price_estimate: string, reason: string}[]>}
+ */
+async function getRaceRecommendationsFromKnowledge(race, userProfile) {
+  const userSection = userProfile
+    ? `\n## 추가 개인 조건\n${buildUserSummary(userProfile)}`
+    : '';
+
+  const prompt = `당신은 마라톤 대회 코스 분석 전문 AI입니다. 현재 추천 DB에 데이터가 없어 AI 지식 기반으로 추천합니다.
+아래 대회 코스 정보에 가장 적합한 시판 러닝화 최대 3개를 추천하고 추천 이유를 작성하세요.
+
+## 대회 코스 정보
+- 대회명: ${race.race_name}
+- 코스 구분: ${race.course_type === 'full' ? '풀 마라톤' : '하프 마라톤'}
+- 평균 기온: ${race.avg_temp_celsius}°C
+- 노면: ${race.surface_type}
+- 누적 고도: ${race.elevation_gain_m}m
+- 난이도: ${race.difficulty}/5
+- 코스 요약: ${race.course_summary}
+- 권장 신발 키워드: ${race.shoe_priority_hint}
+${userSection}
+
+## 출력 규칙
+- 반드시 JSON 배열만 출력하세요 (코드블록 없이)
+- 배열 요소 수: 최대 3개
+- 각 요소 형식: {"rank": 1, "brand": "브랜드명", "goods_name": "모델명", "price_estimate": "약 X~Y만원", "reason": "..."}
+- reason: 코스 특성(기온·노면·난이도·고도)과 신발 스펙을 연결한 2~3문장 한국어
+- 부상 방지 관점 필수 포함
+- 실제 시판 중인 모델만 추천할 것`;
+
+  const raw = await callClaude(prompt);
   return parseJson(raw);
 }
 
@@ -256,4 +333,6 @@ module.exports = {
   getRaceRecommendations,
   getSocksRecommendation,
   getOutfitRecommendation,
+  getAiRecommendationsFromKnowledge,
+  getRaceRecommendationsFromKnowledge,
 };

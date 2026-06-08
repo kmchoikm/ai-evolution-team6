@@ -24,14 +24,7 @@
     <!-- 대회 목록 -->
     <div id="race-list-container"></div>
 
-    <!-- 추천 결과 (대회 선택 후 인라인 패널은 JS로 동적 삽입) -->
-    <div id="race-results-container"></div>
-
-    <!-- 액션 -->
-    <div id="race-actions" class="actions" style="display:none;">
-      <button onclick="resetRaceSelection()" class="btn-secondary">다른 대회 선택</button>
-      <button onclick="location.href='diagnosis.html'" class="btn-secondary">내 맞춤 추천받기</button>
-    </div>
+    <!-- 추천 결과·액션은 race-detail-panel 내부에 인라인 렌더링 -->
   </main>
 
   <!-- 로딩 오버레이 -->

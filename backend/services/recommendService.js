@@ -5,7 +5,7 @@
  * 폴백: Claude 실패 시 점수 기반 상위 5개 즉시 반환
  */
 
-const { getAiRecommendations } = require('./claudeService');
+const { getAiRecommendations, getAiRecommendationsFromKnowledge } = require('./claudeService');
 
 // 예산 코드 → 최대 가격 매핑
 const BUDGET_MAX = {
@@ -166,25 +166,77 @@ async function recommend(userProfile, allShoes) {
   const candidates = filterCandidates(userProfile, allShoes);
 
   if (candidates.length === 0) {
-    return [];
+    // ── Case A: DB 자체가 비어있음 → Claude 자체 지식으로 추천 ──
+    if (allShoes.length === 0) {
+      try {
+        const aiResults = await getAiRecommendationsFromKnowledge(userProfile);
+        return aiResults.map((ai, i) => ({
+          rank: ai.rank ?? i + 1,
+          goods_no: null,
+          brand: ai.brand,
+          goods_name: ai.goods_name,
+          price_estimate: ai.price_estimate || null,
+          reason: ai.reason,
+          is_fallback: false,
+          is_db_recommendation: false,
+        }));
+      } catch (err) {
+        console.warn('[Recommend] Claude API 실패 (DB 없음):', err.message);
+        return [];
+      }
+    }
+
+    // ── Case B: DB에 데이터 있으나 필터 결과 0건 → 필터 완화 후 Claude 재호출 ──
+    const relaxedCandidates = allShoes
+      .map((s) => ({ ...s, _score: calcScore(userProfile, s) }))
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 10);
+
+    try {
+      const aiResults = await getAiRecommendations(userProfile, relaxedCandidates);
+      return aiResults
+        .map((ai, i) => {
+          const shoe = relaxedCandidates.find((s) => s.goods_no === ai.goods_no);
+          if (!shoe) return null;
+          return {
+            rank: ai.rank ?? i + 1,
+            ...shoe,
+            match_score: shoe._score,
+            reason: ai.reason,
+            is_fallback: false,
+            is_db_recommendation: true,
+          };
+        })
+        .filter(Boolean);
+    } catch (err) {
+      console.warn('[Recommend] Claude API 실패 (필터 완화), 폴백 사용:', err.message);
+      return relaxedCandidates.slice(0, 5).map((shoe, i) => ({
+        rank: i + 1,
+        ...shoe,
+        match_score: shoe._score,
+        reason: fallbackReason(userProfile, shoe),
+        is_fallback: true,
+        is_db_recommendation: true,
+      }));
+    }
   }
 
+  // ── 정상 경로: 1차 필터 후보 있음 ──
   let aiResults;
   try {
     aiResults = await getAiRecommendations(userProfile, candidates);
   } catch (err) {
     console.warn('[Recommend] Claude API 실패, 폴백 사용:', err.message);
-    // 폴백: 점수 상위 5개를 직접 반환
     return candidates.slice(0, 5).map((shoe, i) => ({
       rank: i + 1,
       ...shoe,
       match_score: shoe._score,
       reason: fallbackReason(userProfile, shoe),
       is_fallback: true,
+      is_db_recommendation: true,
     }));
   }
 
-  // Claude 결과 + Shoes 메타데이터 병합
   return aiResults
     .map((ai, i) => {
       const shoe = candidates.find((s) => s.goods_no === ai.goods_no);
@@ -195,6 +247,7 @@ async function recommend(userProfile, allShoes) {
         match_score: shoe._score,
         reason: ai.reason,
         is_fallback: false,
+        is_db_recommendation: true,
       };
     })
     .filter(Boolean);

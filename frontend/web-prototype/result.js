@@ -26,6 +26,57 @@ let currentRecommendations = [];
 let selectedSockColor = null;
 
 // ============================================================
+// 개발자 테스트 패널 (localhost 전용)
+// ============================================================
+
+const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+
+/** 패널 초기화 — localhost 에서만 표시 */
+function initDevPanel() {
+  if (!IS_LOCAL) return;
+  const panel = document.getElementById('dev-panel');
+  if (panel) panel.style.display = 'block';
+}
+
+/** 선택된 모드에 맞는 _test_shoes 반환 */
+function getTestShoes() {
+  const mode = document.querySelector('input[name="test-mode"]:checked')?.value;
+  if (mode === 'case-a') {
+    return [];  // DB 완전 비어있음
+  }
+  if (mode === 'case-b') {
+    // 모두 50만원 → budget 'low'(7만원) 초과 → candidates === 0 → Case B 진입
+    return [
+      { goods_no: 'TEST001', brand: '나이키', goods_name: '페가수스 41 (테스트)', price: 500000, width: '보통', cushion: 4, weight: 3, distance: '전거리', breathability: 4, fit: 4, toe_fit: 'all', summary: 'Case B 테스트용 — 예산 초과 신발' },
+      { goods_no: 'TEST002', brand: '아식스', goods_name: '젤 카야노 31 (테스트)', price: 500000, width: '보통', cushion: 4, weight: 4, distance: '장거리', breathability: 3, fit: 5, toe_fit: 'egyptian', summary: 'Case B 테스트용 — 예산 초과 신발' },
+      { goods_no: 'TEST003', brand: '호카', goods_name: '클리프턴 9 (테스트)', price: 500000, width: '넓음', cushion: 5, weight: 2, distance: '전거리', breathability: 4, fit: 5, toe_fit: 'roman,germanic', summary: 'Case B 테스트용 — 예산 초과 신발' },
+    ];
+  }
+  return null;  // 정상 모드 — 오버라이드 없음
+}
+
+/** 재테스트 버튼 핸들러 */
+async function devRetest() {
+  const mode = document.querySelector('input[name="test-mode"]:checked')?.value;
+  const badge = document.getElementById('dev-mode-badge');
+
+  const labels = {
+    normal:  '✅ 정상 DB',
+    'case-a': '🔴 Case A: DB 없음',
+    'case-b': '🟡 Case B: 예산 초과',
+  };
+  if (badge) badge.textContent = `실행 중: ${labels[mode] || '?'}`;
+
+  const raw = sessionStorage.getItem('user_profile');
+  let profile;
+  try { profile = JSON.parse(raw); } catch { return; }
+
+  await fetchAndRenderRecommendations(profile, getTestShoes());
+
+  if (badge) badge.textContent = `완료: ${labels[mode] || '?'}`;
+}
+
+// ============================================================
 // 메인 초기화
 // ============================================================
 
@@ -37,6 +88,7 @@ async function init() {
   try { profile = JSON.parse(profileRaw); }
   catch { location.href = 'index.html'; return; }
 
+  initDevPanel();
   renderProfileSummary(profile);
   await fetchAndRenderRecommendations(profile);
 }
@@ -45,15 +97,19 @@ async function init() {
 // 추천 API 호출
 // ============================================================
 
-async function fetchAndRenderRecommendations(profile) {
+async function fetchAndRenderRecommendations(profile, testShoes = null) {
   showLoading(true, 'AI가 최적의 러닝화를 찾고 있어요...');
+
+  // testShoes가 있으면 _test_shoes 파라미터 포함 (개발 환경 전용)
+  const reqBody = { user_profile: profile };
+  if (testShoes !== null) reqBody._test_shoes = testShoes;
 
   let data;
   try {
     const res = await fetch(`${API_BASE}/api/recommend`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_profile: profile }),
+      body: JSON.stringify(reqBody),
     });
     data = await res.json();
     if (!res.ok) throw new Error(data.message || `서버 오류 (HTTP ${res.status})`);
@@ -72,6 +128,7 @@ async function fetchAndRenderRecommendations(profile) {
 
   currentRecommendations = data.recommendations;
   renderResults(currentRecommendations);
+  highlightCelebRef();
 
   if (currentRecommendations[0]?.is_fallback) {
     showToast('AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다.', 4000);
@@ -123,7 +180,8 @@ function renderResults(recs) {
   const container = document.getElementById('results-container');
   if (!container) return;
 
-  const goodMatches = recs.filter((r) => r.match_score >= 30);
+  // Case A(is_db_recommendation:false)는 match_score 없음 → 점수 필터 제외
+  const goodMatches = recs.filter((r) => r.is_db_recommendation === false || r.match_score >= 30);
   if (goodMatches.length === 0) {
     renderNoMatch('매칭 점수 30점 미만 — 조건을 조정해 보세요'); return;
   }
@@ -137,9 +195,10 @@ function renderResults(recs) {
     if (btn) { btn.style.display = 'inline-block'; btn.onclick = () => openCompareModal(goodMatches); }
   }
 
-  // 양말 색상 섹션 활성화 (TOP 1에 색상 데이터가 있을 때)
+  // 양말 색상 섹션 활성화 (DB 기반 + 색상 데이터 있을 때만)
+  // Case A(goods_no:null)는 양말 추천 건너뜀
   const top1 = goodMatches[0];
-  if (top1?.main_color) {
+  if (top1?.main_color && top1?.goods_no) {
     document.getElementById('socks-section').style.display = 'block';
     fetchAndRenderSocks(top1);
   }
@@ -183,12 +242,24 @@ function buildInstagramTags(shoe) {
 }
 
 function renderRecommendationCard(shoe, rank) {
+  // Case A: DB 없음 → price_estimate 사용, match_score 없음
+  const isKnowledgeBased = shoe.is_db_recommendation === false;
+  const priceDisplay = isKnowledgeBased
+    ? (shoe.price_estimate || '가격 미상')
+    : `₩${Number(shoe.price || 0).toLocaleString()}`;
+  const scoreDisplay = isKnowledgeBased
+    ? 'AI 지식 기반'
+    : `매칭 ${shoe.match_score}%`;
+  const knowledgeBadge = isKnowledgeBased
+    ? '<span class="badge badge-medium">AI 지식 기반 추천</span>'
+    : '';
+
   const price = Number(shoe.price || 0).toLocaleString();
-  const confidenceBadge = shoe.confidence === 'high'
+  const confidenceBadge = isKnowledgeBased ? '' : (shoe.confidence === 'high'
     ? '<span class="badge badge-high">신뢰도 높음</span>'
     : shoe.confidence === 'medium'
     ? '<span class="badge badge-medium">신뢰도 보통</span>'
-    : '<span class="badge badge-low">신뢰도 낮음</span>';
+    : '<span class="badge badge-low">신뢰도 낮음</span>');
 
   const igTagsHtml = buildInstagramTags(shoe)
     .map((tag) => {
@@ -203,19 +274,20 @@ function renderRecommendationCard(shoe, rank) {
     : `<div class="rec-thumb-fallback">👟</div>`;
 
   return `
-    <article class="rec-card rank-${rank}">
+    <article class="rec-card rank-${rank}" data-goods-no="${shoe.goods_no || ''}">
       <div class="rec-rank">#${rank}</div>
       <div class="rec-body">
         <div class="rec-header">
           <div class="rec-header-text">
             <div class="rec-title-row">
               <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
-              <div class="rec-score">매칭 ${shoe.match_score}%</div>
+              <div class="rec-score">${scoreDisplay}</div>
             </div>
           </div>
           <div class="rec-thumbnail">${thumbHtml}</div>
         </div>
         <p class="rec-summary">${shoe.summary || ''}</p>
+        ${knowledgeBadge}
         <div class="rec-tags">
           ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
           ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
@@ -226,7 +298,7 @@ function renderRecommendationCard(shoe, rank) {
         <div class="rec-ig-tags">${igTagsHtml}</div>
         <p class="rec-reason">💬 ${shoe.reason || ''}</p>
         <div class="rec-footer">
-          <span class="rec-price">₩${price}</span>
+          <span class="rec-price">${priceDisplay}</span>
           ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
         </div>
       </div>
@@ -420,6 +492,34 @@ function showToast(message, duration = 2000) {
   toast.textContent = message;
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, duration);
+}
+
+/**
+ * 셀럽 참조 하이라이트
+ * celebs.js에서 goToDiagnosisWithRef()로 저장한 celeb_ref를 읽어
+ * 해당 goods_no 카드에 셀럽 배너를 삽입하고 스크롤한다.
+ */
+function highlightCelebRef() {
+  let ref;
+  try {
+    const raw = sessionStorage.getItem('celeb_ref');
+    if (!raw) return;
+    ref = JSON.parse(raw);
+    sessionStorage.removeItem('celeb_ref');
+  } catch { return; }
+
+  if (!ref?.goods_no) return;
+
+  const card = document.querySelector(`.rec-card[data-goods-no="${ref.goods_no}"]`);
+  if (!card) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'celeb-ref-banner';
+  banner.innerHTML = `⭐ <strong>${ref.celeb_name}</strong>이(가) 실제 착용한 신발이에요 — ${ref.shoe_name}`;
+  card.prepend(banner);
+  card.classList.add('rec-card--celeb-ref');
+
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
 }
 
 init();
