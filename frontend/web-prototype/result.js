@@ -88,6 +88,8 @@ async function init() {
   try { profile = JSON.parse(profileRaw); }
   catch { location.href = 'index.html'; return; }
 
+  // 오버레이를 가장 먼저 표시 — 이후 DOM 셋업 작업이 오버레이 뒤에서 진행됨
+  showLoading(true, 'AI가 최적의 러닝화를 찾고 있어요...');
   initDevPanel();
   renderProfileSummary(profile);
   await fetchAndRenderRecommendations(profile);
@@ -195,14 +197,16 @@ function renderResults(recs) {
     if (btn) { btn.style.display = 'inline-block'; btn.onclick = () => openCompareModal(goodMatches); }
   }
 
-  // Top1 양말 자동 표출 (DB 기반 + 색상 데이터 있을 때만, Case A 제외)
+  // Top1 양말 자동 표출 — rAF로 카드 첫 페인트 후 실행해 CLS 방지
   const top1 = goodMatches[0];
   if (top1?.main_color && top1?.goods_no) {
-    const inlineSection = document.getElementById(`inline-socks-${top1.goods_no}`);
-    const iconBtn = document.getElementById(`sock-icon-${top1.goods_no}`);
-    if (inlineSection) inlineSection.style.display = 'block';
-    if (iconBtn) iconBtn.classList.add('active');
-    fetchAndRenderSocks(top1);
+    requestAnimationFrame(() => {
+      const inlineSection = document.getElementById(`inline-socks-${top1.goods_no}`);
+      const iconBtn = document.getElementById(`sock-icon-${top1.goods_no}`);
+      if (inlineSection) inlineSection.style.display = 'block';
+      if (iconBtn) iconBtn.classList.add('active');
+      fetchAndRenderSocks(top1);
+    });
   }
 
   // 사이즈 가이드 링크 노출
