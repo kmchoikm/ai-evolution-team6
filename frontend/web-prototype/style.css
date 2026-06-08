@@ -432,6 +432,22 @@ textarea:focus {
 .rec-card.rank-2 { border-top-color: #888888; }
 .rec-card.rank-3 { border-top-color: #CCCCCC; }
 
+/* 셀럽 참조 하이라이트 */
+.rec-card--celeb-ref {
+  border: 2px solid #E8A000;
+  box-shadow: 0 0 0 3px rgba(232, 160, 0, 0.15);
+}
+.celeb-ref-banner {
+  background: linear-gradient(90deg, #FFF8E6, #FFF3CC);
+  border: 1px solid #E8A000;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #7A5000;
+  line-height: 1.5;
+}
+
 .rec-rank {
   font-size: 26px;
   font-weight: 900;

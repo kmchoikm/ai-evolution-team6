@@ -67,6 +67,37 @@
     </div>
   </div>
 
+  <!-- ✅ 개발자 테스트 패널 (localhost 전용 — 운영 환경에서 자동 숨김) -->
+  <div id="dev-panel" style="
+    display:none; position:fixed; bottom:16px; right:16px; z-index:9999;
+    background:#1e1e2e; color:#cdd6f4; border-radius:12px; padding:16px;
+    width:220px; font-size:13px; box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    font-family: monospace;
+  ">
+    <p style="margin:0 0 10px; font-weight:700; font-size:14px;">🧪 DB 상태 테스트</p>
+
+    <label style="display:block; margin-bottom:6px; cursor:pointer;">
+      <input type="radio" name="test-mode" value="normal" checked> 정상 (실제 DB)
+    </label>
+    <label style="display:block; margin-bottom:6px; cursor:pointer;">
+      <input type="radio" name="test-mode" value="case-a"> Case A — DB 비어있음
+    </label>
+    <label style="display:block; margin-bottom:12px; cursor:pointer;">
+      <input type="radio" name="test-mode" value="case-b"> Case B — 예산 초과 신발만
+    </label>
+
+    <button onclick="devRetest()" style="
+      width:100%; padding:8px; border:none; border-radius:8px;
+      background:#89b4fa; color:#1e1e2e; font-weight:700; cursor:pointer;
+      font-size:13px;
+    ">▶ 재테스트</button>
+
+    <div id="dev-mode-badge" style="
+      margin-top:10px; padding:6px 8px; border-radius:6px;
+      background:#313244; font-size:11px; text-align:center; min-height:20px;
+    "></div>
+  </div>
+
   <footer class="footer">
     <p>powered by KAIST IMMS 이준호 · 김영권 · 박영민 · 최규민</p>
   </footer>

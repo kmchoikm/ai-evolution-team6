@@ -69,6 +69,14 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v2.9 | 2026-06-08 | 수정 | §5.2·§8.9: Claude API 타임아웃 15초 → **30초** 상향 (Case B 실측 최대 14초 소요 대응) | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §5.2: `parseJson` 방어 로직 추가 — 코드블록·설명 텍스트 앞에 있어도 JSON 배열 정상 추출 | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §5.2·§6.10: `/api/recommend/outfit` `max_tokens` 1024 → **2048** (응답 중간 잘림 방지) | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §5.2: DB 0건 시 Claude API 호출 로직 추가 — Case A(DB 비어있음)·Case B(필터 결과 0건) 분기 명세 | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §6.1·§6.3 Response: `is_db_recommendation`, `price_estimate` 필드 추가 | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §8.1·§8.2: DB 0건 분기 콜 플로우 추가 | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §8.9: Timeout 기준 5초 → 15초 현행화; DB 0건 폴백 시나리오 추가 | kmchoikm |
+| v2.9 | 2026-06-08 | 수정 | §3: Claude 모델 `claude-3-5-sonnet-20241022`(retired) → `claude-sonnet-4-6` 교체 | kmchoikm |
 | v2.8 | 2026-06-04 | 삭제 | §6.1 Response·§7.1 Shoes: `arch_support` 컬럼 제거 — 스코어링 로직·대응 사용자 입력 모두 없어진 고아 컬럼 정리 | kmchoikm |
 | v2.7 | 2026-06-04 | 수정 | §1.2·§5.1: Q3-2 족형을 발 아치 3종 → **발 모양 5종** (이집트·로마·그리스·게르만·켈트형)으로 전면 교체 | kmchoikm |
 | v2.7 | 2026-06-04 | 수정 | §5.2: 족형 스코어링 로직 — arch_support 매핑 제거, foot_shape 기반 발볼 선호도·toe_fit 매칭 보너스로 교체 | kmchoikm |
@@ -338,7 +346,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
   * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — 타임아웃·AbortController 내장)
 * **Database & LLM:**
   * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
-  * **LLM:** Anthropic Claude API (모델: `claude-3-5-sonnet-20241022` — 추론 및 근거 생성에 탁월)
+  * **LLM:** Anthropic Claude API (모델: `claude-sonnet-4-6` — 추론 및 근거 생성에 탁월)
 
 ---
 
@@ -354,7 +362,7 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | **WAS** | Backend / API Server | Node.js Express |
 | **WAS** | LLM 처리 로직 | Claude Logic |
 | **WAS** | DB 연결 모듈 | Google Sheets API |
-| **External** | LLM 서비스 | Anthropic Claude 3.5 Sonnet |
+| **External** | LLM 서비스 | Anthropic claude-sonnet-4-6 |
 | **External** | 데이터베이스 | Google Sheets |
 
 #### 데이터 흐름
@@ -458,9 +466,14 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 #### 5.2. 추천 엔진 및 LLM 연동 (백엔드) — v1.0
 
-* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 내전 여부)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
+* **데이터 필터링 (1차):** 사용자가 입력한 조건(예산, 발볼, 족형)을 바탕으로 Google Sheets(DB)에서 조건에 맞지 않는 신발을 1차로 필터링한다. (환각 방지 및 AI 토큰 절약)
 * **Claude API 호출 (2차):** 필터링된 후보군 N개와 사용자 프로파일을 Claude API 프롬프트에 주입하여 최종 **5개**를 선정하고, **"자연어로 된 맞춤형 추천 사유"**를 생성한다.
-* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **5초** 이상 지연될 경우 AbortController로 통신을 끊고, 이미 1차 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다.
+* **DB 0건 시 Claude 호출 (기획 의도):** DB 조회 결과가 없을 때도 Claude API를 반드시 호출한다. 두 가지 케이스로 분기한다.
+  * **Case A — DB 자체가 비어있음 (`allShoes.length === 0`):** Claude 자체 지식 기반 추천 함수(`getAiRecommendationsFromKnowledge`)를 호출한다. 응답에 `goods_no: null`, `price_estimate`(가격대 설명) 포함, `is_db_recommendation: false`로 반환한다.
+  * **Case B — 1차 필터 후 후보 0건 (`candidates.length === 0`, DB에 데이터 있음):** 필터를 완화하여 전체 `allShoes`를 `calcScore` 정렬 후 상위 10개를 Claude에 전달, 최적 추천을 생성한다. 응답은 정상 경로와 동일 형식, `is_db_recommendation: true`로 반환한다.
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **30초** 이상 지연될 경우 AbortController로 통신을 끊고, 이미 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다. (30초 근거: Case B — 필터 완화 후보 10개 처리 시 실측 최대 14초 소요, 여유 확보)
+* **Claude 응답 파싱 방어 (`parseJson`):** Claude가 JSON 앞에 설명 텍스트나 코드블록을 추가해도 정상 파싱되도록 방어 로직을 적용한다. ① 코드블록(` ``` `) 내부 JSON 추출 우선 시도 → ② 코드블록 없는 경우 응답에서 `[...]` 배열 직접 추출. JSON 파싱 실패는 폴백 경로와 동일하게 처리된다.
+* **코디 추천 응답 토큰 (`/api/recommend/outfit`):** 상의·하의·모자 3개 항목, 각 2~3가지 color_name·hex_code·reason 조합으로 응답량이 크므로 `max_tokens: 2048`로 설정한다. (1024 설정 시 응답 중간 잘림(truncation) 발생 → JSON 파싱 오류)
 
 ---
 
@@ -706,14 +719,16 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 | `confidence` | string | 데이터 신뢰도 (`high` / `medium` / `low`) |
 | `reason` | string | Claude AI가 생성한 맞춤형 추천 사유 |
 | `is_fallback` | boolean | Claude API 장애로 폴백 처리된 경우 `true` |
+| `is_db_recommendation` | boolean | DB 데이터 기반 추천이면 `true`, Claude 자체 지식 기반이면 `false` |
 | `main_color` | string | 신발 주조색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
 | `accent_color` | string | 신발 포인트색 (한국어 색상명 — §5.5·§6.8·§6.10 색상 추천에서 활용) |
 | `toe_fit` | string | 발 모양별 호환성 (`all` 또는 쉼표 구분 족형 목록 — `egyptian,roman` 등) |
 | `has_carbon_plate` | boolean | 카본 플레이트 유무 (§5.9 수명 계산에서 활용) |
 | `lifespan_km_min` | number | 최소 권장 수명 (km) |
 | `lifespan_km_max` | number | 최대 권장 수명 (km) |
+| `price_estimate` | string \| null | DB 없을 때 Claude가 생성한 가격대 설명 (예: "약 15~18만원"). `is_db_recommendation: true`이면 `null` |
 
-*정상 (200 OK)*
+*정상 — DB 기반 (200 OK)*
 ```json
 {
   "status": "success",
@@ -737,7 +752,28 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
       "review_count_used": 20,
       "confidence": "high",
       "reason": "평발이신 점과 넓은 발볼을 고려할 때 안정성이 가장 뛰어난 선택입니다.",
-      "is_fallback": false
+      "is_fallback": false,
+      "is_db_recommendation": true,
+      "price_estimate": null
+    }
+  ]
+}
+```
+
+*정상 — DB 없음, Claude 지식 기반 (200 OK)*
+```json
+{
+  "status": "success",
+  "recommendations": [
+    {
+      "rank": 1,
+      "goods_no": null,
+      "brand": "아식스",
+      "goods_name": "젤 카야노 31",
+      "price_estimate": "약 17~20만원",
+      "reason": "이집트형 발과 장거리 훈련 특성상 안정성과 쿠션이 모두 중요합니다...",
+      "is_fallback": false,
+      "is_db_recommendation": false
     }
   ]
 }
@@ -1474,18 +1510,31 @@ FE                    BE                    Sheets               Claude
 │                     │◄──③ rows[]──────────│                     │
 │                     │                     │                     │
 │                     │  ④ 1차 필터링       │                     │
-│                     │  (예산·발볼 기준)    │                     │
+│                     │  (예산·발볼·족형)    │                     │
 │                     │                     │                     │
-│                     │──⑤ prompt + ───────────────────────────►│
-│                     │  후보 목록           │                     │
-│                     │◄──⑥ 최종 5개 + ────────────────────────│
-│                     │  맞춤형 추천 사유    │                     │
+│              ┌──────┴──────────────────┐  │                     │
+│              │ rows[] == [] ?           │  │                     │
+│              │ candidates == [] ?       │  │                     │
+│              └──────┬──────────────────┘  │                     │
+│                     │                     │                     │
+│            DB 비어있음│             정상 후보│                     │
+│            (Case A) │             (1개 이상)│                    │
+│            필터 0건  │                     │                     │
+│            (Case B) │                     │                     │
+│                     │                     │                     │
+│        Case A: 지식기반 프롬프트            │                     │
+│        Case B: 완화 후보 프롬프트           │                     │
+│        정상: 후보 목록 프롬프트             │                     │
+│                     │──⑤ prompt ─────────────────────────────►│
+│                     │◄──⑥ 추천 + 사유 ───────────────────────│
 │                     │                     │                     │
 │                     │──⑦ appendRow()─────►│                     │
 │                     │  [Logs, 비동기]      │                     │
 │                     │                     │                     │
 │◄──⑧ 추천 결과──────│                     │                     │
 │  JSON (최대 5개)     │                     │                     │
+│  is_db_recommendation│                    │                     │
+│  :true/false         │                    │                     │
 │                     │                     │                     │
 │  ⑨ 결과 카드 렌더링  │                     │                     │
 │  + 비교 모달 버튼    │                     │                     │
@@ -1517,12 +1566,28 @@ FE                    BE                    Sheets               Claude
 │                     │  [Races + Shoes]     │                     │
 │                     │◄──⑧ data[]──────────│                     │
 │                     │                     │                     │
-│                     │──⑨ prompt + ───────────────────────────►│
-│                     │  코스 특성 + 후보    │                     │
-│                     │◄──⑩ 최종 5개 + ────────────────────────│
-│                     │  추천 사유           │                     │
-│◄──⑪ 추천 결과──────│                     │                     │
+│                     │  ⑨ 1차 필터링       │                     │
+│                     │  (hint 점수·예산·발볼)│                    │
+│                     │                     │                     │
+│              ┌──────┴──────────────────┐  │                     │
+│              │ allShoes == [] ?         │  │                     │
+│              │ candidates == [] ?       │  │                     │
+│              └──────┬──────────────────┘  │                     │
+│                     │                     │                     │
+│            DB 비어있음│             정상 후보│                     │
+│            (Case A) │             (1개 이상)│                    │
+│            필터 0건  │                     │                     │
+│            (Case B) │                     │                     │
+│                     │                     │                     │
+│        Case A: 코스 지식기반 프롬프트       │                     │
+│        Case B: 완화 후보 + 코스 프롬프트    │                     │
+│        정상: 후보 목록 + 코스 프롬프트      │                     │
+│                     │──⑩ prompt ─────────────────────────────►│
+│                     │◄──⑪ 추천 + 사유 ───────────────────────│
+│◄──⑫ 추천 결과──────│                     │                     │
 │  (race 정보 포함)    │                     │                     │
+│  is_db_recommendation│                    │                     │
+│  :true/false         │                    │                     │
 ```
 
 ---
@@ -1717,7 +1782,7 @@ FE                    BE                    Sheets               Claude
 │  (추천 관련)         │                     │                     │
 │                     │──② Claude 호출──────────────────────────►│
 │                     │                     │                     │
-│                     │  ③ 5초 경과 Timeout │                     │
+│                     │  ③ 30초 경과 Timeout│                     │
 │                     │  → AbortController  │                     │
 │                     │    .abort()          │                     │
 │                     │                     │                     │
@@ -1732,4 +1797,6 @@ FE                    BE                    Sheets               Claude
 │  점수 기반 동적 추천 │                     │                     │
 ```
 
-> Timeout 기준: **5초** (AbortController로 즉시 중단). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 추천을 불러오지 못했습니다. 점수 기반 추천을 보여드립니다." 배너를 표시한다.
+> **Timeout 기준: 30초** (AbortController로 즉시 중단). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다." 토스트를 표시한다.
+>
+> **DB 0건 시나리오 (별도 Fallback):** `allShoes.length === 0`(Case A) 또는 `candidates.length === 0`(Case B)이면 Claude API를 지식 기반 또는 필터 완화 모드로 호출한다. 이 경로에서 Claude마저 실패하면 빈 배열을 반환하고 FE는 "현재 추천 가능한 데이터가 없습니다." 메시지를 표시한다.
