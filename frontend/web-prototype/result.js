@@ -195,11 +195,13 @@ function renderResults(recs) {
     if (btn) { btn.style.display = 'inline-block'; btn.onclick = () => openCompareModal(goodMatches); }
   }
 
-  // 양말 색상 섹션 활성화 (DB 기반 + 색상 데이터 있을 때만)
-  // Case A(goods_no:null)는 양말 추천 건너뜀
+  // Top1 양말 자동 표출 (DB 기반 + 색상 데이터 있을 때만, Case A 제외)
   const top1 = goodMatches[0];
   if (top1?.main_color && top1?.goods_no) {
-    document.getElementById('socks-section').style.display = 'block';
+    const inlineSection = document.getElementById(`inline-socks-${top1.goods_no}`);
+    const iconBtn = document.getElementById(`sock-icon-${top1.goods_no}`);
+    if (inlineSection) inlineSection.style.display = 'block';
+    if (iconBtn) iconBtn.classList.add('active');
     fetchAndRenderSocks(top1);
   }
 
@@ -273,6 +275,33 @@ function renderRecommendationCard(shoe, rank) {
        <div class="rec-thumb-fallback" style="display:none">👟</div>`
     : `<div class="rec-thumb-fallback">👟</div>`;
 
+  // 양말 추천 아이콘 + 인라인 섹션 (DB 기반 + 색상 데이터 있을 때만)
+  const hasSockFeature = !!(shoe.main_color && shoe.goods_no);
+  const sockIconHtml = hasSockFeature ? `
+    <button class="sock-icon-btn"
+      id="sock-icon-${shoe.goods_no}"
+      data-goods-no="${shoe.goods_no}"
+      data-main-color="${(shoe.main_color || '').replace(/"/g, '&quot;')}"
+      data-accent-color="${(shoe.accent_color || '').replace(/"/g, '&quot;')}"
+      onclick="toggleSocksInCard(this)"
+      title="양말 색상 추천">🧦</button>` : '';
+
+  const inlineSocksHtml = hasSockFeature ? `
+    <div id="inline-socks-${shoe.goods_no}" class="inline-socks-section" style="display:none;">
+      <div class="inline-socks-header">
+        <h3>🧦 어울리는 양말 색상</h3>
+        <p class="section-sub">신발 색상 기반 AI 추천</p>
+      </div>
+      <div id="socks-container-${shoe.goods_no}"></div>
+      <div id="outfit-section-${shoe.goods_no}" class="inline-outfit-section" style="display:none;">
+        <div class="inline-socks-header" style="margin-top:16px;">
+          <h3>👕 러닝 코디 추천</h3>
+          <p class="section-sub" id="outfit-sub-${shoe.goods_no}"></p>
+        </div>
+        <div id="outfit-container-${shoe.goods_no}"></div>
+      </div>
+    </div>` : '';
+
   return `
     <article class="rec-card rank-${rank}" data-goods-no="${shoe.goods_no || ''}">
       <div class="rec-rank">#${rank}</div>
@@ -284,7 +313,10 @@ function renderRecommendationCard(shoe, rank) {
               <div class="rec-score">${scoreDisplay}</div>
             </div>
           </div>
-          <div class="rec-thumbnail">${thumbHtml}</div>
+          <div class="rec-thumbnail-wrap">
+            <div class="rec-thumbnail">${thumbHtml}</div>
+            ${sockIconHtml}
+          </div>
         </div>
         <p class="rec-summary">${shoe.summary || ''}</p>
         ${knowledgeBadge}
@@ -301,6 +333,7 @@ function renderRecommendationCard(shoe, rank) {
           <span class="rec-price">${priceDisplay}</span>
           ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
         </div>
+        ${inlineSocksHtml}
       </div>
     </article>
   `;
@@ -311,7 +344,7 @@ function renderRecommendationCard(shoe, rank) {
 // ============================================================
 
 async function fetchAndRenderSocks(shoe) {
-  const container = document.getElementById('socks-container');
+  const container = document.getElementById(`socks-container-${shoe.goods_no}`);
   if (!container) return;
   container.innerHTML = '<div class="socks-loading">양말 색상 분석 중...</div>';
 
@@ -348,8 +381,11 @@ async function fetchAndRenderSocks(shoe) {
 }
 
 function selectSock(sockColor, sockHex, goodsNo, mainColor, accentColor, btnEl) {
-  // 선택 표시
-  document.querySelectorAll('.color-card').forEach((el) => el.classList.remove('selected'));
+  // 해당 신발 카드 내 color-card만 선택 해제 (다른 카드 상태 유지)
+  const socksContainer = document.getElementById(`socks-container-${goodsNo}`);
+  if (socksContainer) {
+    socksContainer.querySelectorAll('.color-card').forEach((el) => el.classList.remove('selected'));
+  }
   btnEl.classList.add('selected');
   selectedSockColor = sockColor;
 
@@ -361,9 +397,9 @@ function selectSock(sockColor, sockHex, goodsNo, mainColor, accentColor, btnEl) 
 // ============================================================
 
 async function fetchAndRenderOutfit(goodsNo, mainColor, accentColor, sockColor) {
-  const section = document.getElementById('outfit-section');
-  const container = document.getElementById('outfit-container');
-  const sub = document.getElementById('outfit-sub');
+  const section = document.getElementById(`outfit-section-${goodsNo}`);
+  const container = document.getElementById(`outfit-container-${goodsNo}`);
+  const sub = document.getElementById(`outfit-sub-${goodsNo}`);
   if (!section || !container) return;
 
   section.style.display = 'block';
@@ -492,6 +528,33 @@ function showToast(message, duration = 2000) {
   toast.textContent = message;
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, duration);
+}
+
+/**
+ * 양말 아이콘 클릭 시 해당 카드 인라인 양말 섹션 토글
+ * 첫 열기 시 API 호출, 이후 재열기는 캐시 사용
+ */
+async function toggleSocksInCard(btnEl) {
+  const goodsNo = btnEl.dataset.goodsNo;
+  const section = document.getElementById(`inline-socks-${goodsNo}`);
+  if (!section) return;
+
+  const isOpen = section.style.display !== 'none';
+  if (isOpen) {
+    section.style.display = 'none';
+    btnEl.classList.remove('active');
+    return;
+  }
+
+  section.style.display = 'block';
+  btnEl.classList.add('active');
+
+  // 이미 양말이 로드된 경우 (socks-grid 존재) skip
+  const container = document.getElementById(`socks-container-${goodsNo}`);
+  if (container?.querySelector('.socks-grid')) return;
+
+  const shoe = currentRecommendations.find((s) => s.goods_no === goodsNo);
+  if (shoe) await fetchAndRenderSocks(shoe);
 }
 
 /**

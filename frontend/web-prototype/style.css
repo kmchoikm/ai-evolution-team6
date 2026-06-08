@@ -432,6 +432,53 @@ textarea:focus {
 .rec-card.rank-2 { border-top-color: #888888; }
 .rec-card.rank-3 { border-top-color: #CCCCCC; }
 
+/* 썸네일 + 양말 아이콘 래퍼 */
+.rec-thumbnail-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 양말 추천 토글 아이콘 */
+.sock-icon-btn {
+  width: 48px;
+  height: 28px;
+  background: #F5F5F5;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.sock-icon-btn:hover  { background: #EBEBEB; border-color: #BDBDBD; }
+.sock-icon-btn.active { background: #E8F5E9; border-color: #4CAF50; transform: scale(1.05); }
+
+/* 카드 내부 인라인 양말/코디 섹션 */
+.inline-socks-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F0F0F0;
+}
+.inline-socks-header {
+  margin-bottom: 10px;
+}
+.inline-socks-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: #222;
+}
+.inline-outfit-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed #E8E8E8;
+}
+
 /* 셀럽 참조 하이라이트 */
 .rec-card--celeb-ref {
   border: 2px solid #E8A000;
