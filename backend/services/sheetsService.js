@@ -167,6 +167,16 @@ async function getCelebs() {
     celeb_image_url: r.get('celeb_image_url') || '',
     goods_no: r.get('goods_no'),
     source_url: r.get('source_url') || '',
+    // v2.9 SNS + 룩북 컬럼
+    instagram_url: r.get('instagram_url') || '',
+    youtube_url: r.get('youtube_url') || '',
+    outfit_thumbnail: r.get('outfit_thumbnail') || '',
+    outfit_top: r.get('outfit_top') || '',
+    outfit_bottom: r.get('outfit_bottom') || '',
+    outfit_socks: r.get('outfit_socks') || '',
+    outfit_hat: r.get('outfit_hat') || '',
+    outfit_sunglasses: r.get('outfit_sunglasses') || '',
+    outfit_etc: r.get('outfit_etc') || '',
   }));
 }
 
@@ -194,6 +204,13 @@ async function getRaceWinners() {
     result_time: r.get('result_time'),
     goods_no: r.get('goods_no'),
     source_url: r.get('source_url') || '',
+    // v2.9 룩북 컬럼
+    outfit_thumbnail: r.get('outfit_thumbnail') || '',
+    outfit_top: r.get('outfit_top') || '',
+    outfit_bottom: r.get('outfit_bottom') || '',
+    outfit_socks: r.get('outfit_socks') || '',
+    outfit_hat: r.get('outfit_hat') || '',
+    outfit_etc: r.get('outfit_etc') || '',
   }));
 }
 

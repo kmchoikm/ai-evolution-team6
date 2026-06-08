@@ -44,10 +44,17 @@ const SCHEMA = {
   ],
   Celebs: [
     'celeb_id', 'celeb_name', 'celeb_type', 'celeb_image_url', 'goods_no', 'source_url',
+    // v2.9 룩북 + SNS 컬럼
+    'instagram_url', 'youtube_url',
+    'outfit_thumbnail', 'outfit_top', 'outfit_bottom', 'outfit_socks',
+    'outfit_hat', 'outfit_sunglasses', 'outfit_etc',
   ],
   RaceWinners: [
     'winner_id', 'race_name', 'race_year', 'winner_name',
     'winner_nationality', 'course_type', 'result_time', 'goods_no', 'source_url',
+    // v2.9 룩북 컬럼
+    'outfit_thumbnail', 'outfit_top', 'outfit_bottom', 'outfit_socks',
+    'outfit_hat', 'outfit_etc',
   ],
   Races: [
     'race_id', 'race_name', 'country', 'city', 'course_type',
@@ -175,16 +182,76 @@ const SAMPLE_SHOES = [
 // ============================================================
 
 const SAMPLE_CELEBS = [
-  { celeb_id: 'celeb_001', celeb_name: '이봉주',   celeb_type: 'athlete',    celeb_image_url: '', goods_no: '4456789', source_url: '' }, // 아식스 노바블라스트 4
-  { celeb_id: 'celeb_002', celeb_name: '류현진',   celeb_type: 'athlete',    celeb_image_url: '', goods_no: '4521387', source_url: '' }, // 나이키 페가수스 41
-  { celeb_id: 'celeb_003', celeb_name: '손흥민',   celeb_type: 'athlete',    celeb_image_url: '', goods_no: '4521387', source_url: '' }, // 나이키 페가수스 41
-  { celeb_id: 'celeb_004', celeb_name: '이동호',   celeb_type: 'athlete',    celeb_image_url: '', goods_no: '4789123', source_url: '' }, // 사코니 엔돌핀 스피드 4
-  { celeb_id: 'celeb_005', celeb_name: '러닝덕',   celeb_type: 'youtuber',   celeb_image_url: '', goods_no: '5123456', source_url: '' }, // 호카 마파테 스피드 2
-  { celeb_id: 'celeb_006', celeb_name: '마라톤TV', celeb_type: 'youtuber',   celeb_image_url: '', goods_no: '4112233', source_url: '' }, // 아식스 젤 카야노 31
-  { celeb_id: 'celeb_007', celeb_name: '김가람',   celeb_type: 'youtuber',   celeb_image_url: '', goods_no: '5005842', source_url: '' }, // 미즈노 맥시마이저 26
-  { celeb_id: 'celeb_008', celeb_name: '양정아',   celeb_type: 'influencer', celeb_image_url: '', goods_no: '5234567', source_url: '' }, // 호카 클리프턴 9
-  { celeb_id: 'celeb_009', celeb_name: '박지윤',   celeb_type: 'influencer', celeb_image_url: '', goods_no: '3990544', source_url: '' }, // 뉴발란스 W480SK5
-  { celeb_id: 'celeb_010', celeb_name: '정진우',   celeb_type: 'influencer', celeb_image_url: '', goods_no: '4456789', source_url: '' }, // 아식스 노바블라스트 4
+  {
+    celeb_id: 'celeb_001', celeb_name: '이봉주', celeb_type: 'athlete',
+    celeb_image_url: '', goods_no: '4456789', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_002', celeb_name: '류현진', celeb_type: 'athlete',
+    celeb_image_url: '', goods_no: '4521387', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_003', celeb_name: '손흥민', celeb_type: 'athlete',
+    celeb_image_url: '', goods_no: '4521387', source_url: '',
+    instagram_url: 'https://www.instagram.com/heungminsson/', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '나이키 드라이핏 러닝 반팔 T', outfit_bottom: '나이키 에어로스위프트 하프팬츠',
+    outfit_socks: '나이키 드라이핏 쿠션 러닝 양말', outfit_hat: '나이키 드라이핏 레거시91 캡', outfit_sunglasses: '', outfit_etc: '가민 포러너 165',
+  },
+  {
+    celeb_id: 'celeb_004', celeb_name: '이동호', celeb_type: 'athlete',
+    celeb_image_url: '', goods_no: '4789123', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_005', celeb_name: '러닝덕', celeb_type: 'youtuber',
+    celeb_image_url: '', goods_no: '5123456', source_url: '',
+    instagram_url: '', youtube_url: 'https://www.youtube.com/@runningduck',
+    outfit_thumbnail: '', outfit_top: '호카 퍼포먼스 반팔 T', outfit_bottom: '호카 런 트레일 숏팬츠',
+    outfit_socks: '팔코 러닝 에어쿠션 양말', outfit_hat: '', outfit_sunglasses: '오클리 레이다EV 패스', outfit_etc: '애플 워치 울트라 2',
+  },
+  {
+    celeb_id: 'celeb_006', celeb_name: '마라톤TV', celeb_type: 'youtuber',
+    celeb_image_url: '', goods_no: '4112233', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_007', celeb_name: '김가람', celeb_type: 'youtuber',
+    celeb_image_url: '', goods_no: '5005842', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_008', celeb_name: '양정아', celeb_type: 'influencer',
+    celeb_image_url: '', goods_no: '5234567', source_url: '',
+    instagram_url: 'https://www.instagram.com/yangjeonga_run/', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '룰루레몬 스위프틀리 테크 반팔', outfit_bottom: '룰루레몬 스피드업 숏팬츠 2.5인치',
+    outfit_socks: '발란티 쿠션 러닝 양말 (핑크)', outfit_hat: '룰루레몬 패스트앤프리 캡', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_009', celeb_name: '박지윤', celeb_type: 'influencer',
+    celeb_image_url: '', goods_no: '3990544', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
+  {
+    celeb_id: 'celeb_010', celeb_name: '정진우', celeb_type: 'influencer',
+    celeb_image_url: '', goods_no: '4456789', source_url: '',
+    instagram_url: '', youtube_url: '',
+    outfit_thumbnail: '', outfit_top: '', outfit_bottom: '',
+    outfit_socks: '', outfit_hat: '', outfit_sunglasses: '', outfit_etc: '',
+  },
 ];
 
 // ============================================================
@@ -193,16 +260,16 @@ const SAMPLE_CELEBS = [
 // ============================================================
 
 const SAMPLE_RACE_WINNERS = [
-  { winner_id: 'winner_001', race_name: '도쿄 마라톤',        race_year: 2024, winner_name: '알렉산더 무타이',   winner_nationality: 'KE', course_type: 'full', result_time: '2:02:27', goods_no: '4789123', source_url: '' },
-  { winner_id: 'winner_002', race_name: '베를린 마라톤',      race_year: 2023, winner_name: '에리아스 킵라가트', winner_nationality: 'KE', course_type: 'full', result_time: '2:01:53', goods_no: '4789123', source_url: '' },
-  { winner_id: 'winner_003', race_name: '보스턴 마라톤',      race_year: 2024, winner_name: '시라즈 아사파',     winner_nationality: 'ET', course_type: 'full', result_time: '2:06:42', goods_no: '5123456', source_url: '' },
-  { winner_id: 'winner_004', race_name: '뉴욕 마라톤',        race_year: 2023, winner_name: '알베르트 코스게이', winner_nationality: 'KE', course_type: 'full', result_time: '2:08:11', goods_no: '5123456', source_url: '' },
-  { winner_id: 'winner_005', race_name: '시카고 마라톤',      race_year: 2023, winner_name: '세이폼 아센파',     winner_nationality: 'ET', course_type: 'full', result_time: '2:03:17', goods_no: '4789123', source_url: '' },
-  { winner_id: 'winner_006', race_name: '대전 서울 마라톤',   race_year: 2024, winner_name: '김민호',            winner_nationality: 'KR', course_type: 'full', result_time: '2:11:34', goods_no: '4456789', source_url: '' },
-  { winner_id: 'winner_007', race_name: '춘천 마라톤',        race_year: 2023, winner_name: '박상혁',            winner_nationality: 'KR', course_type: 'full', result_time: '2:18:45', goods_no: '4112233', source_url: '' },
-  { winner_id: 'winner_008', race_name: 'JTBC 서울 마라톤',  race_year: 2023, winner_name: '이재원',            winner_nationality: 'KR', course_type: 'half', result_time: '1:04:22', goods_no: '4789123', source_url: '' },
-  { winner_id: 'winner_009', race_name: '경주 마라톤',        race_year: 2023, winner_name: '정우진',            winner_nationality: 'KR', course_type: 'full', result_time: '2:22:11', goods_no: '4665544', source_url: '' },
-  { winner_id: 'winner_010', race_name: '대구 마라톤',        race_year: 2024, winner_name: '한동수',            winner_nationality: 'KR', course_type: 'full', result_time: '2:25:33', goods_no: '4456789', source_url: '' },
+  { winner_id: 'winner_001', race_name: '도쿄 마라톤',       race_year: 2024, winner_name: '알렉산더 무타이',   winner_nationality: 'KE', course_type: 'full', result_time: '2:02:27', goods_no: '4789123', source_url: '', outfit_thumbnail: '', outfit_top: '사코니 하이 반팔 티셔츠', outfit_bottom: '사코니 킨바라 숏팬츠', outfit_socks: '사코니 퍼포먼스 양말', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_002', race_name: '베를린 마라톤',     race_year: 2023, winner_name: '에리아스 킵라가트', winner_nationality: 'KE', course_type: 'full', result_time: '2:01:53', goods_no: '4789123', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_003', race_name: '보스턴 마라톤',     race_year: 2024, winner_name: '시라즈 아사파',     winner_nationality: 'ET', course_type: 'full', result_time: '2:06:42', goods_no: '5123456', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_004', race_name: '뉴욕 마라톤',       race_year: 2023, winner_name: '알베르트 코스게이', winner_nationality: 'KE', course_type: 'full', result_time: '2:08:11', goods_no: '5123456', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_005', race_name: '시카고 마라톤',     race_year: 2023, winner_name: '세이폼 아센파',     winner_nationality: 'ET', course_type: 'full', result_time: '2:03:17', goods_no: '4789123', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_006', race_name: '대전 서울 마라톤',  race_year: 2024, winner_name: '김민호',            winner_nationality: 'KR', course_type: 'full', result_time: '2:11:34', goods_no: '4456789', source_url: '', outfit_thumbnail: '', outfit_top: '아식스 러닝 반팔 T', outfit_bottom: '아식스 쿨 2-IN-1 숏팬츠', outfit_socks: '아식스 퀵 드라이 양말', outfit_hat: '', outfit_etc: '가민 포러너 955' },
+  { winner_id: 'winner_007', race_name: '춘천 마라톤',       race_year: 2023, winner_name: '박상혁',            winner_nationality: 'KR', course_type: 'full', result_time: '2:18:45', goods_no: '4112233', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_008', race_name: 'JTBC 서울 마라톤', race_year: 2023, winner_name: '이재원',            winner_nationality: 'KR', course_type: 'half', result_time: '1:04:22', goods_no: '4789123', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_009', race_name: '경주 마라톤',       race_year: 2023, winner_name: '정우진',            winner_nationality: 'KR', course_type: 'full', result_time: '2:22:11', goods_no: '4665544', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
+  { winner_id: 'winner_010', race_name: '대구 마라톤',       race_year: 2024, winner_name: '한동수',            winner_nationality: 'KR', course_type: 'full', result_time: '2:25:33', goods_no: '4456789', source_url: '', outfit_thumbnail: '', outfit_top: '', outfit_bottom: '', outfit_socks: '', outfit_hat: '', outfit_etc: '' },
 ];
 
 // ============================================================

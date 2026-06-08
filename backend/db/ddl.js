@@ -46,15 +46,22 @@ const SCHEMA = {
     'recommended_goods_no',
   ],
 
-  // §7.3 Sheet 3: Celebs (셀럽 착용 신발) — v2.0
+  // §7.3 Sheet 3: Celebs (셀럽 착용 신발) — v2.0 / v2.9 룩북 컬럼 추가
   Celebs: [
     'celeb_id', 'celeb_name', 'celeb_type', 'celeb_image_url', 'goods_no', 'source_url',
+    // v2.9 룩북 + SNS 컬럼
+    'instagram_url', 'youtube_url',
+    'outfit_thumbnail', 'outfit_top', 'outfit_bottom', 'outfit_socks',
+    'outfit_hat', 'outfit_sunglasses', 'outfit_etc',
   ],
 
-  // §7.4 Sheet 4: RaceWinners (대회 우승자 착용 신발) — v2.0
+  // §7.4 Sheet 4: RaceWinners (대회 우승자 착용 신발) — v2.0 / v2.9 룩북 컬럼 추가
   RaceWinners: [
     'winner_id', 'race_name', 'race_year', 'winner_name',
     'winner_nationality', 'course_type', 'result_time', 'goods_no', 'source_url',
+    // v2.9 룩북 컬럼
+    'outfit_thumbnail', 'outfit_top', 'outfit_bottom', 'outfit_socks',
+    'outfit_hat', 'outfit_etc',
   ],
 
   // §7.5 Sheet 5: Races (대회 코스 정보) — v2.0

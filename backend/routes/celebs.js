@@ -87,8 +87,20 @@ router.get('/:celeb_id', async (req, res) => {
     }
 
     // 셀럽 기본 정보 (첫 행에서 추출)
-    const { celeb_name, celeb_type, celeb_image_url } = celebRows_filtered[0];
-    const celeb = { celeb_id, celeb_name, celeb_type, celeb_image_url };
+    const { celeb_name, celeb_type, celeb_image_url, instagram_url, youtube_url } = celebRows_filtered[0];
+    const celeb = { celeb_id, celeb_name, celeb_type, celeb_image_url, instagram_url, youtube_url };
+
+    // outfit 데이터: outfit_thumbnail이 있는 첫 번째 행 우선, 없으면 첫 행 (인덱스 고정 금지)
+    const outfitRow = celebRows_filtered.find((r) => r.outfit_thumbnail) || celebRows_filtered[0];
+    const outfit = {
+      thumbnail: outfitRow.outfit_thumbnail || '',
+      top: outfitRow.outfit_top || '',
+      bottom: outfitRow.outfit_bottom || '',
+      socks: outfitRow.outfit_socks || '',
+      hat: outfitRow.outfit_hat || '',
+      sunglasses: outfitRow.outfit_sunglasses || '',
+      etc: outfitRow.outfit_etc || '',
+    };
 
     // goods_no로 Shoes 시트와 논리 조인
     const shoes = celebRows_filtered
@@ -112,11 +124,12 @@ router.get('/:celeb_id', async (req, res) => {
         status: 'no_match',
         message: '해당 셀럽의 착용 신발 데이터가 없습니다.',
         celeb,
+        outfit,
         shoes: [],
       });
     }
 
-    return res.status(200).json({ status: 'success', celeb, shoes });
+    return res.status(200).json({ status: 'success', celeb, outfit, shoes });
   } catch (err) {
     console.error('[Celebs/:id] 처리 중 예외:', err);
     return res.status(500).json({
