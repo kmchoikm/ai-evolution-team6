@@ -104,6 +104,9 @@ function selectShoe(goodsNo, label) {
   const labelEl = document.getElementById('selected-shoe-label');
   labelEl.textContent = `✓ 선택됨: ${label}`;
   labelEl.style.display = 'block';
+  // 이전 오류 메시지 제거
+  const errEl = document.getElementById('errors');
+  if (errEl) errEl.style.display = 'none';
 }
 
 // ============================================================
