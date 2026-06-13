@@ -435,11 +435,12 @@ textarea:focus {
 
 /* AI reason 업데이트 하이라이트 */
 .rec-reason--updated {
-  animation: reason-highlight 1.4s ease forwards;
+  animation: reason-highlight 1.8s ease forwards;
 }
 @keyframes reason-highlight {
-  0%   { background: #fff8e1; border-radius: 6px; }
-  100% { background: transparent; }
+  0%   { box-shadow: 0 0 0 2px rgba(91, 107, 248, 0.5); }
+  60%  { box-shadow: 0 0 0 2px rgba(91, 107, 248, 0.15); }
+  100% { box-shadow: none; }
 }
 
 /* ============================================================
@@ -659,15 +660,51 @@ textarea:focus {
 .badge-medium { background: #FFF4E6; color: #D07800; }
 .badge-low    { background: #FFEEEE; color: #CC2222; }
 
-.rec-reason {
-  background: #F7F7F7;
+/* 추천 이유 래퍼 — AI / 스펙 기반 두 가지 상태 */
+.rec-reason-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
   padding: 10px 12px;
   border-radius: 8px;
-  font-size: 13px;
+  border-left: 3px solid transparent;
   margin-bottom: 12px;
-  color: var(--text-mid);
-  line-height: 1.55;
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
+.rec-reason-wrap[data-ai="false"] {
+  background: #F7F7F7;
+  border-left-color: #D8D8D8;
+}
+.rec-reason-wrap[data-ai="true"] {
+  background: linear-gradient(135deg, #F0F4FF 0%, #F8F0FF 100%);
+  border-left-color: #5B6BF8;
+}
+.rec-reason-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1.7;
+}
+.rec-reason-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+.rec-reason-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.rec-reason-wrap[data-ai="false"] .rec-reason-badge { color: #BBBBBB; }
+.rec-reason-wrap[data-ai="true"]  .rec-reason-badge { color: #5B6BF8; }
+.rec-reason {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  margin: 0;
+}
+.rec-reason-wrap[data-ai="true"] .rec-reason { color: #2D2D4E; }
 .rec-footer {
   display: flex;
   justify-content: space-between;
