@@ -10,7 +10,7 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000;
 const MODEL = 'claude-sonnet-4-6';
 
 const DISTANCE_KO = {

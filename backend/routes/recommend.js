@@ -137,8 +137,20 @@ router.post('/ai-reasons', async (req, res) => {
     return res.status(400).json({ status: 'error', message: 'user_profile과 candidates 배열이 필요합니다.' });
   }
 
+  let aiResults;
   try {
-    const aiResults = await getAiRecommendations(user_profile, candidates);
+    aiResults = await getAiRecommendations(user_profile, candidates);
+  } catch (err) {
+    console.warn('[Recommend/ai-reasons] 1차 실패, 재시도 중:', err.message);
+    try {
+      aiResults = await getAiRecommendations(user_profile, candidates);
+    } catch (retryErr) {
+      console.error('[Recommend/ai-reasons] 재시도도 실패:', retryErr.message);
+      return res.status(500).json({ status: 'error', message: 'AI 추천 이유 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+  }
+
+  try {
     const reasons = aiResults
       .filter((ai) => ai.goods_no)
       .map((ai) => ({ goods_no: ai.goods_no, reason: ai.reason }));

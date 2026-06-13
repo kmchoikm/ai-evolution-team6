@@ -161,9 +161,12 @@ async function runPhase2(profile, recs) {
     data = await res.json();
     if (!res.ok) throw new Error(data.message);
   } catch (err) {
-    // AI 실패 — DB summary 텍스트로 카드별 개별 이유 표출 (동일 텍스트 반복 방지)
+    // AI 실패 — fallback 스타일 유지하며 DB summary로 카드별 개별 텍스트 표출
     showAiProgress(false);
-    if (recs[0]?.summary) updateCardReason(recs[0].goods_no, recs[0].summary);
+    if (recs[0]?.summary) {
+      const el = document.querySelector(`.rec-card[data-goods-no="${recs[0].goods_no}"] .rec-reason`);
+      if (el) el.textContent = recs[0].summary;
+    }
     for (let i = 1; i < recs.length; i++) {
       await delay(350);
       appendCard({ ...recs[i], reason: recs[i].summary || recs[i].reason }, i + 1);
@@ -237,20 +240,25 @@ function appendCard(rec, rank) {
   requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('rec-card--visible')));
 }
 
-/** 카드의 추천 이유 텍스트를 fade로 AI reason으로 교체 */
+/** 카드의 추천 이유를 AI reason으로 fade 교체 (뱃지·아이콘·스타일 모두 업그레이드) */
 function updateCardReason(goodsNo, reason) {
   if (!reason) return;
   const card = document.querySelector(`.rec-card[data-goods-no="${goodsNo}"]`);
   if (!card) return;
-  const el = card.querySelector('.rec-reason');
+  const wrap  = card.querySelector('.rec-reason-wrap');
+  const icon  = card.querySelector('.rec-reason-icon');
+  const badge = card.querySelector('.rec-reason-badge');
+  const el    = card.querySelector('.rec-reason');
   if (!el) return;
 
   el.style.transition = 'opacity 0.3s ease';
   el.style.opacity = '0';
   setTimeout(() => {
-    el.textContent = `💬 ${reason}`;
+    if (wrap)  { wrap.dataset.ai = 'true'; wrap.classList.add('rec-reason--updated'); }
+    if (icon)  icon.textContent  = '✨';
+    if (badge) badge.textContent = 'AI 맞춤 분석';
+    el.textContent = reason;
     el.style.opacity = '1';
-    el.classList.add('rec-reason--updated');
   }, 320);
 }
 
@@ -504,7 +512,13 @@ function renderRecommendationCard(shoe, rank) {
           ${confidenceBadge}
         </div>
         <div class="rec-ig-tags">${igTagsHtml}</div>
-        <p class="rec-reason">💬 ${shoe.reason || ''}</p>
+        <div class="rec-reason-wrap" data-ai="${shoe.is_fallback === false ? 'true' : 'false'}">
+          <span class="rec-reason-icon">${shoe.is_fallback === false ? '✨' : '📊'}</span>
+          <div class="rec-reason-content">
+            <span class="rec-reason-badge">${shoe.is_fallback === false ? 'AI 맞춤 분석' : '스펙 기반'}</span>
+            <p class="rec-reason">${shoe.reason || ''}</p>
+          </div>
+        </div>
         <div class="rec-footer">
           <span class="rec-price">${priceDisplay}</span>
           ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
