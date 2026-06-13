@@ -48,3 +48,4 @@ coverage/
 .claude/skills/*
 .claude/worktrees/
 !.claude/skills/.gitkeep
+.gstack/
