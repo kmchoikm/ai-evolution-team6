@@ -126,12 +126,36 @@ function fallbackReason(user, shoe) {
 }
 
 // ============================================================
+// 모델 시리즈 중복 제거 헬퍼
+// ============================================================
+
+/**
+ * 신발 이름에서 모델 시리즈 키 추출
+ * "젤-트라부코 12 GTX - 블랙:그레피티 그레이" → "아식스__젤-트라부코"
+ * "젤-트라부코 테라 - 샌드:크림"             → "아식스__젤-트라부코 테라"
+ */
+function extractSeriesKey(brand, goodsName) {
+  const basePart = goodsName.split(' - ')[0].trim();
+  const noVersion = basePart.replace(/\s+\d.*$/, '').trim();
+  return `${brand}__${noVersion}`;
+}
+
+/**
+ * 두 시리즈 키가 같은 계열인지 판정
+ * "아식스__젤-트라부코" ↔ "아식스__젤-트라부코 테라" → true (접두어 관계)
+ */
+function isRelatedSeries(keyA, keyB) {
+  if (keyA === keyB) return true;
+  const [shorter, longer] = keyA.length <= keyB.length ? [keyA, keyB] : [keyB, keyA];
+  return longer.startsWith(shorter + ' ');
+}
+
+// ============================================================
 // 1차 필터링
 // ============================================================
 
 function filterCandidates(user, shoes) {
   const cap = BUDGET_MAX[user.budget] ?? Infinity;
-  const userWidth = WIDTH_MAP[user.foot_width];
 
   let filtered = shoes.filter((s) => {
     // 예산 초과 제외
@@ -147,11 +171,22 @@ function filterCandidates(user, shoes) {
     filtered = shoes.filter((s) => s.price <= cap);
   }
 
-  // 점수 순 정렬 후 상위 10개만 Claude에 전달 (토큰 절약)
-  return filtered
+  // 점수 순 정렬
+  const scored = filtered
     .map((s) => ({ ...s, _score: calcScore(user, s) }))
-    .sort((a, b) => b._score - a._score)
-    .slice(0, 10);
+    .sort((a, b) => b._score - a._score);
+
+  // 같은 모델 시리즈 중 최고 점수 1개만 유지 (예: 젤-트라부코 12/13/9/테라 → 최상위 1개)
+  const seenSeries = [];
+  const deduped = scored.filter((shoe) => {
+    const key = extractSeriesKey(shoe.brand, shoe.goods_name);
+    const isDupe = seenSeries.some((s) => isRelatedSeries(s, key));
+    if (!isDupe) seenSeries.push(key);
+    return !isDupe;
+  });
+
+  // 상위 10개만 Claude에 전달 (토큰 절약)
+  return deduped.slice(0, 10);
 }
 
 // ============================================================

@@ -161,11 +161,12 @@ async function runPhase2(profile, recs) {
     data = await res.json();
     if (!res.ok) throw new Error(data.message);
   } catch (err) {
-    // AI 실패 — fallback reason 유지, 나머지 카드는 fallback으로 순차 표출
+    // AI 실패 — DB summary 텍스트로 카드별 개별 이유 표출 (동일 텍스트 반복 방지)
     showAiProgress(false);
+    if (recs[0]?.summary) updateCardReason(recs[0].goods_no, recs[0].summary);
     for (let i = 1; i < recs.length; i++) {
       await delay(350);
-      appendCard(recs[i], i + 1);
+      appendCard({ ...recs[i], reason: recs[i].summary || recs[i].reason }, i + 1);
     }
     finalizeCards(recs);
     return;
