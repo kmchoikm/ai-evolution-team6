@@ -10,6 +10,10 @@ const API_BASE = (window.location.protocol === 'file:' ||
   ? 'http://localhost:3000'
   : 'https://ai-evolution-team6-production.up.railway.app';
 
+// 이 값을 올리면 모든 브라우저의 sessionStorage 캐시가 자동 무효화됨
+const CACHE_VERSION = 'v2';
+const CACHE_KEY = (name) => `${name}_${CACHE_VERSION}`;
+
 let allCelebs = [];
 let allWinners = [];
 
@@ -52,7 +56,7 @@ function switchTab(tab) {
 // ============================================================
 
 async function fetchCelebs() {
-  const cached = getCachedData('celebs_cache');
+  const cached = getCachedData(CACHE_KEY('celebs'));
   if (cached) {
     allCelebs = cached.celebs || [];
     renderCelebList(allCelebs);
@@ -64,7 +68,7 @@ async function fetchCelebs() {
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
     allCelebs = data.celebs || [];
-    setCacheData('celebs_cache', data); // 세션 내 재방문 시 즉시 렌더링
+    setCacheData(CACHE_KEY('celebs'), data); // 세션 내 재방문 시 즉시 렌더링
     renderCelebList(allCelebs);
   } catch (err) {
     document.getElementById('celebs-list-container').innerHTML = renderErrorState(err.message, 'fetchCelebs()');
@@ -120,7 +124,7 @@ function attachCelebPrefetchListeners() {
 }
 
 function prefetchCelebLookbook(celebId) {
-  const key = `celeb_lookbook_${celebId}`;
+  const key = CACHE_KEY(`celeb_lookbook_${celebId}`);
   if (sessionStorage.getItem(key)) return;
   fetch(`${API_BASE}/api/celebs/${celebId}`)
     .then((r) => r.json())
@@ -144,7 +148,7 @@ async function fetchCelebLookbook(celebId, btnEl) {
   panel.classList.add('open');
   btnEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  const cached = getCachedData(`celeb_lookbook_${celebId}`);
+  const cached = getCachedData(CACHE_KEY(`celeb_lookbook_${celebId}`));
   if (cached) {
     renderLookbook(cached.celeb, cached.outfit || {}, cached.shoes || [], {
       showSNS: true, showCTA: true, panelId: `celeb-expand-${celebId}`,
@@ -157,7 +161,7 @@ async function fetchCelebLookbook(celebId, btnEl) {
     const res = await fetch(`${API_BASE}/api/celebs/${celebId}`);
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
-    setCacheData(`celeb_lookbook_${celebId}`, data);
+    setCacheData(CACHE_KEY(`celeb_lookbook_${celebId}`), data);
     renderLookbook(data.celeb, data.outfit || {}, data.shoes || [], {
       showSNS: true, showCTA: true, panelId: `celeb-expand-${celebId}`,
     });
@@ -304,7 +308,7 @@ function renderLookbook(celeb, outfit, shoes, options) {
 // ============================================================
 
 async function fetchWinners() {
-  const cached = getCachedData('winners_cache');
+  const cached = getCachedData(CACHE_KEY('winners'));
   if (cached) {
     allWinners = cached.winners || [];
     renderWinnerList(allWinners);
@@ -316,7 +320,7 @@ async function fetchWinners() {
     const data = await res.json();
     if (!res.ok || data.status === 'error') throw new Error(data.message);
     allWinners = data.winners || [];
-    setCacheData('winners_cache', data); // 세션 내 재방문 시 즉시 렌더링
+    setCacheData(CACHE_KEY('winners'), data); // 세션 내 재방문 시 즉시 렌더링
     renderWinnerList(allWinners);
   } catch (err) {
     document.getElementById('winners-list-container').innerHTML = renderErrorState(err.message, 'fetchWinners()');
