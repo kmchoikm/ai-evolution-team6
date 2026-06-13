@@ -41,11 +41,14 @@
     </div>
   </div>
 
-  <!-- 로딩 오버레이 — display:none 제거: 첫 HTML 페인트부터 표시해 빈 화면 깜박임 방지 -->
+  <!-- 로딩 오버레이 — Phase 1(DB 검색) 동안만 표시, Phase 2부터 제거 -->
   <div id="loading-overlay" class="loading-overlay">
     <div class="loading-content">
       <div class="spinner"></div>
-      <p id="loading-message">AI가 최적의 러닝화를 찾고 있어요...</p>
+      <p id="loading-message">맞는 러닝화를 찾고 있어요...</p>
+      <div class="loading-progress">
+        <div class="loading-progress-bar"></div>
+      </div>
     </div>
   </div>
 
