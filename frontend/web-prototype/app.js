@@ -161,20 +161,8 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
-  showLoading('AI가 최적의 러닝화를 찾고 있어요...');
-
-  // 사용자 프로필 저장
+  // 사용자 프로필 저장 후 즉시 결과 페이지로 이동
+  // (결과 페이지 자체 로딩 오버레이가 Phase 1 동안 표시됨)
   sessionStorage.setItem('user_profile', JSON.stringify(profile));
-
-  // 적절한 시간(딱딱 UX) 후 결과 페이지로
-  setTimeout(() => {
-    window.location.href = 'result.html';
-  }, 800);
+  window.location.href = 'result.html';
 });
-
-function showLoading(message) {
-  const overlay = document.getElementById('loading-overlay');
-  const msg = document.getElementById('loading-message');
-  msg.textContent = message;
-  overlay.style.display = 'flex';
-}
