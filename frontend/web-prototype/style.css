@@ -856,9 +856,11 @@ textarea:focus {
    필터 바
    ============================================================ */
 
-.filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.filter-bar { display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.filter-bar::-webkit-scrollbar { display: none; }
 
 .filter-btn {
+  flex-shrink: 0;
   padding: 6px 14px;
   border: 1.5px solid var(--border);
   background: var(--card);
