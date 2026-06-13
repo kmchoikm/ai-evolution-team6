@@ -378,6 +378,70 @@ textarea:focus {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Phase 1 로딩 오버레이 — 인디터미네이트 프로그레스바 */
+.loading-progress {
+  width: 180px;
+  height: 4px;
+  background: #EBEBEB;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 12px auto 0;
+}
+.loading-progress-bar {
+  height: 100%;
+  width: 45%;
+  background: var(--primary);
+  border-radius: 2px;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(500%); }
+}
+
+/* Phase 2 — AI writing bar (비차단 진행 표시) */
+.ai-writing-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 18px;
+  background: #f5f7ff;
+  border: 1px solid #dde2ff;
+  border-radius: 12px;
+  margin: 10px 0 4px;
+  color: #5464d4;
+  font-size: 14px;
+}
+.ai-writing-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #dde2ff;
+  border-top-color: #5464d4;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* 카드 순차 등장 애니메이션 */
+.rec-card--enter {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.rec-card--enter.rec-card--visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+/* AI reason 업데이트 하이라이트 */
+.rec-reason--updated {
+  animation: reason-highlight 1.4s ease forwards;
+}
+@keyframes reason-highlight {
+  0%   { background: #fff8e1; border-radius: 6px; }
+  100% { background: transparent; }
+}
+
 /* ============================================================
    결과 페이지 — 프로필 요약
    ============================================================ */

@@ -1,6 +1,9 @@
 /**
- * RunFit 결과 페이지 렌더링 로직
- * result.html 전용 — /api/recommend, /api/recommend/socks, /api/recommend/outfit 연동
+ * RunFit 결과 페이지 — 2-Phase 스트리밍 추천
+ *
+ * Phase 1: POST /api/recommend/quick  — DB 스코어링만 (~1~2초), 오버레이 제거 후 카드 #1 즉시 표출
+ * Phase 2: POST /api/recommend/ai-reasons — Claude AI 이유 생성 (~8~15초), 백그라운드 실행
+ *          → 카드 #1 reason 업데이트 후 #2, #3… 순차 등장 (350ms 간격)
  */
 
 const API_BASE = (window.location.protocol === 'file:' ||
@@ -25,52 +28,44 @@ const PROFILE_LABELS = {
 let currentRecommendations = [];
 let selectedSockColor = null;
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ============================================================
 // 개발자 테스트 패널 (localhost 전용)
 // ============================================================
 
 const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
 
-/** 패널 초기화 — localhost 에서만 표시 */
 function initDevPanel() {
   if (!IS_LOCAL) return;
   const panel = document.getElementById('dev-panel');
   if (panel) panel.style.display = 'block';
 }
 
-/** 선택된 모드에 맞는 _test_shoes 반환 */
 function getTestShoes() {
   const mode = document.querySelector('input[name="test-mode"]:checked')?.value;
-  if (mode === 'case-a') {
-    return [];  // DB 완전 비어있음
-  }
+  if (mode === 'case-a') return [];
   if (mode === 'case-b') {
-    // 모두 50만원 → budget 'low'(7만원) 초과 → candidates === 0 → Case B 진입
     return [
       { goods_no: 'TEST001', brand: '나이키', goods_name: '페가수스 41 (테스트)', price: 500000, width: '보통', cushion: 4, weight: 3, distance: '전거리', breathability: 4, fit: 4, toe_fit: 'all', summary: 'Case B 테스트용 — 예산 초과 신발' },
       { goods_no: 'TEST002', brand: '아식스', goods_name: '젤 카야노 31 (테스트)', price: 500000, width: '보통', cushion: 4, weight: 4, distance: '장거리', breathability: 3, fit: 5, toe_fit: 'egyptian', summary: 'Case B 테스트용 — 예산 초과 신발' },
       { goods_no: 'TEST003', brand: '호카', goods_name: '클리프턴 9 (테스트)', price: 500000, width: '넓음', cushion: 5, weight: 2, distance: '전거리', breathability: 4, fit: 5, toe_fit: 'roman,germanic', summary: 'Case B 테스트용 — 예산 초과 신발' },
     ];
   }
-  return null;  // 정상 모드 — 오버라이드 없음
+  return null;
 }
 
-/** 재테스트 버튼 핸들러 */
 async function devRetest() {
   const mode = document.querySelector('input[name="test-mode"]:checked')?.value;
   const badge = document.getElementById('dev-mode-badge');
-
-  const labels = {
-    normal:  '✅ 정상 DB',
-    'case-a': '🔴 Case A: DB 없음',
-    'case-b': '🟡 Case B: 예산 초과',
-  };
+  const labels = { normal: '✅ 정상 DB', 'case-a': '🔴 Case A: DB 없음', 'case-b': '🟡 Case B: 예산 초과' };
   if (badge) badge.textContent = `실행 중: ${labels[mode] || '?'}`;
 
   const raw = sessionStorage.getItem('user_profile');
   let profile;
   try { profile = JSON.parse(raw); } catch { return; }
 
+  // dev 패널은 기존 단일 API 사용 (Case A/B 시나리오 포함)
   await fetchAndRenderRecommendations(profile, getTestShoes());
 
   if (badge) badge.textContent = `완료: ${labels[mode] || '?'}`;
@@ -88,21 +83,224 @@ async function init() {
   try { profile = JSON.parse(profileRaw); }
   catch { location.href = 'index.html'; return; }
 
-  // 오버레이를 가장 먼저 표시 — 이후 DOM 셋업 작업이 오버레이 뒤에서 진행됨
-  showLoading(true, 'AI가 최적의 러닝화를 찾고 있어요...');
   initDevPanel();
   renderProfileSummary(profile);
-  await fetchAndRenderRecommendations(profile);
+  await runPhase1(profile);
 }
 
 // ============================================================
-// 추천 API 호출
+// Phase 1 — DB 스코어링 (오버레이 제거 후 카드 #1 즉시 표출)
+// ============================================================
+
+async function runPhase1(profile) {
+  showLoading(true, '맞는 러닝화를 찾고 있어요...');
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/recommend/quick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_profile: profile }),
+    });
+    data = await res.json();
+    if (!res.ok) throw new Error(data.message || `서버 오류 (HTTP ${res.status})`);
+  } catch (err) {
+    showLoading(false);
+    renderError(err.message || '추천을 불러올 수 없습니다.');
+    return;
+  }
+
+  showLoading(false);
+
+  if (data.status === 'no_match') { renderNoMatch(data.message); return; }
+  if (data.status !== 'success' || !data.recommendations?.length) {
+    renderError(data.message || '추천 결과를 받지 못했습니다.'); return;
+  }
+
+  const recs = data.recommendations;
+  currentRecommendations = [...recs];
+
+  // 카드 #1 즉시 표출
+  renderFirstCard(recs[0]);
+  highlightCelebRef();
+  document.getElementById('size-link-section').style.display = 'block';
+
+  // Top1 양말 자동 표출
+  const top1 = recs[0];
+  if (top1?.main_color && top1?.goods_no) {
+    requestAnimationFrame(() => {
+      const inlineSection = document.getElementById(`inline-socks-${top1.goods_no}`);
+      const iconBtn = document.getElementById(`sock-icon-${top1.goods_no}`);
+      if (inlineSection) inlineSection.style.display = 'block';
+      if (iconBtn) iconBtn.classList.add('active');
+      fetchAndRenderSocks(top1);
+    });
+  }
+
+  // Phase 2 시작 (백그라운드 — await 없음)
+  runPhase2(profile, recs).catch((err) => {
+    console.error('[Phase2] 미처리 오류:', err);
+    showAiProgress(false);
+  });
+}
+
+// ============================================================
+// Phase 2 — AI 추천 이유 생성 (백그라운드, 비차단)
+// ============================================================
+
+async function runPhase2(profile, recs) {
+  showAiProgress(true);
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/recommend/ai-reasons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_profile: profile, candidates: recs }),
+    });
+    data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+  } catch (err) {
+    // AI 실패 — fallback reason 유지, 나머지 카드는 fallback으로 순차 표출
+    showAiProgress(false);
+    showToast('AI 분석 서버가 지연되어 스코어 기반 결과를 표시합니다.', 4000);
+    for (let i = 1; i < recs.length; i++) {
+      await delay(350);
+      appendCard(recs[i], i + 1);
+    }
+    finalizeCards(recs);
+    return;
+  }
+
+  showAiProgress(false);
+
+  // goods_no → AI reason 맵
+  const reasonMap = {};
+  (data.reasons || []).forEach((r) => { if (r.goods_no) reasonMap[r.goods_no] = r.reason; });
+
+  // 카드 #1 reason 업데이트 (AI reason으로 fade 교체)
+  const top1 = recs[0];
+  if (reasonMap[top1.goods_no]) {
+    updateCardReason(top1.goods_no, reasonMap[top1.goods_no]);
+    currentRecommendations[0] = { ...top1, reason: reasonMap[top1.goods_no], is_fallback: false };
+  }
+
+  // 카드 #2~ 순차 등장 (350ms 간격)
+  for (let i = 1; i < recs.length; i++) {
+    await delay(350);
+    const enriched = {
+      ...recs[i],
+      reason: reasonMap[recs[i].goods_no] || recs[i].reason,
+      is_fallback: !reasonMap[recs[i].goods_no],
+    };
+    currentRecommendations[i] = enriched;
+    appendCard(enriched, i + 1);
+  }
+
+  finalizeCards(recs);
+}
+
+// ============================================================
+// 카드 렌더링 헬퍼
+// ============================================================
+
+/** Phase 1 완료 후 컨테이너를 초기화하고 카드 #1과 제목을 렌더 */
+function renderFirstCard(rec) {
+  const container = document.getElementById('results-container');
+  if (!container) return;
+  container.innerHTML = `
+    <h2 class="section-title" id="results-title">🏆 최고 추천 러닝화</h2>
+    ${renderRecommendationCard(rec, 1)}
+  `;
+}
+
+/** Phase 2에서 카드를 AI writing bar 앞에 슬라이드-인으로 삽입 */
+function appendCard(rec, rank) {
+  const container = document.getElementById('results-container');
+  if (!container) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderRecommendationCard(rec, rank).trim();
+  const card = wrapper.firstElementChild;
+  if (!card) return;
+
+  card.classList.add('rec-card--enter');
+
+  const bar = document.getElementById('ai-writing-bar');
+  if (bar && container.contains(bar)) {
+    container.insertBefore(card, bar);
+  } else {
+    container.appendChild(card);
+  }
+
+  // 두 번의 rAF로 transition이 정상 발동되게 보장
+  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('rec-card--visible')));
+}
+
+/** 카드의 추천 이유 텍스트를 fade로 AI reason으로 교체 */
+function updateCardReason(goodsNo, reason) {
+  if (!reason) return;
+  const card = document.querySelector(`.rec-card[data-goods-no="${goodsNo}"]`);
+  if (!card) return;
+  const el = card.querySelector('.rec-reason');
+  if (!el) return;
+
+  el.style.transition = 'opacity 0.3s ease';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.textContent = `💬 ${reason}`;
+    el.style.opacity = '1';
+    el.classList.add('rec-reason--updated');
+  }, 320);
+}
+
+/** AI writing bar 표시/제거 (DOM 동적 삽입) */
+function showAiProgress(on) {
+  const container = document.getElementById('results-container');
+  let bar = document.getElementById('ai-writing-bar');
+
+  if (on) {
+    if (!bar && container) {
+      bar = document.createElement('div');
+      bar.id = 'ai-writing-bar';
+      bar.className = 'ai-writing-bar';
+      bar.innerHTML = `
+        <div class="ai-writing-spinner"></div>
+        <span>AI가 추천 이유를 작성하고 있어요...</span>
+      `;
+      container.appendChild(bar);
+    }
+  } else {
+    if (bar) bar.remove();
+  }
+}
+
+/** 모든 카드 등장 완료 후 제목·비교 버튼 확정 */
+function finalizeCards(recs) {
+  const title = document.getElementById('results-title');
+  if (title) title.textContent = `🏆 최고 추천 러닝화 TOP ${recs.length}`;
+
+  if (currentRecommendations.length >= 2) {
+    const btn = document.getElementById('compare-btn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.onclick = () => openCompareModal(currentRecommendations);
+    }
+  }
+}
+
+// ============================================================
+// 기존 단일 API 호출 (devRetest 전용 — Case A/B 시나리오 지원)
 // ============================================================
 
 async function fetchAndRenderRecommendations(profile, testShoes = null) {
+  // 이전 결과 초기화
+  const container = document.getElementById('results-container');
+  if (container) container.innerHTML = '';
+  showAiProgress(false);
+
   showLoading(true, 'AI가 최적의 러닝화를 찾고 있어요...');
 
-  // testShoes가 있으면 _test_shoes 파라미터 포함 (개발 환경 전용)
   const reqBody = { user_profile: profile };
   if (testShoes !== null) reqBody._test_shoes = testShoes;
 
@@ -138,7 +336,7 @@ async function fetchAndRenderRecommendations(profile, testShoes = null) {
 }
 
 // ============================================================
-// 로딩 토글
+// 로딩 오버레이 토글
 // ============================================================
 
 function showLoading(on, message) {
@@ -175,14 +373,13 @@ function renderProfileSummary(profile) {
 }
 
 // ============================================================
-// 추천 결과 렌더링
+// 추천 결과 전체 렌더링 (devRetest 전용)
 // ============================================================
 
 function renderResults(recs) {
   const container = document.getElementById('results-container');
   if (!container) return;
 
-  // Case A(is_db_recommendation:false)는 match_score 없음 → 점수 필터 제외
   const goodMatches = recs.filter((r) => r.is_db_recommendation === false || r.match_score >= 30);
   if (goodMatches.length === 0) {
     renderNoMatch('매칭 점수 30점 미만 — 조건을 조정해 보세요'); return;
@@ -197,7 +394,6 @@ function renderResults(recs) {
     if (btn) { btn.style.display = 'inline-block'; btn.onclick = () => openCompareModal(goodMatches); }
   }
 
-  // Top1 양말 자동 표출 — rAF로 카드 첫 페인트 후 실행해 CLS 방지
   const top1 = goodMatches[0];
   if (top1?.main_color && top1?.goods_no) {
     requestAnimationFrame(() => {
@@ -209,58 +405,38 @@ function renderResults(recs) {
     });
   }
 
-  // 사이즈 가이드 링크 노출
   document.getElementById('size-link-section').style.display = 'block';
 }
 
+// ============================================================
+// 추천 카드 HTML 생성
+// ============================================================
+
 function buildInstagramTags(shoe) {
   const tags = [];
-
-  // 브랜드명
   if (shoe.brand) tags.push(shoe.brand.replace(/\s+/g, ''));
-
-  // 모델명 핵심 시리즈 (첫 단어)
   if (shoe.goods_name) {
     const firstWord = shoe.goods_name.split(/[\s\-\/\(]/)[0];
     if (firstWord && firstWord.length >= 2) tags.push(firstWord);
   }
-
-  // 항상 포함
   tags.push('러닝화');
   tags.push('러닝화추천');
-
-  // 거리 기반 해시태그
-  const distMap = {
-    '단거리': '스피드러닝',
-    '중거리': '중거리러닝',
-    '장거리': '장거리러닝',
-    '전거리': '데일리러닝',
-    '마라톤': '마라톤',
-  };
+  const distMap = { '단거리': '스피드러닝', '중거리': '중거리러닝', '장거리': '장거리러닝', '전거리': '데일리러닝', '마라톤': '마라톤' };
   if (shoe.distance && distMap[shoe.distance]) tags.push(distMap[shoe.distance]);
-
-  // 특성 기반
   if (shoe.has_carbon_plate) tags.push('카본플레이트');
   if (shoe.cushion >= 4) tags.push('쿠션화');
   if (shoe.weight <= 2) tags.push('경량화');
-
   return [...new Set(tags)].slice(0, 6);
 }
 
 function renderRecommendationCard(shoe, rank) {
-  // Case A: DB 없음 → price_estimate 사용, match_score 없음
   const isKnowledgeBased = shoe.is_db_recommendation === false;
   const priceDisplay = isKnowledgeBased
     ? (shoe.price_estimate || '가격 미상')
     : `₩${Number(shoe.price || 0).toLocaleString()}`;
-  const scoreDisplay = isKnowledgeBased
-    ? 'AI 지식 기반'
-    : `매칭 ${shoe.match_score}%`;
-  const knowledgeBadge = isKnowledgeBased
-    ? '<span class="badge badge-medium">AI 지식 기반 추천</span>'
-    : '';
+  const scoreDisplay = isKnowledgeBased ? 'AI 지식 기반' : `매칭 ${shoe.match_score}%`;
+  const knowledgeBadge = isKnowledgeBased ? '<span class="badge badge-medium">AI 지식 기반 추천</span>' : '';
 
-  const price = Number(shoe.price || 0).toLocaleString();
   const confidenceBadge = isKnowledgeBased ? '' : (shoe.confidence === 'high'
     ? '<span class="badge badge-high">신뢰도 높음</span>'
     : shoe.confidence === 'medium'
@@ -279,7 +455,6 @@ function renderRecommendationCard(shoe, rank) {
        <div class="rec-thumb-fallback" style="display:none">👟</div>`
     : `<div class="rec-thumb-fallback">👟</div>`;
 
-  // 양말 추천 아이콘 + 인라인 섹션 (DB 기반 + 색상 데이터 있을 때만)
   const hasSockFeature = !!(shoe.main_color && shoe.goods_no);
   const sockIconHtml = hasSockFeature ? `
     <button class="sock-icon-btn"
@@ -357,11 +532,7 @@ async function fetchAndRenderSocks(shoe) {
     const res = await fetch(`${API_BASE}/api/recommend/socks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        goods_no: shoe.goods_no,
-        main_color: shoe.main_color,
-        accent_color: shoe.accent_color || '',
-      }),
+      body: JSON.stringify({ goods_no: shoe.goods_no, main_color: shoe.main_color, accent_color: shoe.accent_color || '' }),
     });
     data = await res.json();
     if (!res.ok || data.status !== 'success') throw new Error(data.message);
@@ -385,14 +556,12 @@ async function fetchAndRenderSocks(shoe) {
 }
 
 function selectSock(sockColor, sockHex, goodsNo, mainColor, accentColor, btnEl) {
-  // 해당 신발 카드 내 color-card만 선택 해제 (다른 카드 상태 유지)
   const socksContainer = document.getElementById(`socks-container-${goodsNo}`);
   if (socksContainer) {
     socksContainer.querySelectorAll('.color-card').forEach((el) => el.classList.remove('selected'));
   }
   btnEl.classList.add('selected');
   selectedSockColor = sockColor;
-
   fetchAndRenderOutfit(goodsNo, mainColor, accentColor, sockColor);
 }
 
@@ -534,10 +703,6 @@ function showToast(message, duration = 2000) {
   setTimeout(() => { toast.style.display = 'none'; }, duration);
 }
 
-/**
- * 양말 아이콘 클릭 시 해당 카드 인라인 양말 섹션 토글
- * 첫 열기 시 API 호출, 이후 재열기는 캐시 사용
- */
 async function toggleSocksInCard(btnEl) {
   const goodsNo = btnEl.dataset.goodsNo;
   const section = document.getElementById(`inline-socks-${goodsNo}`);
@@ -553,7 +718,6 @@ async function toggleSocksInCard(btnEl) {
   section.style.display = 'block';
   btnEl.classList.add('active');
 
-  // 이미 양말이 로드된 경우 (socks-grid 존재) skip
   const container = document.getElementById(`socks-container-${goodsNo}`);
   if (container?.querySelector('.socks-grid')) return;
 
@@ -561,11 +725,6 @@ async function toggleSocksInCard(btnEl) {
   if (shoe) await fetchAndRenderSocks(shoe);
 }
 
-/**
- * 셀럽 참조 하이라이트
- * celebs.js에서 goToDiagnosisWithRef()로 저장한 celeb_ref를 읽어
- * 해당 goods_no 카드에 셀럽 배너를 삽입하고 스크롤한다.
- */
 function highlightCelebRef() {
   let ref;
   try {

@@ -254,4 +254,4 @@ async function recommend(userProfile, allShoes) {
     .filter(Boolean);
 }
 
-module.exports = { recommend };
+module.exports = { recommend, filterCandidates, fallbackReason };

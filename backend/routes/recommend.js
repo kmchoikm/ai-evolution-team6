@@ -9,7 +9,8 @@
 const express = require('express');
 const router = express.Router();
 const { getAllShoes, getRaces, saveLog } = require('../services/sheetsService');
-const { recommend } = require('../services/recommendService');
+const { recommend, filterCandidates, fallbackReason } = require('../services/recommendService');
+const { getAiRecommendations } = require('../services/claudeService');
 const { recommendByRace } = require('../services/raceRecommendService');
 const { getSocksRecommendation, getOutfitRecommendation } = require('../services/claudeService');
 
@@ -68,6 +69,83 @@ router.post('/', async (req, res) => {
       status: 'error',
       message: '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
     });
+  }
+});
+
+// ============================================================
+// POST /api/recommend/quick — DB 스코어링만, Claude 없음 (Phase 1 전용)
+// ============================================================
+
+router.post('/quick', async (req, res) => {
+  const userProfile = req.body?.user_profile;
+
+  if (!userProfile || !userProfile.running_distance || !userProfile.foot_width) {
+    return res.status(400).json({ status: 'error', message: '필수 입력값(running_distance, foot_width)이 누락됐습니다.' });
+  }
+
+  try {
+    let allShoes;
+    if (process.env.NODE_ENV !== 'production' && Array.isArray(req.body?._test_shoes)) {
+      allShoes = req.body._test_shoes;
+    } else {
+      try {
+        allShoes = await getAllShoes();
+      } catch (err) {
+        console.error('[Recommend/quick] Sheets 조회 실패:', err.message);
+        return res.status(503).json({ status: 'error', message: '상품 데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+      }
+    }
+
+    const candidates = filterCandidates(userProfile, allShoes);
+
+    if (candidates.length === 0) {
+      return res.status(200).json({
+        status: 'no_match',
+        message: '입력하신 조건에 맞는 러닝화가 없습니다. 예산 범위나 발볼 조건을 조정해 보세요.',
+        recommendations: [],
+      });
+    }
+
+    const recommendations = candidates.slice(0, 5).map((shoe, i) => ({
+      rank: i + 1,
+      ...shoe,
+      match_score: shoe._score,
+      reason: fallbackReason(userProfile, shoe),
+      is_fallback: true,
+      is_db_recommendation: true,
+    }));
+
+    // 로그 저장 (비동기 — 응답을 막지 않음)
+    const recommendedNos = recommendations.map((r) => r.goods_no).filter(Boolean);
+    saveLog(userProfile, recommendedNos);
+
+    return res.status(200).json({ status: 'success', recommendations });
+  } catch (err) {
+    console.error('[Recommend/quick] 처리 중 예외:', err);
+    return res.status(500).json({ status: 'error', message: '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+  }
+});
+
+// ============================================================
+// POST /api/recommend/ai-reasons — Claude AI 추천 이유만 반환 (Phase 2 전용)
+// ============================================================
+
+router.post('/ai-reasons', async (req, res) => {
+  const { user_profile, candidates } = req.body || {};
+
+  if (!user_profile || !Array.isArray(candidates) || candidates.length === 0) {
+    return res.status(400).json({ status: 'error', message: 'user_profile과 candidates 배열이 필요합니다.' });
+  }
+
+  try {
+    const aiResults = await getAiRecommendations(user_profile, candidates);
+    const reasons = aiResults
+      .filter((ai) => ai.goods_no)
+      .map((ai) => ({ goods_no: ai.goods_no, reason: ai.reason }));
+    return res.status(200).json({ status: 'success', reasons });
+  } catch (err) {
+    console.error('[Recommend/ai-reasons] 처리 중 예외:', err);
+    return res.status(500).json({ status: 'error', message: 'AI 추천 이유 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
   }
 });
 
