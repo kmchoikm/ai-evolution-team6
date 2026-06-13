@@ -95,7 +95,7 @@ function renderCelebList(celebs) {
           <button class="celeb-card" data-id="${c.celeb_id}" onclick="fetchCelebLookbook('${c.celeb_id}', this)">
             <div class="celeb-avatar">
               ${c.celeb_image_url
-                ? `<img src="${c.celeb_image_url}" alt="${c.celeb_name}" onerror="this.parentElement.innerHTML='<span class=celeb-avatar-placeholder>👤</span>'" />`
+                ? `<img src="${c.celeb_image_url}" alt="${c.celeb_name}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<span class=celeb-avatar-placeholder>👤</span>'" />`
                 : '<span class="celeb-avatar-placeholder">👤</span>'}
             </div>
             <div class="celeb-card-info">
@@ -209,7 +209,7 @@ function renderLookbook(celeb, outfit, shoes, options) {
     ? '<p class="empty-msg" style="padding:16px 0;">착용 신발 데이터가 없습니다.</p>'
     : shoes.map((shoe) => {
         const thumbHtml = shoe.thumbnail
-          ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
+          ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img" referrerpolicy="no-referrer"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
              <div class="rec-thumb-fallback" style="display:none">👟</div>`
           : `<div class="rec-thumb-fallback">👟</div>`;
@@ -261,7 +261,7 @@ function renderLookbook(celeb, outfit, shoes, options) {
       <div class="lookbook-celeb-header">
         <div class="celeb-avatar" style="width:44px;height:44px;flex-shrink:0;">
           ${celeb.celeb_image_url
-            ? `<img src="${celeb.celeb_image_url}" alt="${celeb.celeb_name}" onerror="this.parentElement.innerHTML='👤'" />`
+            ? `<img src="${celeb.celeb_image_url}" alt="${celeb.celeb_name}" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='👤'" />`
             : '<span class="celeb-avatar-placeholder" style="font-size:22px;">👤</span>'}
         </div>
         <div class="lookbook-celeb-info">
@@ -401,7 +401,7 @@ function toggleWinnerExpand(idx, btnEl) {
     ? '<p class="empty-msg" style="padding:8px 0;">착용 신발 데이터가 없습니다.</p>'
     : shoes.map((shoe) => {
         const thumbHtml = shoe.thumbnail
-          ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
+          ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img" referrerpolicy="no-referrer"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
              <div class="rec-thumb-fallback" style="display:none">👟</div>`
           : `<div class="rec-thumb-fallback">👟</div>`;
