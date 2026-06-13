@@ -163,7 +163,6 @@ async function runPhase2(profile, recs) {
   } catch (err) {
     // AI 실패 — fallback reason 유지, 나머지 카드는 fallback으로 순차 표출
     showAiProgress(false);
-    showToast('AI 분석 서버가 지연되어 스코어 기반 결과를 표시합니다.', 4000);
     for (let i = 1; i < recs.length; i++) {
       await delay(350);
       appendCard(recs[i], i + 1);
@@ -330,9 +329,6 @@ async function fetchAndRenderRecommendations(profile, testShoes = null) {
   renderResults(currentRecommendations);
   highlightCelebRef();
 
-  if (currentRecommendations[0]?.is_fallback) {
-    showToast('AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다.', 4000);
-  }
 }
 
 // ============================================================
