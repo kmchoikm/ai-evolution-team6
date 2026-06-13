@@ -13,19 +13,6 @@ const API_BASE = (window.location.protocol === 'file:' ||
 let allCelebs = [];
 let allWinners = [];
 
-// 이름 첫 글자 컬러 아바타 — 이미지 로드 실패 시 일관된 폴백 UI
-const AVATAR_COLORS = ['#E57373','#F06292','#BA68C8','#7986CB','#4FC3F7','#4DB6AC','#81C784','#FFB74D','#A1887F','#90A4AE'];
-function avatarColor(name) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
-}
-function celebAvatarHtml(imageUrl, name, size = 40) {
-  const initial = (name || '?')[0];
-  const fallback = `<span class="celeb-avatar-initial" style="background:${avatarColor(name || '?')};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.45)}px;">${initial}</span>`;
-  if (!imageUrl) return fallback;
-  return `<img src="${imageUrl}" alt="${name}" referrerpolicy="no-referrer" onerror="this.outerHTML='${fallback.replace(/'/g, '&apos;')}'"/>`;
-}
 
 function getCachedData(key) {
   try {
@@ -108,7 +95,7 @@ function renderCelebList(celebs) {
         <div class="celeb-item">
           <button class="celeb-card" data-id="${c.celeb_id}" onclick="fetchCelebLookbook('${c.celeb_id}', this)">
             <div class="celeb-avatar">
-              ${celebAvatarHtml(c.celeb_image_url, c.celeb_name, 40)}
+              ${c.celeb_image_url ? `<img src="${c.celeb_image_url}" alt="${c.celeb_name}" referrerpolicy="no-referrer" />` : ''}
             </div>
             <div class="celeb-card-info">
               <p class="celeb-name">${c.celeb_name}</p>
@@ -271,8 +258,8 @@ function renderLookbook(celeb, outfit, shoes, options) {
         <button class="lookbook-close-btn" onclick="${panelId.startsWith('winner') ? 'closeWinnerLookbook()' : 'closeLookbook()'}" aria-label="닫기">← 닫기</button>
       </div>
       <div class="lookbook-celeb-header">
-        <div class="celeb-avatar" style="width:44px;height:44px;flex-shrink:0;">
-          ${celebAvatarHtml(celeb.celeb_image_url, celeb.celeb_name, 44)}
+        <div class="celeb-avatar" style="flex-shrink:0;">
+          ${celeb.celeb_image_url ? `<img src="${celeb.celeb_image_url}" alt="${celeb.celeb_name}" referrerpolicy="no-referrer" />` : ''}
         </div>
         <div class="lookbook-celeb-info">
           <p class="lookbook-celeb-name">${celeb.celeb_name}</p>
