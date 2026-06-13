@@ -58,6 +58,10 @@ async function callClaude(prompt, maxTokens = 1024) {
       },
       { timeout: TIMEOUT_MS }
     );
+    // max_tokens 도달 시 JSON이 잘려 parseJson 실패로 이어지므로 조기 경고
+    if (message.stop_reason === 'max_tokens') {
+      console.warn(`[ClaudeService] max_tokens(${maxTokens}) 도달 — 응답 잘림 가능성`);
+    }
     return message.content[0].text.trim();
   } catch (err) {
     // SDK가 타임아웃·중단 시 던지는 에러 타입을 모두 포괄
@@ -157,7 +161,8 @@ ${candidateList}
 - 뻔한 홍보 문구("이 제품은 훌륭합니다") 금지
 - 동일 브랜드·모델명의 제품은 색상이 달라도 중복 선정 금지 (가장 적합한 1개만 선정)`;
 
-  const raw = await callClaude(prompt);
+  // 5개 후보 × 한국어 2~3문장 ≒ 1100~1300 토큰 → 여유분 포함 2048
+  const raw = await callClaude(prompt, 2048);
   return parseJson(raw);
 }
 
@@ -210,7 +215,8 @@ ${candidateList}
 - reason: 코스 특성(기온·노면·난이도·고도)과 신발 스펙을 연결한 2~3문장 한국어
 - 부상 방지 관점 필수 포함`;
 
-  const raw = await callClaude(prompt);
+  // 5개 후보 × 코스 분석 2~3문장 → 여유분 포함 2048
+  const raw = await callClaude(prompt, 2048);
   return parseJson(raw);
 }
 
