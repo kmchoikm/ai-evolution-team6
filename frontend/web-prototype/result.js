@@ -496,22 +496,22 @@ function renderRecommendationCard(shoe, rank) {
               <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
               <div class="rec-score">${scoreDisplay}</div>
             </div>
+            <p class="rec-summary">${shoe.summary || ''}</p>
+            ${knowledgeBadge}
+            <div class="rec-tags">
+              ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
+              ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
+              ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
+              ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
+              ${confidenceBadge}
+            </div>
+            <div class="rec-ig-tags">${igTagsHtml}</div>
           </div>
           <div class="rec-thumbnail-wrap">
             <div class="rec-thumbnail">${thumbHtml}</div>
             ${sockIconHtml}
           </div>
         </div>
-        <p class="rec-summary">${shoe.summary || ''}</p>
-        ${knowledgeBadge}
-        <div class="rec-tags">
-          ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
-          ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
-          ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
-          ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
-          ${confidenceBadge}
-        </div>
-        <div class="rec-ig-tags">${igTagsHtml}</div>
         <div class="rec-reason-wrap" data-ai="${shoe.is_fallback === false ? 'true' : 'false'}">
           <span class="rec-reason-icon">${shoe.is_fallback === false ? '✨' : '📊'}</span>
           <div class="rec-reason-content">
