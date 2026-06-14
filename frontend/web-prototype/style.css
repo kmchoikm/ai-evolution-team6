@@ -1599,3 +1599,178 @@ textarea:focus {
   .hub-card-label { font-size: 10px; }
   .lifespan-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ============================================================
+   무신사 인기 러닝화 랭킹 위젯
+   ============================================================ */
+
+.musinsa-section {
+  margin-top: 32px;
+}
+
+.musinsa-section-header {
+  margin-bottom: 14px;
+}
+
+.musinsa-section-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.musinsa-source {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 3px;
+}
+
+.musinsa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 카드 전체가 링크 — 모바일 전체 탭 가능 */
+.musinsa-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  text-decoration: none;
+  color: inherit;
+  min-height: 80px;
+  transition: background 0.15s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.musinsa-card:active {
+  background: var(--bg);
+}
+
+.musinsa-rank {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.musinsa-card-img-wrap {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+.musinsa-card-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+}
+
+/* 이미지 로드 실패 시 브랜드 이니셜 컬러 아바타 */
+.musinsa-avatar {
+  width: 64px;
+  height: 64px;
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+}
+
+.musinsa-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.musinsa-brand {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.musinsa-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.musinsa-price {
+  font-size: 12px;
+  color: var(--text-mid);
+}
+
+/* 터치 타겟 최소 48px 보장 */
+.musinsa-cta {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 14px 4px 14px 8px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+/* 스켈레톤 로딩 */
+@keyframes musinsa-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton-box,
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    #e8e8e8 50%,
+    var(--border) 75%
+  );
+  background-size: 200% 100%;
+  animation: musinsa-shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+
+.musinsa-skeleton .skeleton-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.musinsa-skeleton .musinsa-card-info {
+  gap: 7px;
+}
+
+.musinsa-skeleton .skeleton-line {
+  height: 12px;
+}
+
+.musinsa-error-msg {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--text-light);
+  font-size: 13px;
+  line-height: 1.5;
+}
