@@ -914,7 +914,7 @@ textarea:focus {
 .hub-card-icon { font-size: 26px; }
 .hub-card-label { font-size: 12px; font-weight: 700; color: var(--text); }
 
-.hub-intro { margin-top: 4px; text-align: left; }
+.hub-intro { margin-top: 32px; text-align: left; }
 .hub-intro h2 { font-size: 17px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.3px; }
 
 .hub-feature-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
