@@ -594,8 +594,8 @@ textarea:focus {
 .rec-score {
   background: var(--accent);
   color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 2px 8px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
