@@ -387,7 +387,10 @@ function buildRaceCardHTML(shoe, rank) {
          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
        <div class="rec-thumb-fallback" style="display:none">👟</div>`
     : `<div class="rec-thumb-fallback">👟</div>`;
-  const fallbackBadge = shoe.is_fallback ? '<span class="badge badge-medium">빠른 추천</span>' : '';
+
+  const isAiReason = shoe.is_fallback === false;
+  const reasonIcon = isAiReason ? '✨' : '📊';
+  const reasonBadge = isAiReason ? 'AI 코스 분석' : '스펙 기반';
 
   return `
     <article class="rec-card rank-${rank}" data-goods-no="${shoe.goods_no || ''}">
@@ -399,18 +402,25 @@ function buildRaceCardHTML(shoe, rank) {
               <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
               <div class="rec-score">매칭 ${shoe.match_score}%</div>
             </div>
+            <div class="rec-tags">
+              ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
+              ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
+              ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
+              ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
+            </div>
+            <div class="rec-ig-tags">${igTagsHtml}</div>
           </div>
-          <div class="rec-thumbnail">${thumbHtml}</div>
+          <div class="rec-thumbnail-wrap">
+            <div class="rec-thumbnail">${thumbHtml}</div>
+          </div>
         </div>
-        <div class="rec-tags">
-          ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
-          ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
-          ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
-          ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
-          ${fallbackBadge}
+        <div class="rec-reason-wrap" data-ai="${isAiReason ? 'true' : 'false'}">
+          <span class="rec-reason-icon">${reasonIcon}</span>
+          <div class="rec-reason-content">
+            <span class="rec-reason-badge">${reasonBadge}</span>
+            <p class="rec-reason">${shoe.reason || ''}</p>
+          </div>
         </div>
-        <div class="rec-ig-tags">${igTagsHtml}</div>
-        <p class="rec-reason">💬 ${shoe.reason || ''}</p>
         <div class="rec-footer">
           <span class="rec-price">₩${price}</span>
           ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
@@ -441,21 +451,25 @@ function appendRaceCard(shoe, rank) {
   requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('rec-card--visible')));
 }
 
-/** 카드 #1의 추천 이유를 AI reason으로 fade 교체 */
+/** 카드 #1의 추천 이유를 AI reason으로 fade 교체 (wrap/icon/badge 동시 업데이트) */
 function updateRaceCardReason(goodsNo, reason) {
   if (!reason || !goodsNo) return;
   const card = document.querySelector(`.rec-card[data-goods-no="${goodsNo}"]`);
   if (!card) return;
-  const reasonEl = card.querySelector('.rec-reason');
-  if (!reasonEl) return;
-  reasonEl.style.opacity = '0';
+  const wrap  = card.querySelector('.rec-reason-wrap');
+  const icon  = card.querySelector('.rec-reason-icon');
+  const badge = card.querySelector('.rec-reason-badge');
+  const el    = card.querySelector('.rec-reason');
+  if (!el) return;
+  el.style.transition = 'opacity 0.3s ease';
+  el.style.opacity = '0';
   setTimeout(() => {
-    reasonEl.textContent = `💬 ${reason}`;
-    const badge = card.querySelector('.badge-medium');
-    if (badge) badge.remove();
-    reasonEl.style.transition = 'opacity 0.4s';
-    reasonEl.style.opacity = '1';
-  }, 200);
+    if (wrap)  { wrap.dataset.ai = 'true'; wrap.classList.add('rec-reason--updated'); }
+    if (icon)  icon.textContent  = '✨';
+    if (badge) badge.textContent = 'AI 코스 분석';
+    el.textContent = reason;
+    el.style.opacity = '1';
+  }, 320);
 }
 
 /** AI writing bar 표시/숨김 */
