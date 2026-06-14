@@ -32,6 +32,7 @@
   - [5.8 대회 코스 기반 러닝화 추천](#58-대회-코스-기반-러닝화-추천-v20)
   - [5.9 러닝화 교체 시기 계산기](#59-러닝화-교체-시기-계산기-v20)
   - [5.10 사이즈 핏 가이드](#510-사이즈-핏-가이드-v20)
+  - [5.11 홈 화면 무신사 인기 러닝화 랭킹 위젯](#511-홈-화면-무신사-인기-러닝화-랭킹-위젯-v30)
 - [6. API 명세](#6-api-명세-api-specifications)
   - [6.1 POST /api/recommend](#61-post-apirecommend--v10)
   - [6.2 GET /api/races](#62-get-apiraces--v20)
@@ -70,6 +71,13 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v3.1 | 2026-06-15 | 수정 | §3·§5.2·§8.9: Claude API 타임아웃 30초 → **60초** 상향 (2-Phase 구조 안정화) | kmchoikm |
+| v3.1 | 2026-06-15 | 추가 | §5.2: 2-Phase 추천 아키텍처 명세 추가 (quick + ai-reasons 분리 구조) | kmchoikm |
+| v3.1 | 2026-06-15 | 추가 | §5.11 본문 작성 — 무신사 랭킹 위젯 상세 기능 명세 | kmchoikm |
+| v3.1 | 2026-06-15 | 추가 | §5.11 목차 항목 누락 추가 | kmchoikm |
+| v3.1 | 2026-06-15 | 추가 | §6.12 본문 작성 — GET /api/musinsa/ranking 엔드포인트 명세 | kmchoikm |
+| v3.1 | 2026-06-15 | 추가 | §6.1·§6.3: 2-Phase 구현 참고 노트 추가 | kmchoikm |
+| v3.1 | 2026-06-15 | 수정 | §1.8·§5.10: 홈 화면 직접 접근 표현 삭제 (§1.1·§5.3 레이아웃과 모순 해소) | kmchoikm |
 | v3.0 | 2026-06-14 | 추가 | §5.11 홈 화면 무신사 인기 러닝화 랭킹 위젯 (Top 5) — 백엔드 프록시 + 인메모리 캐시 1시간 | kmchoikm |
 | v3.0 | 2026-06-14 | 추가 | §6.12 GET /api/musinsa/ranking — 무신사 러닝화 카테고리 랭킹 프록시 엔드포인트 | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §5.1·§6.1: budget 허용값에 `any`(상관없음) 추가 — FE `value=""` → `value="any"`, BE `BUDGET_MAX.any = Infinity` | kmchoikm |
@@ -334,7 +342,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
 
 #### 1.8 사이즈 핏 가이드
 
-1. 추천 결과 하단 "사이즈 변환" 링크 또는 홈 화면에서 직접 접근
+1. 추천 결과 하단 "사이즈 변환" 링크에서 접근
 2. 현재 신발 (브랜드·모델·사이즈 mm) 입력
 3. 변환할 신발 (브랜드·모델) 선택
 4. "변환하기" 클릭 → 권장 사이즈(mm) + 핏 설명 + 발볼 주의사항 표시
@@ -356,7 +364,7 @@ Q1~Q7 입력         대회 선택 →      착용신발탐색  계산기
   * **State Management:** sessionStorage (페이지 간 상태 전달)
 * **Backend (WAS):**
   * **Framework:** Node.js + Express.js (가벼운 API 서버 구축)
-  * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — SDK 네이티브 타임아웃 30초, `APIConnectionTimeoutError` 감지)
+  * **Claude SDK:** `@anthropic-ai/sdk` (Anthropic 공식 Node.js SDK — SDK 네이티브 타임아웃 60초, `APIConnectionTimeoutError` 감지)
 * **Database & LLM:**
   * **DB:** Google Sheets + `google-spreadsheet` npm 패키지
   * **LLM:** Anthropic Claude API (모델: `claude-sonnet-4-6` — 추론 및 근거 생성에 탁월)
@@ -484,7 +492,12 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 * **DB 0건 시 Claude 호출 (기획 의도):** DB 조회 결과가 없을 때도 Claude API를 반드시 호출한다. 두 가지 케이스로 분기한다.
   * **Case A — DB 자체가 비어있음 (`allShoes.length === 0`):** Claude 자체 지식 기반 추천 함수(`getAiRecommendationsFromKnowledge`)를 호출한다. 응답에 `goods_no: null`, `price_estimate`(가격대 설명) 포함, `is_db_recommendation: false`로 반환한다.
   * **Case B — 1차 필터 후 후보 0건 (`candidates.length === 0`, DB에 데이터 있음):** 필터를 완화하여 전체 `allShoes`를 `calcScore` 정렬 후 상위 10개를 Claude에 전달, 최적 추천을 생성한다. 응답은 정상 경로와 동일 형식, `is_db_recommendation: true`로 반환한다.
-* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **30초** 이상 지연될 경우 SDK 네이티브 timeout(`APIConnectionTimeoutError`)으로 감지해 중단하고, 이미 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다. (30초 근거: Case B — 필터 완화 후보 10개 처리 시 실측 최대 14초 소요, 여유 확보)
+* **타임아웃 및 폴백(Fallback) (PREMORTEM D1 리스크 대응):** API 응답이 **60초** 이상 지연될 경우 SDK 네이티브 timeout(`APIConnectionTimeoutError`)으로 감지해 중단하고, 이미 필터링된 후보(`candidates`) 중 `calcScore` 기반 점수 상위 5개를 `is_fallback: true` 플래그와 함께 즉시 반환한다. Sheets 재조회 없이 메모리 내 candidates를 사용하므로 응답이 빠르다. (60초 근거: 2-Phase AI 이유 생성 단계 안정화 여유 확보)
+* **2-Phase 추천 아키텍처:** 사용자 체감 대기 시간 최소화를 위해 추천 과정을 두 단계로 분리한다.
+  * **Phase 1 — DB 스코어링** (`POST /api/recommend/quick`): Claude 없이 DB에서 후보를 필터링·스코어링하여 1~2초 내 추천 카드를 즉시 표출한다. `is_fallback: true`로 반환.
+  * **Phase 2 — AI 이유 생성** (`POST /api/recommend/ai-reasons`): Phase 1 직후 백그라운드에서 Claude API를 호출하여 각 카드의 추천 이유를 맞춤형 AI 문장으로 교체한다. 카드 #1부터 350ms 간격으로 순차 업데이트, `is_fallback: false`로 전환.
+  * Phase 2 실패 시 카드는 Phase 1의 스펙 기반 이유를 그대로 유지한다.
+  * 기존 단일 `POST /api/recommend`는 devRetest·E2E 내부 테스트 전용으로 유지.
 * **Claude 응답 파싱 방어 (`parseJson`):** Claude가 JSON 앞에 설명 텍스트나 코드블록을 추가해도 정상 파싱되도록 방어 로직을 적용한다. ① 코드블록(` ``` `) 내부 JSON 추출 우선 시도 → ② 코드블록 없는 경우 응답에서 `[...]` 배열 직접 추출. JSON 파싱 실패는 폴백 경로와 동일하게 처리된다.
 * **코디 추천 응답 토큰 (`/api/recommend/outfit`):** 상의·하의·모자 3개 항목, 각 2~3가지 color_name·hex_code·reason 조합으로 응답량이 크므로 `max_tokens: 2048`로 설정한다. (1024 설정 시 응답 중간 잘림(truncation) 발생 → JSON 파싱 오류)
 
@@ -662,7 +675,42 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 
 **UI 흐름**
 
-홈 화면 또는 추천 결과 하단 "사이즈 변환" 링크 → 현재 신발(브랜드·모델·사이즈) 입력 → 비교할 신발(브랜드·모델) 선택 → 추천 사이즈 + 핏 설명 + 발볼 주의사항 출력
+추천 결과 하단 "사이즈 변환" 링크 → 현재 신발(브랜드·모델·사이즈) 입력 → 비교할 신발(브랜드·모델) 선택 → 추천 사이즈 + 핏 설명 + 발볼 주의사항 출력
+
+---
+
+#### 5.11. 홈 화면 무신사 인기 러닝화 랭킹 위젯 (v3.0)
+
+홈 화면(`index.html`) 보조 서비스 카드 하단에 무신사 인기 러닝화 Top 5를 표시하는 실시간 위젯.
+
+**목적:** 트렌드 상품 노출로 홈 체류 시간 증가 및 상품 구매 전환 경로 제공.
+
+**동작 방식**
+
+| 단계 | 내용 |
+|---|---|
+| 로딩 | 스켈레톤 카드 5개 표시 (레이아웃 점프 방지) |
+| 데이터 | `GET /api/musinsa/ranking?limit=5` 호출 → 백엔드 프록시 경유 (프론트엔드 직접 호출 시 CORS 차단) |
+| 캐시 | 백엔드 인메모리 캐시 TTL 1시간 — 무신사 API 과호출 방지 |
+| 에러 | 무신사 API 장애 시 에러 메시지 표시 (위젯 `display:none` 처리 금지 — 레이아웃 버그처럼 보임) |
+
+**표시 항목**
+
+| 항목 | 설명 |
+|---|---|
+| 순위 | 1~5위 |
+| 썸네일 | 상품 이미지 (로드 실패 시 브랜드 이니셜 아바타 색상 폴백) |
+| 브랜드명 | 한국어 브랜드명 |
+| 상품명 | 한국어 모델명 |
+| 가격 | 최종가 + 할인율 (할인 중인 경우만 표시) |
+| 링크 | 무신사 상품 페이지 (새 탭, `noopener noreferrer`) |
+
+**구현 파일**
+
+| 파일 | 역할 |
+|---|---|
+| `frontend/web-prototype/musinsa-widget.js` | 위젯 클라이언트 로직 (스켈레톤·렌더링·에러 처리) |
+| `backend/routes/musinsa.js` | 무신사 API 프록시 + 인메모리 캐시 (→ §6.12) |
 
 ---
 
@@ -809,6 +857,8 @@ MVP 단계의 속도와 유지보수성을 고려하여, 복잡한 인프라 대
 { "status": "error", "message": "오류 메시지" }
 ```
 
+> **구현 참고 (2-Phase):** 실제 FE 구현은 Phase 1(`POST /api/recommend/quick` — DB 스코어링, 즉시 반환)과 Phase 2(`POST /api/recommend/ai-reasons` — Claude 이유 생성, 백그라운드)로 분리됨. 이 단일 엔드포인트는 devRetest·E2E 테스트 전용 (`result.js devRetest()` 참조).
+
 ---
 
 #### 6.2 [GET] `/api/races` — v2.0
@@ -934,6 +984,8 @@ GET /api/races?country=KR&course_type=full
 ```json
 { "status": "error", "message": "오류 메시지" }
 ```
+
+> **구현 참고 (2-Phase):** 실제 FE 구현은 Phase 1(`POST /api/recommend/race/quick`)과 Phase 2(`POST /api/recommend/race/ai-reasons`)로 분리됨. 이 단일 엔드포인트는 devRetest·E2E 테스트 전용.
 
 ---
 
@@ -1387,6 +1439,53 @@ GET /api/shoes?brand=아식스&keyword=카야노
 *오류 (4xx/5xx)*
 ```json
 { "status": "error", "message": "오류 메시지" }
+```
+
+---
+
+#### 6.12 [GET] `/api/musinsa/ranking` — v3.0
+
+**설명**
+무신사 러닝화 카테고리 인기 랭킹을 프록시하여 반환한다. 백엔드에서 무신사 내부 API를 호출하고 1시간 인메모리 캐싱한다. CORS 제한으로 프론트엔드 직접 호출 불가.
+
+**연관 시나리오**
+§5.11 홈 화면 무신사 인기 러닝화 랭킹 위젯
+
+**Query 파라미터**
+
+| 파라미터명 | 타입 | 허용값 | 필수 | 설명 |
+|---|---|---|---|---|
+| `limit` | number | 1~10 정수 | - | 반환 개수 (기본값: `5`) |
+
+**Request**
+```
+GET /api/musinsa/ranking?limit=5
+```
+
+*정상 (200 OK)*
+```json
+{
+  "cached": true,
+  "cachedAt": "2026-06-15T10:00:00.000Z",
+  "items": [
+    {
+      "rank": 1,
+      "brand": "나이키",
+      "name": "에어 줌 페가수스 41",
+      "price": 179000,
+      "discountRatio": 10,
+      "thumbnail": "https://...",
+      "url": "https://www.musinsa.com/products/..."
+    }
+  ]
+}
+```
+
+> `cached`: 응답이 캐시에서 제공됐으면 `true`. `cachedAt`: 캐시 저장 일시(ISO 8601). `discountRatio`: 할인율(%). 할인 없으면 `0`.
+
+*오류 (503)*
+```json
+{ "status": "error", "message": "무신사 랭킹을 불러올 수 없습니다." }
 ```
 
 ---
@@ -1845,7 +1944,7 @@ FE                    BE                    Sheets               Claude
 │  (추천 관련)         │                     │                     │
 │                     │──② Claude 호출──────────────────────────►│
 │                     │                     │                     │
-│                     │  ③ 30초 경과 Timeout│                     │
+│                     │  ③ 60초 경과 Timeout│                     │
 │                     │  → SDK APIConnection│                     │
 │                     │    TimeoutError 감지 │                     │
 │                     │                     │                     │
@@ -1860,6 +1959,6 @@ FE                    BE                    Sheets               Claude
 │  점수 기반 동적 추천 │                     │                     │
 ```
 
-> **Timeout 기준: 30초** (SDK 네이티브 `{ timeout: 30000 }` → `APIConnectionTimeoutError` 감지). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). FE는 "AI 분석 서버가 지연되어 빠른 추천 결과를 표시했습니다." 토스트를 표시한다.
+> **Timeout 기준: 60초** (SDK 네이티브 `{ timeout: 60000 }` → `APIConnectionTimeoutError` 감지). Fallback: 이미 필터링된 `candidates`에서 `calcScore` 상위 5개를 동적으로 반환 (Sheets 재조회 없음, `is_fallback: true`). 2-Phase 구조에서 Phase 2(`/api/recommend/ai-reasons`) 실패 시 카드는 Phase 1의 스펙 기반 이유를 그대로 유지한다.
 >
 > **DB 0건 시나리오 (별도 Fallback):** `allShoes.length === 0`(Case A) 또는 `candidates.length === 0`(Case B)이면 Claude API를 지식 기반 또는 필터 완화 모드로 호출한다. 이 경로에서 Claude마저 실패하면 빈 배열을 반환하고 FE는 "현재 추천 가능한 데이터가 없습니다." 메시지를 표시한다.

@@ -5,7 +5,7 @@
  * - 양말 색상 추천
  * - 러닝 코디 추천
  *
- * 타임아웃: 30초 (PREMORTEM D1 대응 — Sonnet 4.6 후보 10개 처리 여유)
+ * 타임아웃: 60초 (PREMORTEM D1 대응 — 2-Phase 구조 AI 이유 생성 단계 여유 확보)
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
