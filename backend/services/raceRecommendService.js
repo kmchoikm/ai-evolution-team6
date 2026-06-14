@@ -8,6 +8,19 @@
 
 const { getRaceRecommendations, getRaceRecommendationsFromKnowledge } = require('./claudeService');
 
+// ── 중복 시리즈 제거 헬퍼 (recommendService.js와 동일 로직) ──
+function extractSeriesKey(brand, goodsName) {
+  const basePart = goodsName.split(' - ')[0].trim();
+  const noVersion = basePart.replace(/\s+\d.*$/, '').trim();
+  return `${brand}__${noVersion}`;
+}
+
+function isRelatedSeries(keyA, keyB) {
+  if (keyA === keyB) return true;
+  const [shorter, longer] = keyA.length <= keyB.length ? [keyA, keyB] : [keyB, keyA];
+  return longer.startsWith(shorter + ' ');
+}
+
 // shoe_priority_hint 키워드 → Shoes 컬럼 매핑 (점수 보너스용)
 const HINT_SCORE_RULES = {
   경량: (shoe) => (shoe.weight <= 2 ? 15 : 0),
@@ -57,8 +70,8 @@ function filterRaceCandidates(race, allShoes, userProfile) {
     }
   }
 
-  // hint 기반 보너스 점수 계산 후 상위 10개 선정
-  return filtered
+  // hint 기반 보너스 점수 계산
+  const scored = filtered
     .map((shoe) => {
       let score = 50; // 기본 점수
       for (const hint of hints) {
@@ -73,8 +86,18 @@ function filterRaceCandidates(race, allShoes, userProfile) {
       }
       return { ...shoe, _score: Math.min(100, score) };
     })
-    .sort((a, b) => b._score - a._score)
-    .slice(0, 10);
+    .sort((a, b) => b._score - a._score);
+
+  // 같은 모델 시리즈 중 최고 점수 1개만 유지
+  const seenSeries = [];
+  const deduped = scored.filter((shoe) => {
+    const key = extractSeriesKey(shoe.brand, shoe.goods_name);
+    const isDupe = seenSeries.some((s) => isRelatedSeries(s, key));
+    if (!isDupe) seenSeries.push(key);
+    return !isDupe;
+  });
+
+  return deduped.slice(0, 10);
 }
 
 /**
@@ -199,4 +222,4 @@ async function recommendByRace(race, allShoes, userProfile) {
     .filter(Boolean);
 }
 
-module.exports = { recommendByRace };
+module.exports = { recommendByRace, filterRaceCandidates, fallbackRaceReason };

@@ -10,9 +10,8 @@ const express = require('express');
 const router = express.Router();
 const { getAllShoes, getRaces, saveLog } = require('../services/sheetsService');
 const { recommend, filterCandidates, fallbackReason } = require('../services/recommendService');
-const { getAiRecommendations } = require('../services/claudeService');
-const { recommendByRace } = require('../services/raceRecommendService');
-const { getSocksRecommendation, getOutfitRecommendation } = require('../services/claudeService');
+const { getAiRecommendations, getRaceRecommendations, getSocksRecommendation, getOutfitRecommendation } = require('../services/claudeService');
+const { recommendByRace, filterRaceCandidates, fallbackRaceReason } = require('../services/raceRecommendService');
 
 // ============================================================
 // POST /api/recommend — AI 러닝화 추천
@@ -158,6 +157,128 @@ router.post('/ai-reasons', async (req, res) => {
   } catch (err) {
     console.error('[Recommend/ai-reasons] 처리 중 예외:', err);
     return res.status(500).json({ status: 'error', message: 'AI 추천 이유 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+  }
+});
+
+// ============================================================
+// POST /api/recommend/race/quick — DB 스코어링만, Claude 없음 (Phase 1 전용)
+// ============================================================
+
+router.post('/race/quick', async (req, res) => {
+  const { race_id, course_type, user_profile } = req.body || {};
+
+  if (!race_id) {
+    return res.status(400).json({ status: 'error', message: 'race_id는 필수입니다.' });
+  }
+  if (!course_type || !['half', 'full'].includes(course_type)) {
+    return res.status(400).json({ status: 'error', message: "course_type은 'half' 또는 'full'이어야 합니다." });
+  }
+
+  try {
+    let races, allShoes;
+    try {
+      [races, allShoes] = await Promise.all([getRaces(), getAllShoes()]);
+    } catch (err) {
+      console.error('[RaceRecommend/quick] Sheets 조회 실패:', err.message);
+      return res.status(503).json({ status: 'error', message: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+
+    const race = races.find((r) => r.race_id === race_id && r.is_active !== false);
+    if (!race) {
+      return res.status(404).json({ status: 'error', message: '해당 대회를 찾을 수 없습니다.' });
+    }
+
+    const raceWithCourseType = { ...race, course_type };
+    const candidates = filterRaceCandidates(raceWithCourseType, allShoes, user_profile || null);
+
+    if (candidates.length === 0) {
+      return res.status(200).json({
+        status: 'no_match',
+        message: '해당 코스 조건에 맞는 러닝화가 없습니다.',
+        race: { race_name: race.race_name, course_type, course_summary: race.course_summary },
+        recommendations: [],
+      });
+    }
+
+    const recommendations = candidates.slice(0, 5).map((shoe, i) => ({
+      rank: i + 1,
+      ...shoe,
+      match_score: shoe._score,
+      reason: fallbackRaceReason(raceWithCourseType, shoe),
+      is_fallback: true,
+      is_db_recommendation: true,
+    }));
+
+    return res.status(200).json({
+      status: 'success',
+      race: {
+        race_name: race.race_name,
+        course_type,
+        course_summary: race.course_summary,
+        difficulty: race.difficulty,
+        avg_temp_celsius: race.avg_temp_celsius,
+        surface_type: race.surface_type,
+        elevation_gain_m: race.elevation_gain_m,
+      },
+      recommendations,
+    });
+  } catch (err) {
+    console.error('[RaceRecommend/quick] 처리 중 예외:', err);
+    return res.status(500).json({ status: 'error', message: '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+  }
+});
+
+// ============================================================
+// POST /api/recommend/race/ai-reasons — Claude AI 추천 이유만 반환 (Phase 2 전용)
+// ============================================================
+
+router.post('/race/ai-reasons', async (req, res) => {
+  const { race_id, course_type, user_profile, candidates } = req.body || {};
+
+  if (!race_id) {
+    return res.status(400).json({ status: 'error', message: 'race_id는 필수입니다.' });
+  }
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return res.status(400).json({ status: 'error', message: 'candidates 배열이 필요합니다.' });
+  }
+
+  try {
+    let races;
+    try {
+      races = await getRaces();
+    } catch (err) {
+      console.error('[RaceRecommend/ai-reasons] Sheets 조회 실패:', err.message);
+      return res.status(503).json({ status: 'error', message: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+
+    const race = races.find((r) => r.race_id === race_id && r.is_active !== false);
+    if (!race) {
+      return res.status(404).json({ status: 'error', message: '해당 대회를 찾을 수 없습니다.' });
+    }
+
+    const raceWithCourseType = { ...race, course_type: course_type || race.course_type };
+
+    let aiResults;
+    try {
+      aiResults = await getRaceRecommendations(raceWithCourseType, candidates, user_profile || null);
+    } catch (err) {
+      console.warn('[RaceRecommend/ai-reasons] 1차 실패, 재시도:', err.message);
+      try {
+        aiResults = await getRaceRecommendations(raceWithCourseType, candidates, user_profile || null);
+      } catch (retryErr) {
+        console.error('[RaceRecommend/ai-reasons] 재시도 실패:', retryErr.message);
+        return res.status(500).json({ status: 'error', message: 'AI 추천 이유 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
+      }
+    }
+
+    const reasons = aiResults
+      .filter((ai) => ai.goods_no)
+      .map((ai) => ({ goods_no: ai.goods_no, reason: ai.reason }));
+
+    return res.status(200).json({ status: 'success', reasons });
+  } catch (err) {
+    console.error('[RaceRecommend/ai-reasons] 처리 중 예외:', err);
+    return res.status(500).json({ status: 'error', message: '서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
   }
 });
 

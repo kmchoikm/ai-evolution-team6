@@ -13,6 +13,8 @@ let allRaces = [];
 let selectedRace = null;
 let currentTab = 'domestic';
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function getCachedData(key) {
   try {
     const raw = sessionStorage.getItem(key);
@@ -232,7 +234,7 @@ function surfaceLabel(s) {
 }
 
 // ============================================================
-// 대회 기반 추천 API 호출
+// 대회 기반 추천 — 2-Phase 진입점
 // ============================================================
 
 async function fetchRaceRecommendations() {
@@ -242,21 +244,32 @@ async function fetchRaceRecommendations() {
   if (!courseType) { showToast('코스 유형(하프/풀)을 선택해 주세요.'); return; }
 
   const btn = document.getElementById('recommend-race-btn');
-  btn.disabled = true; btn.textContent = '분석 중...';
+  btn.disabled = true;
+  btn.textContent = '분석 중...';
 
-  showLoading(true, 'AI가 코스에 맞는 신발을 분석 중...');
-
-  // 선택적 개인 조건
   const footWidth = document.querySelector('input[name="foot_width"]:checked')?.value;
   const budget = document.querySelector('input[name="race_budget"]:checked')?.value;
   const userProfile = footWidth ? { foot_width: footWidth, budget: budget || null } : null;
 
+  await runPhase1Race(courseType, userProfile);
+
+  btn.disabled = false;
+  btn.textContent = '이 코스에 맞는 신발 추천받기 →';
+}
+
+// ============================================================
+// Phase 1 — DB 스코어링 (로딩 해제 후 카드 #1 즉시 표출)
+// ============================================================
+
+async function runPhase1Race(courseType, userProfile) {
   const resultsEl = document.getElementById('inline-race-results');
   const actionsEl = document.getElementById('inline-race-actions');
 
+  showLoading(true, '코스에 맞는 신발을 찾고 있어요...');
+
   let data;
   try {
-    const res = await fetch(`${API_BASE}/api/recommend/race`, {
+    const res = await fetch(`${API_BASE}/api/recommend/race/quick`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -276,12 +289,10 @@ async function fetchRaceRecommendations() {
         <p>${err.message}</p>
         <button onclick="fetchRaceRecommendations()" class="btn-primary">다시 시도</button>
       </div>`;
-    btn.disabled = false; btn.textContent = '이 코스에 맞는 신발 추천받기 →';
     return;
   }
 
   showLoading(false);
-  btn.disabled = false; btn.textContent = '이 코스에 맞는 신발 추천받기 →';
 
   if (data.status === 'no_match') {
     if (resultsEl) resultsEl.innerHTML = `
@@ -290,9 +301,180 @@ async function fetchRaceRecommendations() {
     return;
   }
 
-  renderRaceResults(data.recommendations);
+  const recs = data.recommendations;
+
+  // 카드 #1 즉시 표출
+  if (resultsEl) {
+    resultsEl.innerHTML =
+      `<h2 class="section-title">코스 최적 러닝화 TOP ${recs.length}</h2>` +
+      buildRaceCardHTML(recs[0], 1);
+  }
   if (actionsEl) actionsEl.style.display = 'flex';
   if (resultsEl) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Phase 2 시작 (백그라운드 — await 없음)
+  runPhase2Race(selectedRace.race_id, courseType, userProfile, recs).catch((err) => {
+    console.error('[Phase2 Race] 미처리 오류:', err);
+    showRaceAiProgress(false);
+  });
+}
+
+// ============================================================
+// Phase 2 — AI 추천 이유 생성 (백그라운드, 비차단)
+// ============================================================
+
+async function runPhase2Race(raceId, courseType, userProfile, recs) {
+  showRaceAiProgress(true);
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/recommend/race/ai-reasons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        race_id: raceId,
+        course_type: courseType,
+        user_profile: userProfile,
+        candidates: recs,
+      }),
+    });
+    data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+  } catch (err) {
+    // AI 실패 — 폴백 이유로 나머지 카드 표출
+    showRaceAiProgress(false);
+    for (let i = 1; i < recs.length; i++) {
+      await delay(350);
+      appendRaceCard(recs[i], i + 1);
+    }
+    return;
+  }
+
+  showRaceAiProgress(false);
+
+  const reasonMap = {};
+  (data.reasons || []).forEach((r) => { if (r.goods_no) reasonMap[r.goods_no] = r.reason; });
+
+  // 카드 #1 이유 AI 텍스트로 업데이트
+  if (reasonMap[recs[0].goods_no]) {
+    updateRaceCardReason(recs[0].goods_no, reasonMap[recs[0].goods_no]);
+  }
+
+  // 카드 #2~ 순차 등장 (350ms 간격)
+  for (let i = 1; i < recs.length; i++) {
+    await delay(350);
+    appendRaceCard({
+      ...recs[i],
+      reason: reasonMap[recs[i].goods_no] || recs[i].reason,
+      is_fallback: !reasonMap[recs[i].goods_no],
+    }, i + 1);
+  }
+}
+
+// ============================================================
+// 카드 렌더링 헬퍼 (Phase 1/2 공용)
+// ============================================================
+
+function buildRaceCardHTML(shoe, rank) {
+  const price = Number(shoe.price || 0).toLocaleString();
+  const igTagsHtml = buildInstagramTags(shoe)
+    .map((tag) => {
+      const url = `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`;
+      return `<a href="${url}" target="_blank" rel="noopener" class="feature-tag feature-tag--ig">#${tag}</a>`;
+    }).join('');
+  const thumbHtml = shoe.thumbnail
+    ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+       <div class="rec-thumb-fallback" style="display:none">👟</div>`
+    : `<div class="rec-thumb-fallback">👟</div>`;
+  const fallbackBadge = shoe.is_fallback ? '<span class="badge badge-medium">빠른 추천</span>' : '';
+
+  return `
+    <article class="rec-card rank-${rank}" data-goods-no="${shoe.goods_no || ''}">
+      <div class="rec-rank">#${rank}</div>
+      <div class="rec-body">
+        <div class="rec-header">
+          <div class="rec-header-text">
+            <div class="rec-title-row">
+              <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
+              <div class="rec-score">매칭 ${shoe.match_score}%</div>
+            </div>
+          </div>
+          <div class="rec-thumbnail">${thumbHtml}</div>
+        </div>
+        <div class="rec-tags">
+          ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
+          ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
+          ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
+          ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
+          ${fallbackBadge}
+        </div>
+        <div class="rec-ig-tags">${igTagsHtml}</div>
+        <p class="rec-reason">💬 ${shoe.reason || ''}</p>
+        <div class="rec-footer">
+          <span class="rec-price">₩${price}</span>
+          ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
+        </div>
+      </div>
+    </article>`;
+}
+
+/** Phase 2에서 카드를 AI writing bar 앞에 슬라이드-인으로 삽입 */
+function appendRaceCard(shoe, rank) {
+  const resultsEl = document.getElementById('inline-race-results');
+  if (!resultsEl) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildRaceCardHTML(shoe, rank).trim();
+  const card = wrapper.firstElementChild;
+  if (!card) return;
+
+  card.classList.add('rec-card--enter');
+
+  const bar = document.getElementById('race-ai-writing-bar');
+  if (bar && resultsEl.contains(bar)) {
+    resultsEl.insertBefore(card, bar);
+  } else {
+    resultsEl.appendChild(card);
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('rec-card--visible')));
+}
+
+/** 카드 #1의 추천 이유를 AI reason으로 fade 교체 */
+function updateRaceCardReason(goodsNo, reason) {
+  if (!reason || !goodsNo) return;
+  const card = document.querySelector(`.rec-card[data-goods-no="${goodsNo}"]`);
+  if (!card) return;
+  const reasonEl = card.querySelector('.rec-reason');
+  if (!reasonEl) return;
+  reasonEl.style.opacity = '0';
+  setTimeout(() => {
+    reasonEl.textContent = `💬 ${reason}`;
+    const badge = card.querySelector('.badge-medium');
+    if (badge) badge.remove();
+    reasonEl.style.transition = 'opacity 0.4s';
+    reasonEl.style.opacity = '1';
+  }, 200);
+}
+
+/** AI writing bar 표시/숨김 */
+function showRaceAiProgress(on) {
+  const resultsEl = document.getElementById('inline-race-results');
+  if (!resultsEl) return;
+  let bar = document.getElementById('race-ai-writing-bar');
+  if (on) {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'race-ai-writing-bar';
+      bar.className = 'ai-writing-bar';
+      bar.innerHTML = '<span class="ai-writing-dots">AI가 코스를 분석 중<span>.</span><span>.</span><span>.</span></span>';
+      resultsEl.appendChild(bar);
+    }
+    bar.style.display = 'block';
+  } else {
+    if (bar) bar.style.display = 'none';
+  }
 }
 
 function buildInstagramTags(shoe) {
@@ -316,53 +498,7 @@ function renderRaceResults(recs) {
   const container = document.getElementById('inline-race-results');
   container.innerHTML =
     `<h2 class="section-title">코스 최적 러닝화 TOP ${recs.length}</h2>` +
-    recs.map((shoe, i) => {
-      const rank = i + 1;
-      const price = Number(shoe.price || 0).toLocaleString();
-
-      const igTagsHtml = buildInstagramTags(shoe)
-        .map((tag) => {
-          const url = `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`;
-          return `<a href="${url}" target="_blank" rel="noopener" class="feature-tag feature-tag--ig">#${tag}</a>`;
-        }).join('');
-
-      const thumbHtml = shoe.thumbnail
-        ? `<img src="${shoe.thumbnail}" alt="${shoe.brand} ${shoe.goods_name}" class="rec-thumb-img"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-           <div class="rec-thumb-fallback" style="display:none">👟</div>`
-        : `<div class="rec-thumb-fallback">👟</div>`;
-
-      const fallbackBadge = shoe.is_fallback ? '<span class="badge badge-medium">빠른 추천</span>' : '';
-
-      return `
-        <article class="rec-card rank-${rank}">
-          <div class="rec-rank">#${rank}</div>
-          <div class="rec-body">
-            <div class="rec-header">
-              <div class="rec-header-text">
-                <div class="rec-title-row">
-                  <h3>${shoe.brand} <span class="rec-name">${shoe.goods_name}</span></h3>
-                  <div class="rec-score">매칭 ${shoe.match_score}%</div>
-                </div>
-              </div>
-              <div class="rec-thumbnail">${thumbHtml}</div>
-            </div>
-            <div class="rec-tags">
-              ${shoe.width ? `<span class="feature-tag">발볼 ${shoe.width}</span>` : ''}
-              ${shoe.cushion ? `<span class="feature-tag">쿠션 ${shoe.cushion}/5</span>` : ''}
-              ${shoe.weight ? `<span class="feature-tag">무게 ${shoe.weight}/5</span>` : ''}
-              ${shoe.distance ? `<span class="feature-tag">${shoe.distance}</span>` : ''}
-              ${fallbackBadge}
-            </div>
-            <div class="rec-ig-tags">${igTagsHtml}</div>
-            <p class="rec-reason">💬 ${shoe.reason || ''}</p>
-            <div class="rec-footer">
-              <span class="rec-price">₩${price}</span>
-              ${shoe.url ? `<a href="${shoe.url}" target="_blank" class="btn-musinsa">무신사에서 보기 →</a>` : ''}
-            </div>
-          </div>
-        </article>`;
-    }).join('');
+    recs.map((shoe, i) => buildRaceCardHTML(shoe, i + 1)).join('');
 }
 
 // ============================================================
