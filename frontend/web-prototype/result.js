@@ -117,7 +117,10 @@ async function runPhase1(profile) {
     renderError(data.message || '추천 결과를 받지 못했습니다.'); return;
   }
 
-  const recs = data.recommendations;
+  const recs = data.recommendations.filter(
+    (r) => r.is_db_recommendation === false || (r.match_score ?? 0) >= 30
+  );
+  if (recs.length === 0) { renderNoMatch(data.message || '입력하신 조건에 맞는 러닝화가 없습니다.'); return; }
   currentRecommendations = [...recs];
 
   // 카드 #1 즉시 표출

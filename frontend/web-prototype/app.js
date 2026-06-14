@@ -93,7 +93,7 @@ function collectFormData() {
     running_distance:
       document.querySelector('input[name="distance"]:checked')?.value || null,
     frequency:
-      document.querySelector('input[name="frequency"]:checked')?.value || 'casual',
+      document.querySelector('input[name="frequency"]:checked')?.value || 'regular',
     foot_width:
       document.querySelector('input[name="width"]:checked')?.value || null,
     // v2.7: 족형(발 모양 유형) — 선택 항목, 미선택 시 null 전달, 백엔드에서 무시
