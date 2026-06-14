@@ -5,7 +5,7 @@
 
 ---
 
-## 목차 (Table of Contents)
+## 목차 (Table of Contents)1
 
 - [변경 이력](#변경-이력-revision-history)
 - [1. 사용자 시나리오](#1-사용자-시나리오-user-scenario)
@@ -44,6 +44,7 @@
   - [6.9 POST /api/size/convert](#69-post-apisizeconvert--v20)
   - [6.10 POST /api/recommend/outfit](#610-post-apirecommendoutfit--v20)
   - [6.11 GET /api/shoes](#611-get-apishoes--v20)
+  - [6.12 GET /api/musinsa/ranking](#612-get-apimusinsaranking--v30)
 - [7. 데이터 구조 (Google Sheets DB & ERD)](#7-데이터-구조-google-sheets-기반-db--erd)
   - [7.0 ERD — 엔티티 관계 정의](#70-erd--엔티티-관계-정의)
   - [7.1 Sheet 1: Shoes](#71-sheet-1-shoes-러닝화-메타-데이터)
@@ -69,6 +70,8 @@
 
 | 버전 | 날짜 | 유형 | 항목 | 작성자 |
 |------|------|------|------|--------|
+| v3.0 | 2026-06-14 | 추가 | §5.11 홈 화면 무신사 인기 러닝화 랭킹 위젯 (Top 5) — 백엔드 프록시 + 인메모리 캐시 1시간 | kmchoikm |
+| v3.0 | 2026-06-14 | 추가 | §6.12 GET /api/musinsa/ranking — 무신사 러닝화 카테고리 랭킹 프록시 엔드포인트 | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §5.1·§6.1: budget 허용값에 `any`(상관없음) 추가 — FE `value=""` → `value="any"`, BE `BUDGET_MAX.any = Infinity` | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §6.1 응답 예시: "주요 필드만 표시, 전체 필드는 표 참조" 노트 추가 | kmchoikm |
 | v2.9 | 2026-06-09 | 수정 | §7.3: Celebs 룩북·SNS 컬럼 9개 추가 (`instagram_url`, `youtube_url`, `outfit_*` 7개) | kmchoikm |

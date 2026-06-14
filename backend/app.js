@@ -14,6 +14,7 @@ const raceWinnersRouter = require('./routes/raceWinners');
 const celebsRouter      = require('./routes/celebs');
 const shoesRouter       = require('./routes/shoes');
 const sizeRouter        = require('./routes/size');
+const musinsaRouter     = require('./routes/musinsa');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/api/race-winners', raceWinnersRouter);  // GET  /api/race-winners
 app.use('/api/celebs',       celebsRouter);       // GET  /api/celebs, /api/celebs/:id
 app.use('/api/shoes',        shoesRouter);        // GET  /api/shoes, POST /api/shoes/lifespan
 app.use('/api/size',         sizeRouter);         // POST /api/size/convert
+app.use('/api/musinsa',      musinsaRouter);      // GET  /api/musinsa/ranking
 
 // ============================================================
 // 404 처리

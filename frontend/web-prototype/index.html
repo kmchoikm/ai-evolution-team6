@@ -35,6 +35,15 @@
       </a>
     </div>
 
+    <!-- 무신사 인기 러닝화 랭킹 위젯 -->
+    <section class="musinsa-section" id="musinsa-ranking-section">
+      <div class="musinsa-section-header">
+        <h2>이번 주 인기 러닝화 Top 5</h2>
+        <p class="musinsa-source">데이터: 무신사</p>
+      </div>
+      <div class="musinsa-list" id="musinsa-ranking-list"></div>
+    </section>
+
     <!-- 서비스 소개 -->
     <section class="hub-intro">
       <h2>RunFit이 도와드릴게요</h2>
@@ -82,6 +91,9 @@
         ? 'http://localhost:3000'
         : 'https://ai-evolution-team6-production.up.railway.app';
 
+      // 외부 스크립트(musinsa-widget.js 등)에서 접근할 수 있도록 전역 노출
+      window.API_BASE = API_BASE;
+
       function prefetchCelebs() {
         // 이미 prefetch된 경우 중복 실행 방지
         if (sessionStorage.getItem('celebs_prefetch_ts')) return;
@@ -115,5 +127,6 @@
       }
     })();
   </script>
+  <script src="musinsa-widget.js"></script>
 </body>
 </html>

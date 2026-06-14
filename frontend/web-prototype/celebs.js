@@ -11,7 +11,7 @@ const API_BASE = (window.location.protocol === 'file:' ||
   : 'https://ai-evolution-team6-production.up.railway.app';
 
 // 이 값을 올리면 모든 브라우저의 sessionStorage 캐시가 자동 무효화됨
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_KEY = (name) => `${name}_${CACHE_VERSION}`;
 
 let allCelebs = [];
