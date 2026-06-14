@@ -588,6 +588,7 @@ textarea:focus {
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  margin-bottom: 6px;
 }
 .rec-header h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
 .rec-name { font-weight: 500; color: var(--text-mid); }
