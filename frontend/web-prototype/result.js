@@ -556,12 +556,12 @@ async function fetchAndRenderSocks(shoe) {
   }
 
   container.innerHTML = `
-    <div class="socks-grid">
+    <div class="color-row-list">
       ${data.socks.map((sock) => `
-        <button class="color-card" onclick="selectSock('${sock.color_name}', '${sock.hex_code}', '${shoe.goods_no}', '${shoe.main_color}', '${shoe.accent_color || ''}', this)">
+        <button class="color-row-item" onclick="selectSock('${sock.color_name}', '${sock.hex_code}', '${shoe.goods_no}', '${shoe.main_color}', '${shoe.accent_color || ''}', this)">
           <div class="color-circle" style="background:${sock.hex_code};"></div>
-          <p class="color-name">${sock.color_name}</p>
-          <p class="color-reason">${sock.reason}</p>
+          <span class="color-name">${sock.color_name}</span>
+          <span class="color-reason">${sock.reason}</span>
         </button>
       `).join('')}
     </div>
@@ -572,7 +572,7 @@ async function fetchAndRenderSocks(shoe) {
 function selectSock(sockColor, sockHex, goodsNo, mainColor, accentColor, btnEl) {
   const socksContainer = document.getElementById(`socks-container-${goodsNo}`);
   if (socksContainer) {
-    socksContainer.querySelectorAll('.color-card').forEach((el) => el.classList.remove('selected'));
+    socksContainer.querySelectorAll('.color-row-item').forEach((el) => el.classList.remove('selected'));
   }
   btnEl.classList.add('selected');
   selectedSockColor = sockColor;
@@ -611,12 +611,12 @@ async function fetchAndRenderOutfit(goodsNo, mainColor, accentColor, sockColor) 
   container.innerHTML = data.outfit.map((item) => `
     <div class="outfit-item">
       <h3 class="outfit-item-title">${item.item}</h3>
-      <div class="socks-grid">
+      <div class="color-row-list">
         ${item.suggestions.map((s) => `
-          <div class="color-card">
+          <div class="color-row-item">
             <div class="color-circle" style="background:${s.hex_code};"></div>
-            <p class="color-name">${s.color_name}</p>
-            <p class="color-reason">${s.reason}</p>
+            <span class="color-name">${s.color_name}</span>
+            <span class="color-reason">${s.reason}</span>
           </div>
         `).join('')}
       </div>
